@@ -1,0 +1,21 @@
+[
+  {
+    "id": "pilot-study",
+    "title": "Phased rollout pilot",
+    "url": "https://example.test/pilot-study",
+    "snippet": "A limited pilot exposed onboarding failures before a broad release and supplied a monitored rollback path."
+  },
+  {
+    "id": "observability-note",
+    "title": "Operational observability note",
+    "url": "https://example.test/observability-note",
+    "snippet": "Release gates should record error rate, latency, and owner response before expanding traffic."
+  },
+  {
+    "id": "counterexample",
+    "title": "Uncontrolled launch counterexample",
+    "url": "https://example.test/counterexample",
+    "snippet": "A broad launch without a rollback owner delayed incident containment and made impact assessment harder."
+  }
+]
+

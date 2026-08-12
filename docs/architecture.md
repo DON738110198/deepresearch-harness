@@ -1,0 +1,40 @@
+# Architecture
+
+## Design position
+
+This project is a **training-free harness**. Model parameters remain frozen. Any observed difference belongs to the orchestration, prompt, evidence collection, and budget policy under the documented evaluation setup; it must not be described as a model capability improvement.
+
+## Current baseline
+
+```text
+CLI input
+  -> ProviderFactory (fake | OpenAI-compatible)
+  -> BaselineResearchPipeline
+       plan(question)
+       collect(plan.search_queries, corpus)
+       build_ledger(evidence)
+       write_report(question, ledger)
+  -> RunStore(state.json, report.md)
+```
+
+`RunState` is the source of truth. It has a status history and serialized task, plan, evidence, claims, citations, trace events, and totals. `RunStore` writes atomically by replacing a temporary JSON file, so an interrupted process does not leave a partial `state.json` in place.
+
+## Contracts and audit boundary
+
+- `Task`, `Plan`, `Evidence`, `Claim`, and `Citation` are validated Pydantic models.
+- Every provider call produces a `TraceEvent` with provider/model, token usage, estimated cost, latency, and stage outcome.
+- `HarnessConfig` validates the provider, pricing, and run-budget settings. Keys are not configuration values: `api_key_env` names the only permitted credential source.
+- `Citation` explicitly connects a report marker to evidence and claim IDs.
+- The collector has a small `EvidenceCollector` interface. The MVP implementation is a deterministic local corpus collector, avoiding untracked network behavior in smoke tests.
+
+## Extension boundaries, not implemented behavior
+
+| Boundary | MVP implementation | Future responsibility |
+| --- | --- | --- |
+| `LLMProvider` | fake and chat-completions provider | structured-output retries, provider-specific adapters |
+| `EvidenceCollector` | local fixture corpus | web search, fetch, parsing, provenance checks |
+| `BaselineResearchPipeline` | linear four-stage flow | Research DAG, re-planning, cancellation |
+| `RunState.trace` | append-only persisted events | budget controller and trace exporters |
+| claim ledger | one claim per evidence item | entailment critic and repair queue |
+
+Do not add DAG fan-out, critic loops, or automatic re-planning until a saved bad case makes their decision boundary measurable.

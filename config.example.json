@@ -1,0 +1,16 @@
+{
+  "provider": {
+    "kind": "openai_compatible",
+    "model": "replace-with-your-model-id",
+    "base_url": "https://api.openai.com/v1",
+    "api_key_env": "OPENAI_API_KEY",
+    "timeout_seconds": 60,
+    "pricing": {
+      "input_per_million_usd": 0.0,
+      "output_per_million_usd": 0.0
+    }
+  },
+  "run": {
+    "max_evidence": 6
+  }
+}
