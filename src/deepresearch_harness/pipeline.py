@@ -342,12 +342,13 @@ class ObligationEvidenceDebtPipeline(BaselineResearchPipeline):
             {
                 "instruction": (
                     "Create an exhaustive but concise answer contract for the question. Return json only. "
-                    "Define 2-5 non-overlapping evidence questions that together cover the decision's named benefits, risks, "
-                    "constraints, and trade-offs. Each obligation must ask for evidence that can substantively inform one "
-                    "answer component; do not require a source to state the final recommendation. Give each obligation one "
-                    "distinct evidence query that repeats the concrete subject and criterion terms from the question and "
-                    "decision context. Do not invent legal, regulatory, policy, product, user-preference, or metric requirements "
-                    "unless the input names them."
+                    "Define 2-5 non-overlapping, domain-specific evidence questions. Cover every distinct workflow stage, "
+                    "comparison axis, failure mode, and hard constraint stated or directly implied by the question and decision "
+                    "context. Use the input's concrete concepts in obligation descriptions and queries. Do not use generic "
+                    "benefit, risk, constraint, or trade-off slots unless the input explicitly asks for those categories. "
+                    "Each obligation must ask for evidence that can substantively inform one answer component; do not require "
+                    "a source to state the final recommendation. Do not invent legal, regulatory, policy, product, user-preference, "
+                    "or metric requirements unless the input names them."
                 ),
                 "question": question,
                 "json_example": {
