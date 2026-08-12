@@ -43,3 +43,5 @@ Start by saving a concrete failure with its inputs and trace. State `problem -> 
 ## Pilot metric boundary
 
 Pilot v0 separates deterministic metrics from semantic judgments. Evidence-ID recall, obligation-level retrieval recall, and citation referential integrity are computed from contracts. Obligation coverage, exact claim support, unsupported claims, and conflict handling require human annotation. Do not label structural citation integrity as factual correctness.
+
+When comparing B0 and B1 reports, use the generated blind-review packet rather than run directories. Candidate order is deterministic from the registered seed but the mapping remains in a separate answer key until annotation is locked.

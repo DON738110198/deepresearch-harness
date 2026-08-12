@@ -27,6 +27,8 @@ Human annotation is required for:
 
 LLM-as-a-Judge is intentionally excluded from pilot v0. It adds another model, prompt, cost, and bias before the basic rubric is stable.
 
+Semantic review uses candidates `A/B` with randomized order per task. The packet hides variant names and retrieval queries; an answer key is stored separately and must not be opened until both candidates for all ten tasks are annotated.
+
 ## Experiment matrix
 
 | Control | B0 | B1 | B2 |

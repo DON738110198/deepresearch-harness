@@ -9,6 +9,7 @@ from .contracts import HarnessConfig
 from .experiment import validate_experiment_manifest
 from .pipeline import BaselineResearchPipeline, LocalCorpusCollector, SearchWritePipeline
 from .providers import FakeProvider, provider_from_config
+from .review import prepare_blind_review
 
 
 def project_root() -> Path:
@@ -55,6 +56,11 @@ def main() -> int:
     run_experiment.add_argument("--manifest", type=Path, required=True)
     run_experiment.add_argument("--config", type=Path, required=True)
     run_experiment.add_argument("--output-dir", type=Path, default=Path("runs") / "experiments")
+    prepare_review = subparsers.add_parser("prepare-review", help="Create blinded B0/B1 review artifacts.")
+    prepare_review.add_argument("--summary", type=Path, required=True)
+    prepare_review.add_argument("--suite", type=Path, required=True)
+    prepare_review.add_argument("--output-dir", type=Path, required=True)
+    prepare_review.add_argument("--seed", type=int, default=20260812)
     args = parser.parse_args()
     if args.command == "demo":
         corpus = project_root() / "examples" / "offline_corpus.json"
@@ -92,6 +98,15 @@ def main() -> int:
                 f"evidence_recall={aggregate.mean_evidence_id_recall},"
                 f"evidence_precision={aggregate.mean_evidence_id_precision}"
             )
+        return 0
+    if args.command == "prepare-review":
+        packet, template, key = prepare_blind_review(
+            summary_path=args.summary,
+            suite_path=args.suite,
+            output_dir=args.output_dir,
+            seed=args.seed,
+        )
+        print(f"review_packet={packet}\nannotation_template={template}\nanswer_key={key}")
         return 0
     return execute(
         question=args.question,

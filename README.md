@@ -50,6 +50,17 @@ python -m deepresearch_harness.cli run-experiment `
 
 Experiment output is ignored by Git and includes one state/report/automatic-score bundle per task and variant plus `summary.json`. Automatic scores cover retrieval and citation structure only; semantic support still requires human annotation.
 
+Create a variant-blinded semantic review packet from a completed batch with:
+
+```powershell
+python -m deepresearch_harness.cli prepare-review `
+  --summary runs\experiments\<experiment>\<timestamp>\summary.json `
+  --suite benchmarks\pilot_v0\tasks.json `
+  --output-dir runs\reviews\<review-id>
+```
+
+The reviewer packet contains candidates `A/B` without variant labels or model-generated retrieval queries. Keep the separately generated `answer_key.json` hidden until annotation is complete.
+
 No API key is accepted through CLI flags or configuration values. `api_key_env` names the environment variable to read at runtime.
 
 ## Scope and limits
@@ -68,6 +79,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/pipeline.py`: baseline orchestration and persistence.
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.
 - `src/deepresearch_harness/batch.py`: frozen-manifest B0/B1 batch execution and automatic aggregation.
+- `src/deepresearch_harness/review.py`: deterministic variant-blind review packet generation.
 - `experiments/pilot_v0/`: token-matched and cost-matched manifests with pinned corpus hashes and pricing.
 - `benchmarks/pilot_v0/`: ten controlled diagnostic tasks and a synthetic corpus.
 - `docs/problem_statement.md`: problem-first design position and falsifiable hypotheses.
