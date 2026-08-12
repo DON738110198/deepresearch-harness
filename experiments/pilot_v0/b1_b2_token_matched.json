@@ -1,0 +1,37 @@
+{
+  "experiment_id": "pilot-v0-b1-vs-b2-token-matched",
+  "status": "ready",
+  "implementation_revision": "6e559874b2745a7b01d53e201656628b9ea97514",
+  "suite_path": "../../benchmarks/pilot_v0/tasks.json",
+  "suite_sha256": "fa044d33871a2422c082cce7dd15ab9a481663292f96b85e67d47746d3b4601f",
+  "corpus_sha256": "26b2c8a597b80c8df64bb89173b492720dff34b5b46d922ebeac90be4df7318a",
+  "variants": ["b1_plan_search_ledger_write", "b2_obligation_evidence_debt"],
+  "budget_mode": "token_matched",
+  "budget": {
+    "max_total_tokens": 8000,
+    "max_estimated_cost_usd": null,
+    "max_llm_calls": 3,
+    "max_output_tokens_per_call": 1200
+  },
+  "provider": {
+    "kind": "openai_compatible",
+    "model": "deepseek-v4-flash",
+    "base_url": "https://api.deepseek.com",
+    "thinking_mode": "disabled",
+    "pricing": {
+      "input_per_million_usd": 0.0,
+      "input_cache_hit_per_million_usd": 0.0028,
+      "input_cache_miss_per_million_usd": 0.14,
+      "output_per_million_usd": 0.28
+    },
+    "pricing_source": "https://api-docs.deepseek.com/quick_start/pricing/",
+    "pricing_checked_at": "2026-08-12"
+  },
+  "notes": [
+    "Caps, controls, and acceptance gates were registered before the B1/B2 batch was run.",
+    "Both variants receive task.question plus decision_context and use the same collector, corpus, top-k, and three-call allowance.",
+    "Automatic gate: both variants complete 10/10 tasks, B2 evidence-obligation recall is at least B1 plus 0.10, and structural citation integrity is 1.0.",
+    "Planned human gate: B2 blind obligation coverage is at least B1 plus 0.10, citation support is no worse than B1 minus 0.05, and irrelevant-claim rate is no worse than B1 plus 0.05.",
+    "AI-assisted review is calibration-only and cannot satisfy the planned human gate."
+  ]
+}
