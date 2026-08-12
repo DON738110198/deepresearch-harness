@@ -59,7 +59,19 @@ python -m deepresearch_harness.cli prepare-review `
   --output-dir runs\reviews\<review-id>
 ```
 
-The reviewer packet contains candidates `A/B` without variant labels or model-generated retrieval queries. Keep the separately generated `answer_key.json` hidden until annotation is complete.
+The reviewer packet contains candidates `A/B` without variant labels or model-generated retrieval queries. Keep the separately generated `answer_key.json` hidden until annotation is complete. The annotation file is rejected unless every candidate, claim, cited claim, obligation, and conflict label is internally complete and references known IDs.
+
+After annotation is locked, validate it and aggregate semantic metrics with:
+
+```powershell
+python -m deepresearch_harness.cli score-review `
+  --packet runs\reviews\<review-id>\review_packet.json `
+  --annotations runs\reviews\<review-id>\annotations.json `
+  --answer-key runs\reviews\<review-id>\answer_key.json `
+  --output runs\reviews\<review-id>\scores.semantic.json
+```
+
+Set `reviewer_type` to `human` for the registered human evaluation. An `ai_assisted` submission is explicitly emitted as `calibration_only`; it is useful for rubric debugging and bad-case selection, but is not a human metric.
 
 No API key is accepted through CLI flags or configuration values. `api_key_env` names the environment variable to read at runtime.
 

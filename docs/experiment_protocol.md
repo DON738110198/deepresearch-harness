@@ -26,9 +26,11 @@ Do not substitute a stronger model, fresher search index, or different tool allo
 
 Persist the question ID, config digest, corpus/tool version, model and provider, run state, all trace events, total tokens, estimated cost, latency, selected evidence, ledger, report, and scoring output. Redact credentials and sensitive raw data before sharing.
 
-## Planned metrics
+## Evaluation status
 
-No outcome metrics have been run in this repository. The following are **planned**:
+The B0/B1 token-matched provider run and an AI-assisted blind calibration are recorded in `pilot_v0_calibration.md`. The registered human semantic evaluation remains **planned**. The calibration is evidence for rubric debugging and mechanism selection only.
+
+The following metrics remain required for registered comparisons:
 
 - citation support rate: claims whose cited evidence supports the claim;
 - evidence recall / coverage against a curated reference set;
@@ -45,3 +47,5 @@ Start by saving a concrete failure with its inputs and trace. State `problem -> 
 Pilot v0 separates deterministic metrics from semantic judgments. Evidence-ID recall, obligation-level retrieval recall, and citation referential integrity are computed from contracts. Obligation coverage, exact claim support, unsupported claims, and conflict handling require human annotation. Do not label structural citation integrity as factual correctness.
 
 When comparing B0 and B1 reports, use the generated blind-review packet rather than run directories. Candidate order is deterministic from the registered seed but the mapping remains in a separate answer key until annotation is locked.
+
+The scorer enforces a mechanical review lock before reading the answer key: all candidates must be present, every claim and cited claim must be classified exactly once, and all referenced obligation/claim IDs must exist in the packet. `ai_assisted` review is calibration-only and must not be reported as a human result.

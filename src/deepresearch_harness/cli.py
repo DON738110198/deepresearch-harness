@@ -9,7 +9,7 @@ from .contracts import HarnessConfig
 from .experiment import validate_experiment_manifest
 from .pipeline import BaselineResearchPipeline, LocalCorpusCollector, SearchWritePipeline
 from .providers import FakeProvider, provider_from_config
-from .review import prepare_blind_review
+from .review import prepare_blind_review, score_blind_review
 
 
 def project_root() -> Path:
@@ -61,6 +61,11 @@ def main() -> int:
     prepare_review.add_argument("--suite", type=Path, required=True)
     prepare_review.add_argument("--output-dir", type=Path, required=True)
     prepare_review.add_argument("--seed", type=int, default=20260812)
+    score_review = subparsers.add_parser("score-review", help="Validate, unblind, and aggregate a completed review.")
+    score_review.add_argument("--packet", type=Path, required=True)
+    score_review.add_argument("--annotations", type=Path, required=True)
+    score_review.add_argument("--answer-key", type=Path, required=True)
+    score_review.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "demo":
         corpus = project_root() / "examples" / "offline_corpus.json"
@@ -107,6 +112,27 @@ def main() -> int:
             seed=args.seed,
         )
         print(f"review_packet={packet}\nannotation_template={template}\nanswer_key={key}")
+        return 0
+    if args.command == "score-review":
+        result = score_blind_review(
+            packet_path=args.packet,
+            annotations_path=args.annotations,
+            answer_key_path=args.answer_key,
+            output_path=args.output,
+        )
+        print(
+            f"experiment={result.experiment_id}\nreviewer_type={result.reviewer_type.value}\n"
+            f"result_status={result.result_status}\noutput={args.output}"
+        )
+        for variant, aggregate in result.aggregates.items():
+            print(
+                f"{variant}: candidates={aggregate.candidate_count},"
+                f"obligation_coverage={aggregate.mean_obligation_coverage},"
+                f"citation_support={aggregate.mean_citation_support_rate},"
+                f"unsupported_claims={aggregate.mean_unsupported_claim_rate},"
+                f"irrelevant_claims={aggregate.mean_irrelevant_claim_rate},"
+                f"conflict_handling={aggregate.mean_conflict_handling_rate}"
+            )
         return 0
     return execute(
         question=args.question,
