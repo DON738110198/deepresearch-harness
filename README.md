@@ -98,6 +98,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `docs/pilot_design.md`: B0/B1/B2 comparison and stage gates.
 - `docs/architecture.md`: current boundaries and next-stage extension points.
 - `docs/experiment_protocol.md`: fair-comparison and bad-case evaluation protocol.
+- `docs/b1_b2_token_v1.md`: retained negative B2 v1 result and causal follow-up.
 
 ## Next implementation order
 
