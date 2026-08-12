@@ -30,7 +30,7 @@ B2 keeps B1's three provider calls and the same collector boundary, but turns th
 - Per-run budget limits cap LLM calls and output tokens, then stop subsequent work when provider-reported total tokens or cache-aware estimated cost exceed the registered bound. Because an OpenAI-compatible API does not expose a pre-call exact input-token cap, observed total-token and cost limits are checked after each response and may overshoot by that response; the trace records this explicitly.
 - `HarnessConfig` validates the provider, pricing, and run-budget settings. Keys are not configuration values: `api_key_env` names the only permitted credential source.
 - `Citation` explicitly connects a report marker to evidence and claim IDs.
-- The collector has a small `EvidenceCollector` interface. The MVP implementation is a deterministic local corpus collector, avoiding untracked network behavior in smoke tests.
+- The collector has a small `EvidenceCollector` interface. The MVP implementation is a deterministic local corpus collector that ranks each query independently and fills top-k round-robin, so one obligation cannot consume every evidence slot. It avoids untracked network behavior in smoke tests.
 
 ## Extension boundaries, not implemented behavior
 

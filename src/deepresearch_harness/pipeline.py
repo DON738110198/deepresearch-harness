@@ -38,18 +38,41 @@ class LocalCorpusCollector:
         self._records = json.loads(corpus_path.read_text(encoding="utf-8"))
 
     def collect(self, queries: list[str], max_evidence: int) -> list[Evidence]:
-        terms = set(re.findall(r"[a-z0-9]+", " ".join(queries).lower()))
+        ranked_by_query = [self._rank_query(query) for query in queries]
+        selected: list[tuple[dict[str, str], str]] = []
+        selected_ids: set[str] = set()
+        next_rank = [0] * len(ranked_by_query)
+        while len(selected) < max_evidence:
+            added = False
+            for query_index, rows in enumerate(ranked_by_query):
+                while next_rank[query_index] < len(rows) and rows[next_rank[query_index]][1]["id"] in selected_ids:
+                    next_rank[query_index] += 1
+                if next_rank[query_index] >= len(rows):
+                    continue
+                _, item, query = rows[next_rank[query_index]]
+                next_rank[query_index] += 1
+                selected.append((item, query))
+                selected_ids.add(item["id"])
+                added = True
+                if len(selected) == max_evidence:
+                    break
+            if not added:
+                break
+        return [
+            Evidence(id=item["id"], title=item["title"], url=item["url"], excerpt=item["snippet"], query=query)
+            for item, query in selected
+        ]
+
+    def _rank_query(self, query: str) -> list[tuple[int, dict[str, str], str]]:
+        terms = set(re.findall(r"[a-z0-9]+", query.lower()))
         scored: list[tuple[int, dict[str, str], str]] = []
         for item in self._records:
             haystack = f"{item['title']} {item['snippet']}".lower()
             score = sum(term in haystack for term in terms)
             if score:
-                scored.append((score, item, queries[0]))
+                scored.append((score, item, query))
         scored.sort(key=lambda row: (-row[0], row[1]["id"]))
-        return [
-            Evidence(id=item["id"], title=item["title"], url=item["url"], excerpt=item["snippet"], query=query)
-            for _, item, query in scored[:max_evidence]
-        ]
+        return scored
 
 
 class BudgetExceeded(RuntimeError):

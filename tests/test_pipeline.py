@@ -104,3 +104,22 @@ def test_b2_persists_obligation_to_evidence_debt_links_without_extra_calls(tmp_p
 
     persisted = RunState.model_validate_json((tmp_path / state.run_id / "state.json").read_text(encoding="utf-8"))
     assert persisted.evidence_debts == state.evidence_debts
+
+
+def test_local_collector_balances_evidence_across_queries(tmp_path: Path) -> None:
+    corpus = tmp_path / "corpus.json"
+    corpus.write_text(
+        json.dumps(
+            [
+                {"id": "a1", "title": "alpha alpha", "url": "https://example.test/a1", "snippet": "alpha"},
+                {"id": "a2", "title": "alpha", "url": "https://example.test/a2", "snippet": "alpha"},
+                {"id": "b1", "title": "beta", "url": "https://example.test/b1", "snippet": "beta"},
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    evidence = LocalCorpusCollector(corpus).collect(["alpha", "beta"], max_evidence=2)
+
+    assert [item.id for item in evidence] == ["a1", "b1"]
+    assert [item.query for item in evidence] == ["alpha", "beta"]
