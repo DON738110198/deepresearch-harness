@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from .benchmark import FailureFocus, validate_suite_assets
 from .contracts import HarnessConfig
 from .pipeline import BaselineResearchPipeline, LocalCorpusCollector
 from .providers import FakeProvider, provider_from_config
@@ -35,12 +36,22 @@ def main() -> int:
     run.add_argument("--corpus", type=Path, required=True)
     run.add_argument("--config", type=Path)
     run.add_argument("--output-dir", type=Path, default=Path("runs"))
+    validate = subparsers.add_parser("validate-pilot", help="Validate a pilot suite and its corpus references.")
+    validate.add_argument("--suite", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "demo":
         corpus = project_root() / "examples" / "offline_corpus.json"
         pipeline = BaselineResearchPipeline(provider=FakeProvider(), collector=LocalCorpusCollector(corpus), output_dir=args.output_dir)
         state = pipeline.run("What evidence supports a phased rollout?")
         print(f"run_id={state.run_id}\nstatus={state.status.value}\nreport={state.report_path}")
+        return 0
+    if args.command == "validate-pilot":
+        suite, corpus = validate_suite_assets(args.suite)
+        counts = {focus.value: 0 for focus in FailureFocus}
+        for task in suite.tasks:
+            counts[task.failure_focus.value] += 1
+        print(f"suite={suite.suite_id}\nstatus={suite.status}\ntasks={len(suite.tasks)}\ncorpus_records={len(corpus)}")
+        print("failure_focus=" + ",".join(f"{name}:{count}" for name, count in counts.items()))
         return 0
     return execute(question=args.question, corpus=args.corpus, output_dir=args.output_dir, config=args.config)
 

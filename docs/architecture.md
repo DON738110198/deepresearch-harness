@@ -36,5 +36,8 @@ CLI input
 | `BaselineResearchPipeline` | linear four-stage flow | Research DAG, re-planning, cancellation |
 | `RunState.trace` | append-only persisted events | budget controller and trace exporters |
 | claim ledger | one claim per evidence item | entailment critic and repair queue |
+| benchmark contract | controlled pilot validation and layered scoring | batch runner and experiment aggregation |
 
 Do not add DAG fan-out, critic loops, or automatic re-planning until a saved bad case makes their decision boundary measurable.
+
+The project-specific control hypothesis and its simpler baselines are documented in `problem_statement.md`; the first diagnostic suite is documented in `pilot_design.md`. Neither document claims a measured improvement.

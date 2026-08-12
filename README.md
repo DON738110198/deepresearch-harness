@@ -16,6 +16,7 @@ Every run persists its normalized input, plan, evidence, claims, citations, stat
 cd G:\Obsidian\Study\AI_infra_interm\training-free-deepresearch-harness
 python -m pip install -e ".[dev]"
 python -m deepresearch_harness.cli demo --output-dir runs\smoke
+python -m deepresearch_harness.cli validate-pilot --suite benchmarks\pilot_v0\tasks.json
 python -m pytest
 ```
 
@@ -49,14 +50,17 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/contracts.py`: Pydantic run-state contracts.
 - `src/deepresearch_harness/providers.py`: fake and OpenAI-compatible providers.
 - `src/deepresearch_harness/pipeline.py`: baseline orchestration and persistence.
+- `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.
+- `benchmarks/pilot_v0/`: ten controlled diagnostic tasks and a synthetic corpus.
+- `docs/problem_statement.md`: problem-first design position and falsifiable hypotheses.
+- `docs/pilot_design.md`: B0/B1/B2 comparison and stage gates.
 - `docs/architecture.md`: current boundaries and next-stage extension points.
 - `docs/experiment_protocol.md`: fair-comparison and bad-case evaluation protocol.
 
 ## Next implementation order
 
-1. Build a fixed 20-50 question evaluation set with evidence relevance, citation support, completeness, and cost fields; acceptance: a baseline run is reproducible from one command.
-2. Categorize baseline bad cases (missed evidence, unsupported claim, redundant search, budget exhaustion); acceptance: each category has saved input, expected behavior, and a regression test.
-3. Add budget-aware re-planning only for a measured failure category; acceptance: same model, tool, corpus, and token/fee budget, with comparison artifacts per run.
-4. Add Critic-Repair for unsupported claims before considering a Research DAG; acceptance: it reduces a pre-defined unsupported-citation rate without exceeding the matched budget.
-5. Add a Research DAG only when independent evidence branches improve a measured coverage failure; acceptance: branch-level traces and a fair budget-matched baseline comparison.
-
+1. Implement B0 Search-Write against the same state and trace contracts; acceptance: one command runs B0 or B1 without changing corpus or provider.
+2. Add a versioned experiment manifest with enforced token and fee caps; acceptance: a run stops with an explicit budget reason rather than silently exceeding its cap.
+3. Run B0 and B1 on the ten-task controlled pilot and annotate reports blind to variant; acceptance: every task has raw state, report, config digest, and scoring record.
+4. Select one repeated bad case and implement only its smallest causal fix; Evidence-Debt, Critic-Repair, re-planning, or DAG execution remain hypotheses until selected by evidence.
+5. Expand to a 20-50 task external-source evaluation set only after the controlled pilot's contracts and annotation rubric are stable.

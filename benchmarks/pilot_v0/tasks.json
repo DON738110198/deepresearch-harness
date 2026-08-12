@@ -1,0 +1,150 @@
+{
+  "suite_id": "ai-infra-decision-pilot-v0",
+  "version": "0.1.0",
+  "status": "planned",
+  "corpus_path": "corpus.json",
+  "expected_task_count": 10,
+  "expected_per_failure_focus": 2,
+  "tasks": [
+    {
+      "id": "pilot-01-rollout",
+      "question": "Should the platform use a phased rollout for a high-impact agent change, and what gates are required?",
+      "target_user": "platform release owner",
+      "decision_context": "The change can affect user-visible actions and must be reversible.",
+      "failure_focus": "coverage_gap",
+      "obligations": [
+        {"id":"blast-radius","description":"Explain how the release controls initial impact.","gold_evidence_ids":["t01-blast-radius"]},
+        {"id":"rollback","description":"Define rollback ownership and readiness.","gold_evidence_ids":["t01-rollback"]},
+        {"id":"observability","description":"Name evidence-based expansion gates.","gold_evidence_ids":["t01-observability"]}
+      ],
+      "forbidden_shortcuts": ["Recommend a phased rollout without rollback and monitoring conditions."],
+      "acceptance_notes": ["The recommendation must connect every gate to eligible evidence."]
+    },
+    {
+      "id": "pilot-02-vector-index",
+      "question": "Which vector-index strategy fits a frequently updated retrieval service with tight latency and memory limits?",
+      "target_user": "retrieval infrastructure engineer",
+      "decision_context": "The choice must balance recall, serving resources, and update behavior.",
+      "failure_focus": "coverage_gap",
+      "obligations": [
+        {"id":"recall","description":"Compare retrieval recall behavior.","gold_evidence_ids":["t02-recall"]},
+        {"id":"serving-cost","description":"Compare latency and resident memory.","gold_evidence_ids":["t02-latency-memory"]},
+        {"id":"updates","description":"Account for ongoing index updates.","gold_evidence_ids":["t02-updates"]}
+      ],
+      "forbidden_shortcuts": ["Choose an index from latency alone."],
+      "acceptance_notes": ["The answer may be conditional instead of naming one universal winner."]
+    },
+    {
+      "id": "pilot-03-reranking",
+      "question": "Is a reranker justified for the retrieval pipeline, and where should it be applied?",
+      "target_user": "RAG system owner",
+      "decision_context": "Topically similar distractors appear in retrieved candidates, but latency is bounded.",
+      "failure_focus": "citation_mismatch",
+      "obligations": [
+        {"id":"candidate-recall","description":"Establish what the first-stage retriever recovers.","gold_evidence_ids":["t03-dense-recall"]},
+        {"id":"ordering","description":"Establish whether reranking improves supporting-passage order.","gold_evidence_ids":["t03-rerank-precision"]},
+        {"id":"latency","description":"Bound where reranking is affordable.","gold_evidence_ids":["t03-rerank-cost"]}
+      ],
+      "forbidden_shortcuts": ["Use dense-retrieval evidence as proof that reranking improves ordering."],
+      "acceptance_notes": ["Each claim must cite evidence for that exact stage of the pipeline."]
+    },
+    {
+      "id": "pilot-04-agent-memory",
+      "question": "Should persistent agent memory be enabled by default for this service?",
+      "target_user": "agent platform owner",
+      "decision_context": "The service handles multiple users and instructions can become stale.",
+      "failure_focus": "citation_mismatch",
+      "obligations": [
+        {"id":"relevance","description":"Assess whether retrieved memory improves or pollutes task context.","gold_evidence_ids":["t04-memory-relevance"]},
+        {"id":"privacy","description":"Specify retention and isolation requirements.","gold_evidence_ids":["t04-memory-privacy"]},
+        {"id":"freshness","description":"Address stale and conflicting memory.","gold_evidence_ids":["t04-memory-staleness"]}
+      ],
+      "forbidden_shortcuts": ["Treat better personalization as evidence that privacy and freshness risks are resolved."],
+      "acceptance_notes": ["A conditional or opt-in recommendation is allowed."]
+    },
+    {
+      "id": "pilot-05-multi-agent",
+      "question": "When should this research workflow use parallel subagents instead of a single sequential agent?",
+      "target_user": "research-agent architect",
+      "decision_context": "Some research branches are independent while others depend on earlier findings.",
+      "failure_focus": "conflict_omission",
+      "obligations": [
+        {"id":"parallel-benefit","description":"Identify conditions that benefit from parallel work.","gold_evidence_ids":["t05-parallel-benefit"],"counter_evidence_ids":["t05-dependent-counter"]},
+        {"id":"coordination-cost","description":"Account for delegation and merge overhead.","gold_evidence_ids":["t05-coordination-cost"]},
+        {"id":"dependency-rule","description":"Distinguish independent from dependent branches.","gold_evidence_ids":["t05-dependent-counter"],"counter_evidence_ids":["t05-parallel-benefit"]}
+      ],
+      "forbidden_shortcuts": ["Claim parallelism is always faster."],
+      "acceptance_notes": ["The decision rule must reconcile the positive and negative cases."]
+    },
+    {
+      "id": "pilot-06-checkpointing",
+      "question": "What checkpoint policy should a long-running agent use for reliable recovery?",
+      "target_user": "agent reliability engineer",
+      "decision_context": "Runs contain external side effects and late-stage failures are possible.",
+      "failure_focus": "conflict_omission",
+      "obligations": [
+        {"id":"recovery","description":"Explain what state checkpoints recover.","gold_evidence_ids":["t06-recovery"]},
+        {"id":"side-effects","description":"Prevent duplicate external actions during replay.","gold_evidence_ids":["t06-idempotency"]},
+        {"id":"frequency","description":"Balance checkpoint overhead against recomputation.","gold_evidence_ids":["t06-storage-cost"],"counter_evidence_ids":["t06-frequency-counter"]}
+      ],
+      "forbidden_shortcuts": ["Equate state recovery with exactly-once side effects."],
+      "acceptance_notes": ["The policy must state a trade-off rather than maximize checkpoint frequency blindly."]
+    },
+    {
+      "id": "pilot-07-model-routing",
+      "question": "Should the service route requests across models, and which constraints control the route?",
+      "target_user": "LLM platform engineer",
+      "decision_context": "Requests vary in difficulty and data sensitivity.",
+      "failure_focus": "redundant_search",
+      "obligations": [
+        {"id":"quality","description":"Define a quality-based routing condition.","gold_evidence_ids":["t07-route-quality"]},
+        {"id":"latency","description":"Account for queue and response latency.","gold_evidence_ids":["t07-route-latency"]},
+        {"id":"privacy","description":"Treat data policy as a hard routing constraint.","gold_evidence_ids":["t07-route-privacy"]}
+      ],
+      "forbidden_shortcuts": ["Count repeated summaries as additional independent evidence."],
+      "acceptance_notes": ["The duplicate routing summary is not gold evidence."]
+    },
+    {
+      "id": "pilot-08-tool-retry",
+      "question": "What retry policy should agent tools use under transient failures?",
+      "target_user": "tool-runtime owner",
+      "decision_context": "Tools include both read-only calls and side-effecting actions.",
+      "failure_focus": "redundant_search",
+      "obligations": [
+        {"id":"recovery","description":"Identify when bounded retries recover transient failures.","gold_evidence_ids":["t08-retry-transient"]},
+        {"id":"idempotency","description":"Separate safe retries from duplicate side effects.","gold_evidence_ids":["t08-retry-idempotency"]},
+        {"id":"stopping","description":"Bound tail latency and total retry cost.","gold_evidence_ids":["t08-retry-tail"]}
+      ],
+      "forbidden_shortcuts": ["Treat the duplicate retry note as a complete policy."],
+      "acceptance_notes": ["A valid policy distinguishes tool classes and includes a stop condition."]
+    },
+    {
+      "id": "pilot-09-context-compaction",
+      "question": "How should a long research run compact context without losing decision-critical evidence?",
+      "target_user": "long-horizon agent engineer",
+      "decision_context": "The run must fit a fixed context budget while remaining auditable.",
+      "failure_focus": "budget_prioritization",
+      "obligations": [
+        {"id":"savings","description":"Establish why compaction may be needed.","gold_evidence_ids":["t09-token-saving"]},
+        {"id":"loss-risk","description":"Identify what a free-form summary can lose.","gold_evidence_ids":["t09-fact-loss"]},
+        {"id":"retention-policy","description":"Specify what must remain in durable structured state.","gold_evidence_ids":["t09-durable-ledger"]}
+      ],
+      "forbidden_shortcuts": ["Spend the entire answer on token savings and omit fact-loss risk."],
+      "acceptance_notes": ["Under budget pressure, the durable evidence/decision record remains mandatory."]
+    },
+    {
+      "id": "pilot-10-evaluation",
+      "question": "How should a small fixed budget be allocated to evaluate a deep-research harness?",
+      "target_user": "agent evaluation lead",
+      "decision_context": "The team can afford deterministic checks broadly but only limited expert review.",
+      "failure_focus": "budget_prioritization",
+      "obligations": [
+        {"id":"coverage","description":"Build task coverage around workflows and failure modes.","gold_evidence_ids":["t10-task-coverage"]},
+        {"id":"judge-reliability","description":"Calibrate automated semantic judging against experts.","gold_evidence_ids":["t10-judge-reliability"]},
+        {"id":"allocation","description":"Allocate cheap structural checks and scarce semantic review.","gold_evidence_ids":["t10-eval-cost"]}
+      ],
+      "forbidden_shortcuts": ["Use only an uncalibrated LLM judge because it is cheaper."],
+      "acceptance_notes": ["The allocation must preserve human review for semantic support and difficult cases."]
+    }
+  ]
+}

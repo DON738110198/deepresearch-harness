@@ -38,3 +38,6 @@ No outcome metrics have been run in this repository. The following are **planned
 
 Start by saving a concrete failure with its inputs and trace. State `problem -> evidence -> hypothesis -> change -> metric -> conclusion`. Add only the smallest mechanism that tests that hypothesis, then add a focused regression test. A more complex orchestration is not accepted merely because it produces a more fluent report.
 
+## Pilot metric boundary
+
+Pilot v0 separates deterministic metrics from semantic judgments. Evidence-ID recall, obligation-level retrieval recall, and citation referential integrity are computed from contracts. Obligation coverage, exact claim support, unsupported claims, and conflict handling require human annotation. Do not label structural citation integrity as factual correctness.
