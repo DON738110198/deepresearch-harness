@@ -99,6 +99,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `docs/architecture.md`: current boundaries and next-stage extension points.
 - `docs/experiment_protocol.md`: fair-comparison and bad-case evaluation protocol.
 - `docs/b1_b2_token_v1.md`: retained negative B2 v1 result and causal follow-up.
+- `docs/b1_b2_token_v2.md`: retained B2 v2 tie and search-layer diagnosis.
 
 ## Next implementation order
 
