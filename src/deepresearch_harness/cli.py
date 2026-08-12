@@ -7,7 +7,7 @@ from .benchmark import FailureFocus, validate_suite_assets
 from .batch import run_experiment_batch
 from .contracts import HarnessConfig
 from .experiment import validate_experiment_manifest
-from .pipeline import BaselineResearchPipeline, LocalCorpusCollector, SearchWritePipeline
+from .pipeline import BaselineResearchPipeline, LocalCorpusCollector, ObligationEvidenceDebtPipeline, SearchWritePipeline
 from .providers import FakeProvider, provider_from_config
 from .review import prepare_blind_review, score_blind_review
 
@@ -20,7 +20,11 @@ def execute(*, question: str, corpus: Path, output_dir: Path, config: Path | Non
     settings = HarnessConfig.model_validate_json(config.read_text(encoding="utf-8")) if config else None
     provider = provider_from_config(settings)
     max_evidence = settings.run.max_evidence if settings else 6
-    pipeline_class = SearchWritePipeline if variant == "b0" else BaselineResearchPipeline
+    pipeline_class = {
+        "b0": SearchWritePipeline,
+        "b1": BaselineResearchPipeline,
+        "b2": ObligationEvidenceDebtPipeline,
+    }[variant]
     pipeline = pipeline_class(
         provider=provider,
         collector=LocalCorpusCollector(corpus),
@@ -47,16 +51,16 @@ def main() -> int:
     run.add_argument("--corpus", type=Path, required=True)
     run.add_argument("--config", type=Path)
     run.add_argument("--output-dir", type=Path, default=Path("runs"))
-    run.add_argument("--variant", choices=("b0", "b1"), default="b1")
+    run.add_argument("--variant", choices=("b0", "b1", "b2"), default="b1")
     validate = subparsers.add_parser("validate-pilot", help="Validate a pilot suite and its corpus references.")
     validate.add_argument("--suite", type=Path, required=True)
     validate_experiment = subparsers.add_parser("validate-experiment", help="Validate a frozen experiment manifest.")
     validate_experiment.add_argument("--manifest", type=Path, required=True)
-    run_experiment = subparsers.add_parser("run-experiment", help="Run all B0/B1 tasks from a frozen manifest.")
+    run_experiment = subparsers.add_parser("run-experiment", help="Run both variants from a frozen manifest.")
     run_experiment.add_argument("--manifest", type=Path, required=True)
     run_experiment.add_argument("--config", type=Path, required=True)
     run_experiment.add_argument("--output-dir", type=Path, default=Path("runs") / "experiments")
-    prepare_review = subparsers.add_parser("prepare-review", help="Create blinded B0/B1 review artifacts.")
+    prepare_review = subparsers.add_parser("prepare-review", help="Create blinded two-variant review artifacts.")
     prepare_review.add_argument("--summary", type=Path, required=True)
     prepare_review.add_argument("--suite", type=Path, required=True)
     prepare_review.add_argument("--output-dir", type=Path, required=True)

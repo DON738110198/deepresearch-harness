@@ -29,9 +29,23 @@ class PlanStep(BaseModel):
     objective: str = Field(min_length=1)
 
 
+class PlannedObligation(BaseModel):
+    id: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    search_query: str = Field(min_length=1)
+
+
 class Plan(BaseModel):
     steps: list[PlanStep] = Field(min_length=1)
     search_queries: list[str] = Field(min_length=1)
+    obligations: list[PlannedObligation] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def plan_ids_are_unique(self) -> "Plan":
+        obligation_ids = [item.id for item in self.obligations]
+        if len(obligation_ids) != len(set(obligation_ids)):
+            raise ValueError("plan obligation ids must be unique")
+        return self
 
 
 class Evidence(BaseModel):
@@ -55,6 +69,22 @@ class Citation(BaseModel):
     claim_id: str
     evidence_id: str
     marker: str
+
+
+class EvidenceDebt(BaseModel):
+    obligation_id: str = Field(min_length=1)
+    status: Literal["resolved", "open"]
+    evidence_ids: list[str] = Field(default_factory=list)
+    claim_ids: list[str] = Field(default_factory=list)
+    detail: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def status_matches_links(self) -> "EvidenceDebt":
+        if self.status == "resolved" and (not self.evidence_ids or not self.claim_ids):
+            raise ValueError("resolved evidence debt requires evidence_ids and claim_ids")
+        if self.status == "open" and self.claim_ids:
+            raise ValueError("open evidence debt cannot reference resolved claims")
+        return self
 
 
 class Usage(BaseModel):
@@ -135,13 +165,18 @@ class StatusEvent(BaseModel):
 class RunState(BaseModel):
     run_id: str
     task: Task
-    variant: Literal["b0_search_write", "b1_plan_search_ledger_write"] = "b1_plan_search_ledger_write"
+    variant: Literal[
+        "b0_search_write",
+        "b1_plan_search_ledger_write",
+        "b2_obligation_evidence_debt",
+    ] = "b1_plan_search_ledger_write"
     status: RunStatus = RunStatus.PENDING
     status_history: list[StatusEvent] = Field(default_factory=list)
     plan: Plan | None = None
     evidence: list[Evidence] = Field(default_factory=list)
     claims: list[Claim] = Field(default_factory=list)
     citations: list[Citation] = Field(default_factory=list)
+    evidence_debts: list[EvidenceDebt] = Field(default_factory=list)
     trace: list[TraceEvent] = Field(default_factory=list)
     total_usage: Usage = Field(default_factory=Usage)
     budget_limits: BudgetLimits = Field(default_factory=BudgetLimits)
@@ -168,6 +203,14 @@ class RunState(BaseModel):
         if len(markers) != len(set(markers)):
             raise ValueError("citation markers must be unique")
         return citations
+
+    @field_validator("evidence_debts")
+    @classmethod
+    def evidence_debt_obligations_are_unique(cls, debts: list[EvidenceDebt]) -> list[EvidenceDebt]:
+        obligation_ids = [debt.obligation_id for debt in debts]
+        if len(obligation_ids) != len(set(obligation_ids)):
+            raise ValueError("evidence debt obligation ids must be unique")
+        return debts
 
 
 class DirectWriteDraft(BaseModel):

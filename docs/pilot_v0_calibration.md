@@ -4,6 +4,8 @@
 
 This is a rubric calibration and bad-case audit, not the registered human evaluation. The reviewer was AI-assisted, the submission is labeled `calibration_only`, and no result below should be presented as a human metric or a model capability improvement.
 
+Post-run audit found that the B0/B1 batch passed `task.question` to the runtime but omitted the suite's separate `decision_context`. The table remains useful for diagnosing the observed artifacts, but it is not accepted as the final B0/B1 baseline. Future matched manifests must use the corrected shared input for every variant.
+
 The run used the frozen token-matched B0/B1 manifest at implementation revision `2781fc9389d450c465a4ea19d76e5f21c4290406`. Both variants used the same `deepseek-v4-flash` endpoint, local corpus snapshot, top-k, task suite, and per-task token cap.
 
 ## Locked review provenance
@@ -46,7 +48,7 @@ B1 left seven required obligations uncovered across six tasks:
 | context compaction | token-saving need | plan/search covered loss and durable retention only |
 | evaluation allocation | judge reliability | plan/search covered task coverage and cost allocation only |
 
-These failures share one causal pattern: the plan stores free-form steps and an unlinked query list, while the ledger has no auditable mapping from answer obligation to query, evidence, and claim. Increasing top-k is not selected because it would add distractors and cannot repair the reranking case, where the needed evidence was already present. A critic loop or Research DAG is also premature because the missing coverage can be tested without adding an LLM call.
+These failures share one causal pattern after accounting for the missing-context flaw: the plan stores free-form steps and an unlinked query list, while the ledger has no auditable mapping from answer obligation to query, evidence, and claim. Increasing top-k is not selected because it would add distractors and cannot repair the reranking case, where the needed evidence was already present. A critic loop or Research DAG is also premature because the missing coverage can be tested without adding an LLM call.
 
 ## Next hypothesis
 

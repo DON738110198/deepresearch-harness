@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from .benchmark import BenchmarkScore, score_run, validate_suite_assets
 from .contracts import HarnessConfig, RunState
 from .experiment import ExperimentManifest, validate_experiment_manifest
-from .pipeline import BaselineResearchPipeline, LocalCorpusCollector, SearchWritePipeline
+from .pipeline import BaselineResearchPipeline, LocalCorpusCollector, ObligationEvidenceDebtPipeline, SearchWritePipeline
 from .providers import LLMProvider, provider_from_config
 
 
@@ -72,6 +72,7 @@ def run_experiment_batch(
     pipeline_classes = {
         "b0_search_write": SearchWritePipeline,
         "b1_plan_search_ledger_write": BaselineResearchPipeline,
+        "b2_obligation_evidence_debt": ObligationEvidenceDebtPipeline,
     }
     for variant in manifest.variants:
         for task in suite.tasks:
@@ -84,7 +85,8 @@ def run_experiment_batch(
                 budget_limits=manifest.budget,
             )
             try:
-                state = pipeline.run(task.question)
+                research_request = f"{task.question}\n\nDecision context: {task.decision_context}"
+                state = pipeline.run(research_request)
                 score = score_run(task, state)
                 run_dir = Path(state.report_path).parent
                 score_path = run_dir / "score.auto.json"

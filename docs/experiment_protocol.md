@@ -11,6 +11,7 @@ For a baseline versus a harness variant, fix:
 - model identifier, provider endpoint, decoding parameters, and system prompt policy;
 - tool implementations, tool versions, corpus snapshot or web-search date window;
 - question set, evidence eligibility rules, scoring rubric, and retry policy;
+- decision context and other task metadata exposed to the runtime;
 - concurrency, timeout policy, and random seed where supported.
 
 Run each configuration under two separately reported budgets:

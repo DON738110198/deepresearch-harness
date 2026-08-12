@@ -37,7 +37,7 @@ python -m deepresearch_harness.cli run `
   --output-dir runs
 ```
 
-Use `--variant b0` for direct Search-Write and `--variant b1` for Plan-Search-Ledger-Write. Both persist the same `RunState` contract. B0 asks the model for claim/evidence links but compiles citation IDs and markers deterministically in the harness.
+Use `--variant b0` for direct Search-Write, `--variant b1` for Plan-Search-Ledger-Write, and `--variant b2` for obligation-linked Evidence Debt. All persist the same `RunState` contract and compile citation IDs and markers deterministically in the harness. B2 retains B1's three LLM calls while recording whether every planned answer obligation is resolved or open.
 
 The frozen ten-task diagnostic is launched with:
 
@@ -78,11 +78,11 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 ## Scope and limits
 
 - This is a single-agent Plan-Search-Write baseline, not a multi-agent research system.
-- B0 and B1 are comparison baselines, not claimed improvements.
+- B0, B1, and B2 are harness variants, not changes to model capability.
 - The MVP collector searches a supplied JSON evidence corpus. It does not claim live-web coverage or source freshness.
 - The fake provider is for deterministic pipeline tests, not quality evaluation.
 - Report citations point to collected evidence IDs; source quality and claim entailment still require evaluation.
-- All outcome metrics are **planned** until measured with the protocol in `docs/experiment_protocol.md`.
+- The recorded B0/B1 semantic pass is explicitly AI-assisted calibration; registered human semantic metrics remain **planned**.
 
 ## Repository map
 
@@ -90,8 +90,8 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/providers.py`: fake and OpenAI-compatible providers.
 - `src/deepresearch_harness/pipeline.py`: baseline orchestration and persistence.
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.
-- `src/deepresearch_harness/batch.py`: frozen-manifest B0/B1 batch execution and automatic aggregation.
-- `src/deepresearch_harness/review.py`: deterministic variant-blind review packet generation.
+- `src/deepresearch_harness/batch.py`: frozen two-variant batch execution and automatic aggregation.
+- `src/deepresearch_harness/review.py`: deterministic variant-blind review, validation, and aggregation.
 - `experiments/pilot_v0/`: token-matched and cost-matched manifests with pinned corpus hashes and pricing.
 - `benchmarks/pilot_v0/`: ten controlled diagnostic tasks and a synthetic corpus.
 - `docs/problem_statement.md`: problem-first design position and falsifiable hypotheses.
@@ -101,7 +101,8 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 
 ## Next implementation order
 
-1. Run B0 and B1 on the ten-task controlled pilot and annotate reports blind to variant; acceptance: every task has raw state, report, config digest, and scoring record.
-2. Select one repeated bad case and implement only its smallest causal fix; Evidence-Debt, Critic-Repair, re-planning, or DAG execution remain hypotheses until selected by evidence.
-3. Run the separately pre-registered cost-matched comparison after the token-matched diagnostic is complete.
-4. Expand to a 20-50 task external-source evaluation set only after the controlled pilot's contracts and annotation rubric are stable.
+1. Register B1/B2 token-matched and cost-matched manifests after pinning the B2 implementation revision.
+2. Run the controlled pilot and inspect completion, retrieval coverage, trace, Evidence Debt, tokens, and cost before semantic scoring.
+3. Prepare a new blind packet and collect human annotations; AI-assisted review remains calibration-only.
+4. Add Critic-Repair, re-planning, or DAG execution only if the new saved failures identify a causal need that B2 cannot expose or resolve.
+5. Expand to a 20-50 task external-source evaluation set only after the controlled pilot's contracts and human rubric are stable.

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from deepresearch_harness.batch import run_experiment_batch
-from deepresearch_harness.contracts import HarnessConfig
+from deepresearch_harness.contracts import HarnessConfig, RunState
 from deepresearch_harness.providers import FakeProvider
 
 
@@ -30,3 +30,5 @@ def test_offline_batch_persists_all_variant_task_records(tmp_path: Path) -> None
     assert (Path(summary.output_dir) / "summary.json").exists()
     assert all(Path(record.state_path).exists() for record in summary.records)
     assert all(Path(record.score_path).exists() for record in summary.records)
+    first_state = RunState.model_validate_json(Path(summary.records[0].state_path).read_text(encoding="utf-8"))
+    assert "Decision context:" in first_state.task.question

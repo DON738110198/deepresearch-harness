@@ -6,7 +6,23 @@ import uuid
 from pathlib import Path
 from typing import Protocol
 
-from .contracts import BudgetLimits, Citation, Claim, DirectWriteDraft, Evidence, Plan, RunState, RunStatus, Task, TraceEvent
+from pydantic import BaseModel, Field, model_validator
+
+from .contracts import (
+    BudgetLimits,
+    Citation,
+    Claim,
+    DirectWriteDraft,
+    Evidence,
+    EvidenceDebt,
+    Plan,
+    PlannedObligation,
+    PlanStep,
+    RunState,
+    RunStatus,
+    Task,
+    TraceEvent,
+)
 from .providers import LLMProvider
 from .storage import RunStore
 
@@ -40,7 +56,29 @@ class BudgetExceeded(RuntimeError):
     pass
 
 
+class ObligationPlanDraft(BaseModel):
+    steps: list[PlanStep] = Field(
+        default_factory=lambda: [
+            PlanStep(id="answer-contract", objective="Resolve each planned answer obligation with direct evidence.")
+        ],
+        min_length=1,
+    )
+    obligations: list[PlannedObligation] = Field(min_length=2, max_length=5)
+
+    @model_validator(mode="after")
+    def obligation_ids_and_queries_are_unique(self) -> "ObligationPlanDraft":
+        ids = [item.id for item in self.obligations]
+        queries = [item.search_query.casefold() for item in self.obligations]
+        if len(ids) != len(set(ids)):
+            raise ValueError("obligation plan ids must be unique")
+        if len(queries) != len(set(queries)):
+            raise ValueError("each obligation requires a distinct search query")
+        return self
+
+
 class BaselineResearchPipeline:
+    variant = "b1_plan_search_ledger_write"
+
     def __init__(
         self,
         *,
@@ -61,7 +99,7 @@ class BaselineResearchPipeline:
         state = RunState(
             run_id=run_id,
             task=Task(id=f"task-{run_id[:8]}", question=question),
-            variant="b1_plan_search_ledger_write",
+            variant=self.variant,
             budget_limits=self._budget_limits.model_copy(deep=True),
         )
         store = RunStore(self._output_dir, run_id)
@@ -292,3 +330,142 @@ class SearchWritePipeline(BaselineResearchPipeline):
                 raise ValueError(f"direct-write report omitted placeholder {placeholder}")
             report = report.replace(placeholder, citation.marker)
         return report
+
+
+class ObligationEvidenceDebtPipeline(BaselineResearchPipeline):
+    """B2: make answer obligations and unresolved evidence needs explicit without another LLM call."""
+
+    variant = "b2_obligation_evidence_debt"
+
+    def _plan(self, question: str, state: RunState) -> Plan:
+        prompt = json.dumps(
+            {
+                "instruction": (
+                    "Create an exhaustive but concise answer contract for the question. Return json only. "
+                    "Define 2-5 non-overlapping evidence questions that together cover the decision's named benefits, risks, "
+                    "constraints, and trade-offs. Each obligation must ask for evidence that can substantively inform one "
+                    "answer component; do not require a source to state the final recommendation. Give each obligation one "
+                    "distinct evidence query that repeats the concrete subject and criterion terms from the question and "
+                    "decision context. Do not invent legal, regulatory, policy, product, user-preference, or metric requirements "
+                    "unless the input names them."
+                ),
+                "question": question,
+                "json_example": {
+                    "steps": [{"id": "contract", "objective": "Identify every answer obligation."}],
+                    "obligations": [
+                        {
+                            "id": "criterion-id",
+                            "description": "Decision criterion that requires evidence.",
+                            "search_query": "question subject criterion evidence",
+                        }
+                    ],
+                },
+            }
+        )
+        completion = self._complete("plan", prompt, state, json_output=True)
+        draft = ObligationPlanDraft.model_validate_json(completion)
+        return Plan(
+            steps=draft.steps,
+            obligations=draft.obligations,
+            search_queries=[item.search_query for item in draft.obligations],
+        )
+
+    def _build_ledger(self, question: str, evidence: list[Evidence], state: RunState) -> list[Claim]:
+        if state.plan is None or not state.plan.obligations:
+            raise ValueError("B2 requires planned answer obligations")
+        prompt = json.dumps(
+            {
+                "instruction": (
+                    "Build an obligation-linked claim ledger from the supplied evidence. Return json only. "
+                    "For every obligation, emit exactly one evidence_debt entry. Mark it resolved only when selected evidence "
+                    "directly supports one or more atomic claims; otherwise mark it open and explain the missing evidence. "
+                    "Omit topical distractors and do not add facts."
+                ),
+                "question": question,
+                "obligations": [item.model_dump() for item in state.plan.obligations],
+                "json_example": {
+                    "claims": [
+                        {
+                            "id": "claim-evidence-id",
+                            "text": "Exact evidence-backed claim.",
+                            "evidence_ids": ["evidence-id"],
+                            "support": "direct",
+                        }
+                    ],
+                    "evidence_debts": [
+                        {
+                            "obligation_id": "criterion-id",
+                            "status": "resolved",
+                            "evidence_ids": ["evidence-id"],
+                            "claim_ids": ["claim-evidence-id"],
+                            "detail": "Direct evidence found.",
+                        }
+                    ],
+                },
+                "evidence": [item.model_dump(mode="json") for item in evidence],
+            }
+        )
+        payload = json.loads(self._complete("ledger", prompt, state, json_output=True))
+        claims = [Claim.model_validate(item) for item in payload["claims"]]
+        debts = [EvidenceDebt.model_validate(item) for item in payload["evidence_debts"]]
+        self._validate_debt_ledger(state.plan, evidence, claims, debts)
+        state.evidence_debts = debts
+        referenced_claim_ids = {claim_id for debt in debts for claim_id in debt.claim_ids}
+        return [claim for claim in claims if claim.id in referenced_claim_ids]
+
+    def _write_report(self, question: str, run: RunState, state: RunState) -> str:
+        markers = {citation.claim_id: citation.marker for citation in run.citations}
+        prompt = json.dumps(
+            {
+                "instruction": (
+                    "Write a concise markdown decision report using only resolved supplied claims. "
+                    "Preserve each citation marker after its claim. Do not silently invent support for open evidence debt. "
+                    "Do not render an evidence-debt section; the harness appends open obligations deterministically."
+                ),
+                "question": question,
+                "claims": [claim.model_dump() for claim in run.claims],
+                "citations": markers,
+                "evidence_debts": [debt.model_dump() for debt in run.evidence_debts],
+            }
+        )
+        report = self._complete("write", prompt, state)
+        open_debts = [debt for debt in run.evidence_debts if debt.status == "open"]
+        if not open_debts:
+            return report
+        obligation_by_id = {item.id: item for item in run.plan.obligations} if run.plan else {}
+        lines = [report.rstrip(), "", "## Open evidence debt", ""]
+        for debt in open_debts:
+            description = obligation_by_id[debt.obligation_id].description
+            lines.append(f"- **{debt.obligation_id}:** {description} No directly supporting evidence was identified in this run.")
+        return "\n".join(lines) + "\n"
+
+    @staticmethod
+    def _validate_debt_ledger(
+        plan: Plan,
+        evidence: list[Evidence],
+        claims: list[Claim],
+        debts: list[EvidenceDebt],
+    ) -> None:
+        obligation_ids = {item.id for item in plan.obligations}
+        debt_ids = {item.obligation_id for item in debts}
+        if debt_ids != obligation_ids or len(debts) != len(obligation_ids):
+            raise ValueError("evidence debt ledger must classify every planned obligation exactly once")
+        evidence_ids = {item.id for item in evidence}
+        claim_by_id = {item.id: item for item in claims}
+        if len(claim_by_id) != len(claims):
+            raise ValueError("claim ids must be unique")
+        for claim in claims:
+            if not set(claim.evidence_ids).issubset(evidence_ids):
+                raise ValueError(f"claim {claim.id} cites evidence outside this run")
+        for debt in debts:
+            if not set(debt.evidence_ids).issubset(evidence_ids):
+                raise ValueError(f"evidence debt {debt.obligation_id} cites evidence outside this run")
+            if not set(debt.claim_ids).issubset(claim_by_id):
+                raise ValueError(f"evidence debt {debt.obligation_id} cites an unknown claim")
+            linked_evidence = {
+                evidence_id
+                for claim_id in debt.claim_ids
+                for evidence_id in claim_by_id[claim_id].evidence_ids
+            }
+            if debt.status == "resolved" and not set(debt.evidence_ids).issubset(linked_evidence):
+                raise ValueError(f"resolved evidence debt {debt.obligation_id} is not linked through its claims")

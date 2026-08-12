@@ -34,7 +34,13 @@ class ExperimentManifest(BaseModel):
     suite_path: str = Field(min_length=1)
     suite_sha256: str = Field(pattern="^[0-9a-f]{64}$")
     corpus_sha256: str = Field(pattern="^[0-9a-f]{64}$")
-    variants: list[Literal["b0_search_write", "b1_plan_search_ledger_write"]]
+    variants: list[
+        Literal[
+            "b0_search_write",
+            "b1_plan_search_ledger_write",
+            "b2_obligation_evidence_debt",
+        ]
+    ]
     budget_mode: BudgetMode
     budget: BudgetLimits
     provider: FrozenProviderSpec
@@ -42,8 +48,8 @@ class ExperimentManifest(BaseModel):
 
     @model_validator(mode="after")
     def comparison_is_matched_and_priced(self) -> "ExperimentManifest":
-        if set(self.variants) != {"b0_search_write", "b1_plan_search_ledger_write"} or len(self.variants) != 2:
-            raise ValueError("manifest must compare B0 and B1 exactly once")
+        if len(self.variants) != 2 or len(set(self.variants)) != 2:
+            raise ValueError("manifest must compare exactly two distinct variants")
         if self.budget_mode is BudgetMode.TOKEN_MATCHED and self.budget.max_total_tokens is None:
             raise ValueError("token-matched manifest requires max_total_tokens")
         if self.budget_mode is BudgetMode.COST_MATCHED and self.budget.max_estimated_cost_usd is None:

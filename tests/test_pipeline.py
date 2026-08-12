@@ -4,7 +4,13 @@ from pathlib import Path
 import pytest
 
 from deepresearch_harness.contracts import BudgetLimits, RunState, RunStatus
-from deepresearch_harness.pipeline import BaselineResearchPipeline, BudgetExceeded, LocalCorpusCollector, SearchWritePipeline
+from deepresearch_harness.pipeline import (
+    BaselineResearchPipeline,
+    BudgetExceeded,
+    LocalCorpusCollector,
+    ObligationEvidenceDebtPipeline,
+    SearchWritePipeline,
+)
 from deepresearch_harness.providers import FakeProvider
 
 
@@ -76,3 +82,25 @@ def test_b1_stops_with_explicit_reason_when_call_budget_is_exhausted(tmp_path: P
     assert state.stop_reason == "budget_exhausted"
     assert state.trace[-1].stage == "ledger"
     assert state.trace[-1].outcome == "error"
+
+
+def test_b2_persists_obligation_to_evidence_debt_links_without_extra_calls(tmp_path: Path) -> None:
+    pipeline = ObligationEvidenceDebtPipeline(
+        provider=FakeProvider(),
+        collector=LocalCorpusCollector(ROOT / "examples" / "offline_corpus.json"),
+        output_dir=tmp_path,
+    )
+
+    state = pipeline.run("What evidence supports a phased rollout?")
+
+    assert state.variant == "b2_obligation_evidence_debt"
+    assert state.plan is not None and len(state.plan.obligations) == 3
+    assert {item.obligation_id for item in state.evidence_debts} == {
+        item.id for item in state.plan.obligations
+    }
+    assert all(item.status == "resolved" for item in state.evidence_debts)
+    assert [event.stage for event in state.trace] == ["plan", "collect", "ledger", "write"]
+    assert len([event for event in state.trace if event.provider == "fake"]) == 3
+
+    persisted = RunState.model_validate_json((tmp_path / state.run_id / "state.json").read_text(encoding="utf-8"))
+    assert persisted.evidence_debts == state.evidence_debts

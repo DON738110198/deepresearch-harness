@@ -51,30 +51,66 @@ class FakeProvider(LLMProvider):
     ) -> Completion:
         started = time.perf_counter()
         if stage == "plan":
-            text = json.dumps(
-                {
+            payload = json.loads(prompt)
+            plan = {
                     "steps": [
                         {"id": "scope", "objective": "Identify evidence relevant to the question."},
                         {"id": "synthesize", "objective": "Write only evidence-backed conclusions."},
                     ],
-                    "search_queries": ["phased rollout pilot rollback observability"],
-                }
-            )
+            }
+            if "obligations" in payload["json_example"]:
+                plan["obligations"] = [
+                    {
+                        "id": "blast-radius",
+                        "description": "Determine how a phased rollout limits initial impact.",
+                        "search_query": "phased rollout blast radius evidence",
+                    },
+                    {
+                        "id": "rollback",
+                        "description": "Determine the rollback readiness requirement.",
+                        "search_query": "phased rollout rollback readiness evidence",
+                    },
+                    {
+                        "id": "observability",
+                        "description": "Determine the monitoring gate for expansion.",
+                        "search_query": "phased rollout observability expansion gate evidence",
+                    },
+                ]
+            else:
+                plan["search_queries"] = ["phased rollout pilot rollback observability"]
+            text = json.dumps(plan)
         elif stage == "ledger":
-            evidence = json.loads(prompt)["evidence"]
-            text = json.dumps(
+            payload = json.loads(prompt)
+            evidence = payload["evidence"]
+            claims = [
                 {
-                    "claims": [
-                        {
-                            "id": f"claim-{item['id']}",
-                            "text": item["excerpt"],
-                            "evidence_ids": [item["id"]],
-                            "support": "direct",
-                        }
-                        for item in evidence
-                    ]
+                    "id": f"claim-{item['id']}",
+                    "text": item["excerpt"],
+                    "evidence_ids": [item["id"]],
+                    "support": "direct",
                 }
-            )
+                for item in evidence
+            ]
+            ledger = {"claims": claims}
+            if "obligations" in payload:
+                debts = []
+                for index, obligation in enumerate(payload["obligations"]):
+                    assigned = claims[index :: len(payload["obligations"])]
+                    debts.append(
+                        {
+                            "obligation_id": obligation["id"],
+                            "status": "resolved" if assigned else "open",
+                            "evidence_ids": [item["evidence_ids"][0] for item in assigned],
+                            "claim_ids": [item["id"] for item in assigned],
+                            "detail": (
+                                "Deterministic fixture evidence assigned."
+                                if assigned
+                                else "No deterministic fixture evidence was available."
+                            ),
+                        }
+                    )
+                ledger["evidence_debts"] = debts
+            text = json.dumps(ledger)
         elif stage == "write":
             payload = json.loads(prompt)
             lines = [f"# Research report\n\n## Question\n{payload['question']}\n\n## Evidence-backed findings"]
@@ -82,7 +118,7 @@ class FakeProvider(LLMProvider):
                 marker = payload["citations"][claim["id"]]
                 lines.append(f"- {claim['text']} {marker}")
             lines.append("\n## References")
-            for evidence in payload["evidence"]:
+            for evidence in payload.get("evidence", []):
                 lines.append(f"- [{evidence['id']}] {evidence['title']}: {evidence['url']}")
             text = "\n".join(lines) + "\n"
         elif stage == "direct_write":
