@@ -12,6 +12,7 @@ def test_token_matched_manifest_pins_suite_and_corpus() -> None:
     assert manifest.budget_mode is BudgetMode.TOKEN_MATCHED
     assert manifest.budget.max_total_tokens == 8000
     assert manifest.provider.model == "deepseek-v4-flash"
+    assert manifest.implementation_revision == "2781fc9389d450c465a4ea19d76e5f21c4290406"
 
 
 def test_cost_matched_manifest_has_frozen_pricing() -> None:

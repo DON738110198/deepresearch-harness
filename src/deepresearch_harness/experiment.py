@@ -30,6 +30,7 @@ class FrozenProviderSpec(BaseModel):
 class ExperimentManifest(BaseModel):
     experiment_id: str = Field(min_length=1)
     status: Literal["planned", "ready"]
+    implementation_revision: str = Field(pattern="^[0-9a-f]{40}$")
     suite_path: str = Field(min_length=1)
     suite_sha256: str = Field(pattern="^[0-9a-f]{64}$")
     corpus_sha256: str = Field(pattern="^[0-9a-f]{64}$")
@@ -72,4 +73,3 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-

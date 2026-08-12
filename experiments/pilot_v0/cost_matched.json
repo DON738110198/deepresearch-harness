@@ -1,6 +1,7 @@
 {
   "experiment_id": "pilot-v0-b0-vs-b1-cost-matched",
   "status": "ready",
+  "implementation_revision": "2781fc9389d450c465a4ea19d76e5f21c4290406",
   "suite_path": "../../benchmarks/pilot_v0/tasks.json",
   "suite_sha256": "fa044d33871a2422c082cce7dd15ab9a481663292f96b85e67d47746d3b4601f",
   "corpus_sha256": "26b2c8a597b80c8df64bb89173b492720dff34b5b46d922ebeac90be4df7318a",
