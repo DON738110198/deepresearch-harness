@@ -100,11 +100,11 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `docs/experiment_protocol.md`: fair-comparison and bad-case evaluation protocol.
 - `docs/b1_b2_token_v1.md`: retained negative B2 v1 result and causal follow-up.
 - `docs/b1_b2_token_v2.md`: retained B2 v2 tie and search-layer diagnosis.
+- `docs/b1_b2_v3_results.md`: token/cost automatic results and current claim boundary.
 
 ## Next implementation order
 
-1. Register B1/B2 token-matched and cost-matched manifests after pinning the B2 implementation revision.
-2. Run the controlled pilot and inspect completion, retrieval coverage, trace, Evidence Debt, tokens, and cost before semantic scoring.
-3. Prepare a new blind packet and collect human annotations; AI-assisted review remains calibration-only.
-4. Add Critic-Repair, re-planning, or DAG execution only if the new saved failures identify a causal need that B2 cannot expose or resolve.
-5. Expand to a 20-50 task external-source evaluation set only after the controlled pilot's contracts and human rubric are stable.
+1. Complete blind human annotation for both prepared B1/B2 v3 packets; acceptance: 20/20 candidate annotations pass the mechanical review lock for each budget.
+2. Compare semantic obligation coverage, citation support, irrelevant claims, and conflict handling against the registered gates.
+3. Select Critic-Repair, re-planning, or no additional mechanism from repeated human-reviewed bad cases only.
+4. Expand to a 20-50 task external-source evaluation set only after the controlled pilot's contracts and human rubric are stable.
