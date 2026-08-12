@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 
 
 def utc_now() -> datetime:
@@ -60,11 +60,15 @@ class Citation(BaseModel):
 class Usage(BaseModel):
     input_tokens: int = Field(ge=0, default=0)
     output_tokens: int = Field(ge=0, default=0)
+    input_cache_hit_tokens: int = Field(ge=0, default=0)
+    input_cache_miss_tokens: int = Field(ge=0, default=0)
     estimated_cost_usd: float = Field(ge=0, default=0.0)
 
 
 class Pricing(BaseModel):
     input_per_million_usd: float = Field(ge=0, default=0.0)
+    input_cache_hit_per_million_usd: float = Field(ge=0, default=0.0)
+    input_cache_miss_per_million_usd: float = Field(ge=0, default=0.0)
     output_per_million_usd: float = Field(ge=0, default=0.0)
 
 
@@ -74,16 +78,41 @@ class ProviderConfig(BaseModel):
     base_url: str | None = None
     api_key_env: str | None = None
     timeout_seconds: int = Field(ge=1, default=60)
+    thinking_mode: Literal["enabled", "disabled"] | None = None
     pricing: Pricing = Field(default_factory=Pricing)
+
+
+class BudgetLimits(BaseModel):
+    max_total_tokens: int | None = Field(default=None, gt=0)
+    max_estimated_cost_usd: float | None = Field(default=None, gt=0)
+    max_llm_calls: int = Field(default=3, gt=0)
+    max_output_tokens_per_call: int = Field(default=2048, gt=0)
 
 
 class RunConfig(BaseModel):
     max_evidence: int = Field(ge=1, default=6)
+    budget: BudgetLimits = Field(default_factory=BudgetLimits)
 
 
 class HarnessConfig(BaseModel):
     provider: ProviderConfig = Field(default_factory=ProviderConfig)
     run: RunConfig = Field(default_factory=RunConfig)
+
+    @model_validator(mode="after")
+    def cost_budget_requires_pricing(self) -> "HarnessConfig":
+        if self.run.budget.max_estimated_cost_usd is None:
+            return self
+        pricing = self.provider.pricing
+        has_input_price = any(
+            (
+                pricing.input_per_million_usd,
+                pricing.input_cache_hit_per_million_usd,
+                pricing.input_cache_miss_per_million_usd,
+            )
+        )
+        if not has_input_price or pricing.output_per_million_usd <= 0:
+            raise ValueError("a cost budget requires non-zero input and output pricing")
+        return self
 
 
 class TraceEvent(BaseModel):
@@ -106,6 +135,7 @@ class StatusEvent(BaseModel):
 class RunState(BaseModel):
     run_id: str
     task: Task
+    variant: Literal["b0_search_write", "b1_plan_search_ledger_write"] = "b1_plan_search_ledger_write"
     status: RunStatus = RunStatus.PENDING
     status_history: list[StatusEvent] = Field(default_factory=list)
     plan: Plan | None = None
@@ -114,6 +144,8 @@ class RunState(BaseModel):
     citations: list[Citation] = Field(default_factory=list)
     trace: list[TraceEvent] = Field(default_factory=list)
     total_usage: Usage = Field(default_factory=Usage)
+    budget_limits: BudgetLimits = Field(default_factory=BudgetLimits)
+    stop_reason: Literal["budget_exhausted"] | None = None
     report_path: str | None = None
     error: str | None = None
 
@@ -125,6 +157,8 @@ class RunState(BaseModel):
         self.trace.append(event)
         self.total_usage.input_tokens += event.usage.input_tokens
         self.total_usage.output_tokens += event.usage.output_tokens
+        self.total_usage.input_cache_hit_tokens += event.usage.input_cache_hit_tokens
+        self.total_usage.input_cache_miss_tokens += event.usage.input_cache_miss_tokens
         self.total_usage.estimated_cost_usd += event.usage.estimated_cost_usd
 
     @field_validator("citations")
@@ -134,3 +168,15 @@ class RunState(BaseModel):
         if len(markers) != len(set(markers)):
             raise ValueError("citation markers must be unique")
         return citations
+
+
+class DirectWriteDraft(BaseModel):
+    claims: list[Claim] = Field(min_length=1)
+    report: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def claim_ids_are_unique(self) -> "DirectWriteDraft":
+        claim_ids = [claim.id for claim in self.claims]
+        if len(claim_ids) != len(set(claim_ids)):
+            raise ValueError("direct-write claim ids must be unique")
+        return self

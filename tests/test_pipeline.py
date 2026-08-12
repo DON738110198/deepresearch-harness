@@ -1,8 +1,10 @@
 import json
 from pathlib import Path
 
-from deepresearch_harness.contracts import RunState, RunStatus
-from deepresearch_harness.pipeline import BaselineResearchPipeline, LocalCorpusCollector
+import pytest
+
+from deepresearch_harness.contracts import BudgetLimits, RunState, RunStatus
+from deepresearch_harness.pipeline import BaselineResearchPipeline, BudgetExceeded, LocalCorpusCollector, SearchWritePipeline
 from deepresearch_harness.providers import FakeProvider
 
 
@@ -39,3 +41,38 @@ def test_fake_provider_is_deterministic(tmp_path: Path) -> None:
     assert first.plan == second.plan
     assert [claim.text for claim in first.claims] == [claim.text for claim in second.claims]
     assert json.loads((tmp_path / "first" / first.run_id / "state.json").read_text(encoding="utf-8"))["task"]["question"] == "Does a phased rollout need observability?"
+
+
+def test_b0_search_write_uses_one_llm_call_and_shared_audit_contract(tmp_path: Path) -> None:
+    pipeline = SearchWritePipeline(
+        provider=FakeProvider(),
+        collector=LocalCorpusCollector(ROOT / "examples" / "offline_corpus.json"),
+        output_dir=tmp_path,
+    )
+
+    state = pipeline.run("What evidence supports a phased rollout?")
+
+    assert state.variant == "b0_search_write"
+    assert state.plan is None
+    assert [event.stage for event in state.trace] == ["collect", "direct_write"]
+    assert state.claims and state.citations
+    assert Path(state.report_path).exists()
+
+
+def test_b1_stops_with_explicit_reason_when_call_budget_is_exhausted(tmp_path: Path) -> None:
+    pipeline = BaselineResearchPipeline(
+        provider=FakeProvider(),
+        collector=LocalCorpusCollector(ROOT / "examples" / "offline_corpus.json"),
+        output_dir=tmp_path,
+        budget_limits=BudgetLimits(max_llm_calls=1, max_output_tokens_per_call=1000),
+    )
+
+    with pytest.raises(BudgetExceeded, match="LLM call budget exhausted"):
+        pipeline.run("What evidence supports a phased rollout?")
+
+    run_dir = next(path for path in tmp_path.iterdir() if path.is_dir())
+    state = RunState.model_validate_json((run_dir / "state.json").read_text(encoding="utf-8"))
+    assert state.status is RunStatus.FAILED
+    assert state.stop_reason == "budget_exhausted"
+    assert state.trace[-1].stage == "ledger"
+    assert state.trace[-1].outcome == "error"

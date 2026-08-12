@@ -17,6 +17,7 @@ cd G:\Obsidian\Study\AI_infra_interm\training-free-deepresearch-harness
 python -m pip install -e ".[dev]"
 python -m deepresearch_harness.cli demo --output-dir runs\smoke
 python -m deepresearch_harness.cli validate-pilot --suite benchmarks\pilot_v0\tasks.json
+python -m deepresearch_harness.cli validate-experiment --manifest experiments\pilot_v0\token_matched.json
 python -m pytest
 ```
 
@@ -29,17 +30,32 @@ Copy `config.example.json` to a local config file, set only the named environmen
 ```powershell
 $env:OPENAI_API_KEY = "..."
 python -m deepresearch_harness.cli run `
+  --variant b1 `
   --question "What evidence supports a phased rollout?" `
   --corpus examples/offline_corpus.json `
   --config config.local.json `
   --output-dir runs
 ```
 
+Use `--variant b0` for direct Search-Write and `--variant b1` for Plan-Search-Ledger-Write. Both persist the same `RunState` contract. B0 asks the model for claim/evidence links but compiles citation IDs and markers deterministically in the harness.
+
+The frozen ten-task diagnostic is launched with:
+
+```powershell
+python -m deepresearch_harness.cli run-experiment `
+  --manifest experiments\pilot_v0\token_matched.json `
+  --config config.local.json `
+  --output-dir runs\experiments
+```
+
+Experiment output is ignored by Git and includes one state/report/automatic-score bundle per task and variant plus `summary.json`. Automatic scores cover retrieval and citation structure only; semantic support still requires human annotation.
+
 No API key is accepted through CLI flags or configuration values. `api_key_env` names the environment variable to read at runtime.
 
 ## Scope and limits
 
 - This is a single-agent Plan-Search-Write baseline, not a multi-agent research system.
+- B0 and B1 are comparison baselines, not claimed improvements.
 - The MVP collector searches a supplied JSON evidence corpus. It does not claim live-web coverage or source freshness.
 - The fake provider is for deterministic pipeline tests, not quality evaluation.
 - Report citations point to collected evidence IDs; source quality and claim entailment still require evaluation.
@@ -51,6 +67,8 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/providers.py`: fake and OpenAI-compatible providers.
 - `src/deepresearch_harness/pipeline.py`: baseline orchestration and persistence.
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.
+- `src/deepresearch_harness/batch.py`: frozen-manifest B0/B1 batch execution and automatic aggregation.
+- `experiments/pilot_v0/`: token-matched and cost-matched manifests with pinned corpus hashes and pricing.
 - `benchmarks/pilot_v0/`: ten controlled diagnostic tasks and a synthetic corpus.
 - `docs/problem_statement.md`: problem-first design position and falsifiable hypotheses.
 - `docs/pilot_design.md`: B0/B1/B2 comparison and stage gates.
@@ -59,8 +77,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 
 ## Next implementation order
 
-1. Implement B0 Search-Write against the same state and trace contracts; acceptance: one command runs B0 or B1 without changing corpus or provider.
-2. Add a versioned experiment manifest with enforced token and fee caps; acceptance: a run stops with an explicit budget reason rather than silently exceeding its cap.
-3. Run B0 and B1 on the ten-task controlled pilot and annotate reports blind to variant; acceptance: every task has raw state, report, config digest, and scoring record.
-4. Select one repeated bad case and implement only its smallest causal fix; Evidence-Debt, Critic-Repair, re-planning, or DAG execution remain hypotheses until selected by evidence.
-5. Expand to a 20-50 task external-source evaluation set only after the controlled pilot's contracts and annotation rubric are stable.
+1. Run B0 and B1 on the ten-task controlled pilot and annotate reports blind to variant; acceptance: every task has raw state, report, config digest, and scoring record.
+2. Select one repeated bad case and implement only its smallest causal fix; Evidence-Debt, Critic-Repair, re-planning, or DAG execution remain hypotheses until selected by evidence.
+3. Run the separately pre-registered cost-matched comparison after the token-matched diagnostic is complete.
+4. Expand to a 20-50 task external-source evaluation set only after the controlled pilot's contracts and annotation rubric are stable.

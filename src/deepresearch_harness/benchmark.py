@@ -75,6 +75,7 @@ class HumanReportAnnotation(BaseModel):
     unsupported_claim_ids: list[str] = Field(default_factory=list)
     citation_supported_claim_ids: list[str] = Field(default_factory=list)
     citation_mismatched_claim_ids: list[str] = Field(default_factory=list)
+    irrelevant_claim_ids: list[str] = Field(default_factory=list)
     conflict_handled_obligation_ids: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 
@@ -86,6 +87,7 @@ class HumanReportAnnotation(BaseModel):
             self.unsupported_claim_ids,
             self.citation_supported_claim_ids,
             self.citation_mismatched_claim_ids,
+            self.irrelevant_claim_ids,
             self.conflict_handled_obligation_ids,
         )
         if any(len(values) != len(set(values)) for values in list_fields):
@@ -100,11 +102,13 @@ class HumanReportAnnotation(BaseModel):
 class BenchmarkScore(BaseModel):
     task_id: str
     evidence_id_recall: float = Field(ge=0, le=1)
+    evidence_id_precision: float = Field(ge=0, le=1)
     evidence_obligation_recall: float = Field(ge=0, le=1)
     citation_structural_integrity: float = Field(ge=0, le=1)
     obligation_coverage: float | None = Field(default=None, ge=0, le=1)
     citation_support_rate: float | None = Field(default=None, ge=0, le=1)
     unsupported_claim_rate: float | None = Field(default=None, ge=0, le=1)
+    irrelevant_claim_rate: float | None = Field(default=None, ge=0, le=1)
     conflict_handling_rate: float | None = Field(default=None, ge=0, le=1)
     annotation_status: str
 
@@ -142,7 +146,13 @@ def score_run(task: PilotTaskSpec, run: RunState, annotation: HumanReportAnnotat
     selected_ids = {evidence.id for evidence in run.evidence}
     required = [obligation for obligation in task.obligations if obligation.required]
     all_gold_ids = {evidence_id for obligation in required for evidence_id in obligation.gold_evidence_ids}
+    all_eligible_ids = {
+        evidence_id
+        for obligation in required
+        for evidence_id in obligation.gold_evidence_ids + obligation.counter_evidence_ids
+    }
     evidence_id_recall = _ratio(len(selected_ids & all_gold_ids), len(all_gold_ids))
+    evidence_id_precision = _ratio(len(selected_ids & all_eligible_ids), len(selected_ids)) if selected_ids else 0.0
     covered_by_retrieval = sum(bool(selected_ids & set(obligation.gold_evidence_ids)) for obligation in required)
     evidence_obligation_recall = _ratio(covered_by_retrieval, len(required))
 
@@ -164,6 +174,7 @@ def score_run(task: PilotTaskSpec, run: RunState, annotation: HumanReportAnnotat
         return BenchmarkScore(
             task_id=task.id,
             evidence_id_recall=evidence_id_recall,
+            evidence_id_precision=evidence_id_precision,
             evidence_obligation_recall=evidence_obligation_recall,
             citation_structural_integrity=citation_integrity,
             annotation_status="not_annotated",
@@ -179,6 +190,7 @@ def score_run(task: PilotTaskSpec, run: RunState, annotation: HumanReportAnnotat
         + annotation.unsupported_claim_ids
         + annotation.citation_supported_claim_ids
         + annotation.citation_mismatched_claim_ids
+        + annotation.irrelevant_claim_ids
     )
     if not annotated_claims.issubset(claim_by_id):
         raise ValueError("annotation references an unknown claim")
@@ -189,6 +201,7 @@ def score_run(task: PilotTaskSpec, run: RunState, annotation: HumanReportAnnotat
     return BenchmarkScore(
         task_id=task.id,
         evidence_id_recall=evidence_id_recall,
+        evidence_id_precision=evidence_id_precision,
         evidence_obligation_recall=evidence_obligation_recall,
         citation_structural_integrity=citation_integrity,
         obligation_coverage=_ratio(len(set(annotation.covered_obligation_ids) & {item.id for item in required}), len(required)),
@@ -202,6 +215,7 @@ def score_run(task: PilotTaskSpec, run: RunState, annotation: HumanReportAnnotat
             if total_claims
             else None
         ),
+        irrelevant_claim_rate=(len(annotation.irrelevant_claim_ids) / len(run.claims) if run.claims else None),
         conflict_handling_rate=(
             _ratio(len(set(annotation.conflict_handled_obligation_ids)), len(conflict_obligations))
             if conflict_obligations

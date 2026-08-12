@@ -40,6 +40,7 @@ def test_score_separates_deterministic_and_human_metrics() -> None:
 
     automatic = score_run(task, run)
     assert automatic.evidence_id_recall == pytest.approx(2 / 3)
+    assert automatic.evidence_id_precision == 1.0
     assert automatic.evidence_obligation_recall == pytest.approx(2 / 3)
     assert automatic.citation_structural_integrity == 1.0
     assert automatic.obligation_coverage is None
@@ -55,6 +56,7 @@ def test_score_separates_deterministic_and_human_metrics() -> None:
     assert annotated.obligation_coverage == pytest.approx(2 / 3)
     assert annotated.citation_support_rate == 1.0
     assert annotated.unsupported_claim_rate == 0.0
+    assert annotated.irrelevant_claim_rate == 0.0
     assert annotated.conflict_handling_rate is None
     assert annotated.annotation_status == "human_annotated"
 

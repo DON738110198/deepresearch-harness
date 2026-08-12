@@ -18,6 +18,8 @@ Run each configuration under two separately reported budgets:
 1. **Token-matched:** same maximum input plus output token budget per task.
 2. **Cost-matched:** same maximum provider/tool monetary budget per task, with the price table version recorded.
 
+The provider hard-limits output with `max_tokens`. Total billed tokens and estimated fee use provider-returned usage and are enforced between calls; therefore the response that crosses an observed cap is still billable and the run terminates with `stop_reason=budget_exhausted`. Reports must not describe these observed guards as exact pre-call billing caps.
+
 Do not substitute a stronger model, fresher search index, or different tool allowance in one condition. If any control differs, label the result as an ablation or exploratory result rather than a fair head-to-head comparison.
 
 ## Per-run artifacts

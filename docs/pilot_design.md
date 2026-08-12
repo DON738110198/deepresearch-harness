@@ -44,8 +44,8 @@ Token-matched and cost-matched experiments are separate result tables. Actual co
 ## Stage acceptance
 
 1. **Pilot schema:** ten tasks load, every gold/counter evidence ID exists, and failure categories are balanced two each.
-2. **B0 implementation:** one-command batch run persists the same state/trace contract as B1.
-3. **Baseline run:** B0 and B1 finish all ten tasks under frozen configurations; raw reports are annotated blind to variant.
+2. **B0 implementation:** complete; one-command batch run persists the same state/trace contract as B1.
+3. **Baseline run:** B0 and B1 must finish all ten tasks under frozen configurations; raw reports are then annotated blind to variant.
 4. **Bad-case decision:** select one mechanism only if at least two saved failures share a causal category that the mechanism directly addresses.
 5. **B2 acceptance:** improve the targeted metric under both a declared token cap and a separate declared fee cap, without worsening citation support or completion rate beyond a pre-registered tolerance.
 
