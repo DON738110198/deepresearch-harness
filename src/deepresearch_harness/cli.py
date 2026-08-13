@@ -34,7 +34,11 @@ from .pipeline import (
     PrimarySourceResearchPipeline,
     SearchWritePipeline,
 )
-from .pi_browsecomp import export_pi_runs_for_official_evaluator, run_pi_unscored_smoke
+from .pi_browsecomp import (
+    audit_pi_failed_resume,
+    export_pi_runs_for_official_evaluator,
+    run_pi_unscored_smoke,
+)
 from .providers import FakeProvider, provider_from_config
 from .public_benchmark import (
     load_livedrbench_manifest,
@@ -184,6 +188,37 @@ def main() -> int:
         action="store_true",
         help="Retry only failed queries after validating and archiving prior attempts.",
     )
+    audit_pi_resume = subparsers.add_parser(
+        "audit-pi-browsecomp-resume",
+        help="Validate failed-only resume readiness without API calls or writes.",
+    )
+    audit_pi_resume.add_argument("--manifest", type=Path, required=True)
+    audit_pi_resume.add_argument("--partitions", type=Path, required=True)
+    audit_pi_resume.add_argument("--queries", type=Path, required=True)
+    audit_pi_resume.add_argument("--output-dir", type=Path, required=True)
+    audit_pi_resume.add_argument(
+        "--search-url", default="http://127.0.0.1:8765/search"
+    )
+    audit_pi_resume.add_argument(
+        "--model",
+        choices=["deepseek-v4-flash", "deepseek-v4-pro"],
+        default="deepseek-v4-flash",
+    )
+    audit_pi_resume.add_argument(
+        "--control-policy",
+        choices=[
+            "standard",
+            "answer_reserve_v0",
+            "answer_reserve_v1",
+            "answer_reserve_nonthinking_v0",
+            "first_tool_deadline_v0",
+            "tool_bootstrap_v0",
+            "rare_anchor_portfolio_v0",
+        ],
+        default="standard",
+    )
+    audit_pi_resume.add_argument("--retriever-id", default="bm25")
+    audit_pi_resume.add_argument("--retriever-manifest", type=Path)
     export_pi_browsecomp = subparsers.add_parser(
         "export-pi-browsecomp-runs",
         help="Convert frozen Pi traces into the official evaluator input shape.",
@@ -530,6 +565,33 @@ def main() -> int:
             "gold_accessed=false"
         )
         return 0 if summary.succeeded == summary.query_count else 1
+    if args.command == "audit-pi-browsecomp-resume":
+        audit = audit_pi_failed_resume(
+            manifest_path=args.manifest,
+            partitions_path=args.partitions,
+            queries_path=args.queries,
+            output_dir=args.output_dir,
+            search_url=args.search_url,
+            model=args.model,
+            control_policy=args.control_policy,
+            retriever_id=args.retriever_id,
+            retriever_manifest_path=args.retriever_manifest,
+        )
+        print(
+            f"status={audit.status}\n"
+            f"source_summary_sha256={audit.source_summary_sha256}\n"
+            f"queries={audit.query_count}\n"
+            f"immutable_queries={audit.immutable_query_count}\n"
+            f"retry_eligible={audit.retry_eligible_count}\n"
+            f"retry_query_ids_sha256={audit.retry_query_ids_sha256}\n"
+            f"resume_count={audit.resume_count}\n"
+            f"attempts={audit.total_attempts}\n"
+            f"tokens={audit.cumulative_total_tokens}\n"
+            f"cost_usd={audit.cumulative_cost_usd:.8f}\n"
+            f"provider_calls={audit.provider_calls}\n"
+            "gold_accessed=false"
+        )
+        return 0
     if args.command == "export-pi-browsecomp-runs":
         export = export_pi_runs_for_official_evaluator(
             source_dir=args.source_dir,

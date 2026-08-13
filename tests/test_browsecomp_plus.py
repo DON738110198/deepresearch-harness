@@ -39,6 +39,7 @@ from deepresearch_harness.pi_browsecomp import (
     _merge_retry_item,
     _record_prior_attempt,
     _validate_existing_attempt,
+    audit_pi_failed_resume,
     export_pi_runs_for_official_evaluator,
     PiSmokeItem,
     PiSmokeSummary,
@@ -725,6 +726,44 @@ def test_smoke_resume_retries_only_failed_query_end_to_end(
     assert first.succeeded == 1
     assert first.failed == 1
 
+    summary_path = output_dir / "summary.json"
+    summary_bytes = summary_path.read_bytes()
+    artifact_bytes = {
+        path.relative_to(output_dir): path.read_bytes()
+        for path in output_dir.rglob("*")
+        if path.is_file()
+    }
+    monkeypatch.delenv("DEEPSEEK_API_KEY")
+    audit = audit_pi_failed_resume(
+        manifest_path=manifest_path,
+        partitions_path=partitions_path,
+        queries_path=queries_path,
+        output_dir=output_dir,
+        search_url="http://127.0.0.1:8765/search",
+        model="deepseek-v4-flash",
+        control_policy="standard",
+    )
+    assert audit.status == "ready_to_resume_failed_only"
+    assert audit.query_count == 2
+    assert audit.immutable_query_count == 1
+    assert audit.retry_eligible_count == 1
+    assert audit.retry_query_ids_sha256 == sha256(
+        development_ids[1].encode()
+    ).hexdigest()
+    assert audit.total_attempts == 2
+    assert audit.cumulative_total_tokens == 330
+    assert audit.cumulative_cost_usd == pytest.approx(0.003)
+    assert audit.provider_calls == 0
+    assert audit.gold_accessed is False
+    assert summary_path.read_bytes() == summary_bytes
+    assert {
+        path.relative_to(output_dir): path.read_bytes()
+        for path in output_dir.rglob("*")
+        if path.is_file()
+    } == artifact_bytes
+    assert invoked_query_ids == development_ids
+
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-only-key")
     resumed = run_pi_unscored_smoke(**common, resume_failed=True)
     reused_item, retried_item = resumed.items
     assert resumed.schema_version == "pi-browsecomp-unscored-smoke-v1"

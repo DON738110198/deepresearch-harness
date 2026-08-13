@@ -138,6 +138,12 @@ experiment to stronger confirmatory status.
 All newly registered repeat grids use contract v1, which freezes this recovery
 policy before generation and caps a variant at three resume invocations. A v0
 manifest is never edited in place to appear preregistered after a failure.
+Before a paid resume, run `audit-pi-browsecomp-resume` with the exact registered
+model, control policy, retriever identity, query artifact, search URL, and output
+directory. The audit must pass with `provider_calls=0`, `gold_accessed=false`,
+and a retry-eligible count equal to the summary's failed count. Its source
+summary hash must remain unchanged. This is readiness evidence only, not an
+effectiveness result and not extra budget.
 
 Layer promotion uses
 `benchmarks/browsecomp_plus_v0/promotion_gates.json`, not an informal reading of

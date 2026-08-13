@@ -126,6 +126,25 @@ queries and five `402 Insufficient Balance` failures. Across the partial run,
 No 25-query score is reported from this incomplete grid. After provider balance
 is restored, the exact `-Resume` command retries only those five failures under
 the frozen generation controls and then regenerates hash-bound diagnostics.
+The resume can be checked first without an API key, retriever server, file
+write, or provider call. This validates the frozen summary, every live and
+archived attempt, request controls, query ordering, and retriever hashes:
+
+```powershell
+python -m deepresearch_harness.cli audit-pi-browsecomp-resume `
+  --manifest benchmarks\browsecomp_plus_v0\target_manifest.json `
+  --partitions benchmarks\browsecomp_plus_v0\query_partitions.json `
+  --queries runs\browsecomp_plus_v0\dev_queries_25.json `
+  --output-dir runs\browsecomp_plus_v0\repeats\flash-v6-dense25-paired3-preregistered-v2-20260814\trial-03-candidate `
+  --search-url http://127.0.0.1:8766/search `
+  --model deepseek-v4-flash `
+  --control-policy answer_reserve_nonthinking_v0 `
+  --retriever-id qwen3-embedding-0.6b `
+  --retriever-manifest benchmarks\browsecomp_plus_v0\retriever_candidates.json
+```
+
+The current audit returns 20 immutable queries and five retry-eligible queries,
+with `provider_calls=0` and `gold_accessed=false`.
 
 ```powershell
 & .\scripts\run_browsecomp_plus_repeats.ps1 `
@@ -398,7 +417,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/browsecomp_repeats.py`: strict paired-repeat validation, artifact binding, distributions, and query-level win/loss aggregation.
 - `src/deepresearch_harness/browsecomp_judge.py`: self-contained official-judge batches, execution contracts, result validation, and paired score aggregation.
 - `src/deepresearch_harness/browsecomp_decision.py`: frozen promotion gates, resource deltas, and official-judge bad-case routing.
-- `src/deepresearch_harness/pi_browsecomp.py`: auditable smoke orchestration, aggregate usage trace, and hash-bound official-run export.
+- `src/deepresearch_harness/pi_browsecomp.py`: auditable smoke orchestration, read-only resume audit, aggregate usage trace, and hash-bound official-run export.
 - `integrations/pi-browsecomp/`: pinned Pi/DeepSeek tool-loop adapter with no coding-agent prompt or ambient context.
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.
 - `src/deepresearch_harness/batch.py`: frozen two-variant batch execution and automatic aggregation.

@@ -218,6 +218,49 @@ class PiSmokeSummary(StrictContract):
         return self
 
 
+class PiResumeAudit(StrictContract):
+    schema_version: Literal["pi-browsecomp-resume-audit-v0"] = (
+        "pi-browsecomp-resume-audit-v0"
+    )
+    audited_at: str
+    status: Literal["ready_to_resume_failed_only"] = "ready_to_resume_failed_only"
+    source_summary_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    target_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    development_queries_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    model: Literal["deepseek-v4-flash", "deepseek-v4-pro"]
+    control_policy: Literal[
+        "standard",
+        "answer_reserve_v0",
+        "answer_reserve_v1",
+        "answer_reserve_nonthinking_v0",
+        "first_tool_deadline_v0",
+        "tool_bootstrap_v0",
+        "rare_anchor_portfolio_v0",
+    ]
+    retriever_id: str = Field(min_length=1)
+    retriever_manifest_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
+    query_count: int = Field(gt=0)
+    immutable_query_count: int = Field(ge=0)
+    retry_eligible_count: int = Field(gt=0)
+    retry_query_ids_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    resume_count: int = Field(ge=0)
+    total_attempts: int = Field(gt=0)
+    cumulative_total_tokens: int = Field(ge=0)
+    cumulative_cost_usd: float = Field(ge=0)
+    provider_calls: Literal[0] = 0
+    gold_accessed: Literal[False] = False
+
+    @model_validator(mode="after")
+    def counts_are_consistent(self) -> "PiResumeAudit":
+        if self.immutable_query_count + self.retry_eligible_count != self.query_count:
+            raise ValueError("resume audit query counts do not match")
+        if self.total_attempts < self.query_count:
+            raise ValueError("resume audit attempt count is too small")
+        return self
+
+
 class OfficialRunExportItem(StrictContract):
     query_id: str = Field(min_length=1)
     source_run_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
@@ -255,6 +298,120 @@ class OfficialRunExportManifest(StrictContract):
         ):
             raise ValueError("incomplete does not match items")
         return self
+
+
+def audit_pi_failed_resume(
+    *,
+    manifest_path: Path,
+    partitions_path: Path,
+    queries_path: Path,
+    output_dir: Path,
+    search_url: str,
+    model: Literal["deepseek-v4-flash", "deepseek-v4-pro"],
+    control_policy: Literal[
+        "standard",
+        "answer_reserve_v0",
+        "answer_reserve_v1",
+        "answer_reserve_nonthinking_v0",
+        "first_tool_deadline_v0",
+        "tool_bootstrap_v0",
+        "rare_anchor_portfolio_v0",
+    ] = "standard",
+    retriever_id: str = "bm25",
+    retriever_manifest_path: Path | None = None,
+) -> PiResumeAudit:
+    """Validate a failed-only resume without writing files or calling a provider."""
+    repository_root = manifest_path.resolve().parents[2]
+    if not output_dir.resolve().is_relative_to((repository_root / "runs").resolve()):
+        raise ValueError("benchmark traces must be under ignored runs/")
+    summary_path = output_dir / "summary.json"
+    if not summary_path.is_file():
+        raise ValueError("failed-query resume audit requires an existing summary.json")
+    if not retriever_id.strip():
+        raise ValueError("retriever_id must not be blank")
+    if retriever_id == "bm25" and retriever_manifest_path is not None:
+        raise ValueError("BM25 uses the target manifest, not a retriever manifest")
+    if retriever_id != "bm25" and retriever_manifest_path is None:
+        raise ValueError("non-BM25 runs require a pinned retriever manifest")
+
+    retriever_manifest_sha256 = (
+        normalized_text_file_sha256(retriever_manifest_path)
+        if retriever_manifest_path is not None
+        else None
+    )
+    target_manifest_sha256 = normalized_text_file_sha256(manifest_path)
+    development_queries_sha256 = normalized_text_file_sha256(queries_path)
+    manifest = load_browsecomp_plus_target(manifest_path)
+    queries = load_development_queries(
+        queries_path,
+        manifest_path=manifest_path,
+        partitions_path=partitions_path,
+    )
+    track_by_model = {track.model: track for track in manifest.model_tracks}
+    if model not in track_by_model:
+        raise ValueError(f"model is absent from target manifest: {model}")
+    safe_query_ids = [_safe_id(query.query_id) for query in queries.queries]
+    if len(safe_query_ids) != len(set(safe_query_ids)):
+        raise ValueError("query IDs collide after filesystem-safe normalization")
+
+    summary_bytes = summary_path.read_bytes()
+    summary = PiSmokeSummary.model_validate_json(summary_bytes)
+    _validate_resume_summary(
+        summary=summary,
+        target_manifest_sha256=target_manifest_sha256,
+        development_queries_sha256=development_queries_sha256,
+        model=model,
+        control_policy=control_policy,
+        retriever_id=retriever_id,
+        retriever_manifest_sha256=retriever_manifest_sha256,
+        query_ids=[query.query_id for query in queries.queries],
+    )
+
+    contract = manifest.benchmark.standard_search
+    for query, item in zip(queries.queries, summary.items, strict=True):
+        request = _build_request(
+            output_name=output_dir.name,
+            query_id=query.query_id,
+            question=query.question,
+            model=model,
+            thinking_level=track_by_model[model].thinking_level,
+            control_policy=control_policy,
+            max_output_tokens=contract.max_output_tokens,
+            max_iterations=contract.max_iterations,
+            search_url=search_url,
+            attempt_number=item.attempt_count,
+        )
+        _validate_existing_attempt(
+            query_root=output_dir / _safe_id(query.query_id),
+            item=item,
+            request=request,
+            model=model,
+            control_policy=control_policy,
+        )
+
+    if summary_path.read_bytes() != summary_bytes:
+        raise ValueError("source summary changed during resume audit")
+    retry_query_ids = sorted(
+        item.query_id for item in summary.items if item.status == "failed"
+    )
+    return PiResumeAudit(
+        audited_at=datetime.now(timezone.utc).isoformat(),
+        source_summary_sha256=sha256(summary_bytes).hexdigest(),
+        target_manifest_sha256=target_manifest_sha256,
+        development_queries_sha256=development_queries_sha256,
+        model=model,
+        control_policy=control_policy,
+        retriever_id=retriever_id,
+        retriever_manifest_sha256=retriever_manifest_sha256,
+        query_count=summary.query_count,
+        immutable_query_count=summary.query_count - summary.failed,
+        retry_eligible_count=summary.failed,
+        retry_query_ids_sha256=sha256("\n".join(retry_query_ids).encode()).hexdigest(),
+        resume_count=summary.resume_count,
+        total_attempts=sum(item.attempt_count for item in summary.items),
+        cumulative_total_tokens=summary.total_tokens,
+        cumulative_cost_usd=summary.total_cost_usd,
+    )
 
 
 def run_pi_unscored_smoke(

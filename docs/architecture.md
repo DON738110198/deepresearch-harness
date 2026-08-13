@@ -70,6 +70,11 @@ records immutable, preserve every superseded attempt, accumulate all observed
 usage, and stop after three resume invocations. Legacy v0 experiments remain
 loadable but any later recovery is labeled a post-failure operational amendment
 rather than silently backfilled into the original registration.
+`audit-pi-browsecomp-resume` exposes the same validation boundary as a read-only
+preflight. It reconstructs each latest request from the registered controls,
+validates live and archived attempt hashes, and reports only the immutable and
+retry-eligible sets plus cumulative usage. It neither requires an API key nor
+starts the retriever, writes artifacts, reads gold, or invokes the provider.
 
 Two machine-readable snapshots close the external-version boundary:
 `deepseek_provider_snapshot.json` binds API aliases to documented served

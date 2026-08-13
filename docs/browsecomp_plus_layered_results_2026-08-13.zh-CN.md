@@ -140,6 +140,15 @@ source summary。失败尝试消耗的 Token、费用、搜索和延迟继续计
 最终结果必须标注为“预注册生成网格 + 事后披露的失败恢复规则”，不能把它写成
 完全未受中断影响的确认性实验。
 
+已对最后一个 dense variant 执行零成本、只读续跑审计。审计不要求 API key，
+不启动检索服务，不写文件，也不调用模型；结果为 25 条记录全部通过 artifact 与
+冻结控制校验，其中 20 条 immutable、5 条 retry-eligible，`provider_calls=0`、
+`gold_accessed=false`。审计绑定的 source summary SHA-256 仍为
+`6c3d88b1673a26bf29423916f7a4485a0048a3cd721f0183734a3162af8208f2`，
+失败 query-ID 集合哈希为
+`d396b0b9154191cec64f3575c8fd8666a36e7962cafef95fc1e5fa5a7700b519`。
+这只证明恢复路径已就绪，不是效果分数，也不改变原实验的事后恢复限定。
+
 ## Counterfactual Replay
 
 为避免先付费重跑 Agent，再猜测提升来自哪里，我们固定了 BM25 运行已经生成的 70 条搜索 query，只替换检索器：
