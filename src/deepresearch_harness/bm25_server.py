@@ -83,7 +83,12 @@ class BrowseCompBM25Runtime:
 
 
 def truncate_with_tokenizer(text: str, tokenizer: Any, max_tokens: int) -> str:
-    token_ids = tokenizer.encode(text, add_special_tokens=False)
+    token_ids = tokenizer.encode(
+        text,
+        add_special_tokens=False,
+        truncation=True,
+        max_length=max_tokens + 1,
+    )
     if len(token_ids) <= max_tokens:
         return text
     return tokenizer.decode(token_ids[:max_tokens], skip_special_tokens=True)

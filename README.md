@@ -10,12 +10,13 @@ A small, auditable baseline for improving end-to-end Deep Research task executio
 > [`docs/market_research_and_pivot_2026-08.md`](docs/market_research_and_pivot_2026-08.md).
 
 > **Active research target:** use frozen DeepSeek V4 Flash/Pro to test a coherent,
-> evidence-debt-driven stack across retrieval, verification, budgeted control,
-> and answer compilation. BrowseComp-Plus is the primary benchmark candidate,
+> failure-driven stack across retrieval, evidence control, phase-adaptive
+> reasoning, and answer compilation. BrowseComp-Plus is the primary benchmark,
 > with frozen leaderboard thresholds, leakage controls, and matched-budget gates.
-> All target scores and ranks are `planned`. See
+> A strict five-query diagnostic now exists, but official accuracy and every
+> rank claim remain `planned`. See
 > [`docs/research_goal_and_benchmark_strategy.md`](docs/research_goal_and_benchmark_strategy.md)
-> and [`docs/browsecomp_plus_preflight_2026-08-13.md`](docs/browsecomp_plus_preflight_2026-08-13.md).
+> and [`docs/browsecomp_plus_layered_results_2026-08-13.zh-CN.md`](docs/browsecomp_plus_layered_results_2026-08-13.zh-CN.md).
 
 The first MVP is deliberately narrow:
 
@@ -38,11 +39,12 @@ python -m pytest
 
 The demo writes `runs/smoke/<run-id>/state.json` and `report.md`. `state.json` is the audit artifact; it includes prompts only as stage metadata, not credentials.
 
-## BrowseComp-Plus baseline
+## BrowseComp-Plus research path
 
-The active benchmark path pins the repository, datasets, BM25 index, Qwen
-snippet tokenizer, query prompt, empty system-prompt policy, DeepSeek model
-tracks, and deterministic 20/80 query-ID split. Validate the public contract:
+The active benchmark path pins the repository, datasets, BM25 and dense index
+candidates, Qwen snippet tokenizer, query prompt, empty system-prompt policy,
+DeepSeek model tracks, and deterministic 20/80 query-ID split. Validate the
+public contract:
 
 ```powershell
 python -m pip install -e ".[dev,browsecomp-plus]"
@@ -56,25 +58,49 @@ pricing changes.
 
 `benchmarks/browsecomp_plus_v0/query_partitions.json` contains query IDs and
 partition labels only. Plaintext benchmark questions and all model traces stay
-under ignored `runs/`. The thin Pi adapter is in
-`integrations/pi-browsecomp`; Pi provides the tool loop, not the project's
-research contribution. The current five-query DeepSeek V4 Flash run is an
-unscored runtime smoke; its standard-budget status is recorded rather than
-silently converted into an answer when the provider overshoots the requested
-output allowance. See `docs/browsecomp_plus_preflight_2026-08-13.md` for
-observed calls, tokens, cost, latency, and limits.
+under ignored `runs/`. The thin Pi adapter is in `integrations/pi-browsecomp`;
+Pi provides the tool loop, not the project's research contribution. Adapter
+v1+ forces DeepSeek's documented `max_tokens` field after an earlier protocol
+diagnostic showed that Pi's auto-selected `max_completion_tokens` did not cap
+observed reasoning. Those earlier traces are retained but excluded.
 
-After the ignored Java, Python, and BM25 artifacts described there are present,
+The strict five-query diagnostic found two promising harness effects. First,
+high-thinking exploration plus non-thinking answer compilation made 4/5
+outputs schema-complete under the same 10k output allowance. Second, replacing
+BM25 with pinned Qwen3-Embedding-0.6B produced 5/5 schema-complete outputs and
+raised diagnostic evidence recall from 40.00% to 54.92% end to end; strict exact
+match remained 1/5. Two more dense answers appear semantically equivalent to
+gold, but only the pinned Qwen3-32B judge can establish official accuracy. An
+earlier, stronger-looking dense run is retained but excluded because its short
+snippet normalization did not exactly match the BM25 contract.
+
+After the ignored Java, Python, and retrieval artifacts are present,
 `scripts/run_browsecomp_plus_smoke.ps1` starts and stops the loopback search
 server around one traceable run. It never accepts an API key argument.
+
+Dense replay holds all frozen agent search queries fixed before paying for an
+end-to-end rerun:
+
+```powershell
+python -m pip install -e ".[dev,browsecomp-plus-dense]"
+python -m deepresearch_harness.cli replay-browsecomp-plus-retrieval `
+  --manifest benchmarks\browsecomp_plus_v0\target_manifest.json `
+  --retriever-manifest benchmarks\browsecomp_plus_v0\retriever_candidates.json `
+  --source-dir runs\browsecomp_plus_v0\pi_flash_answer_reserve_nonthinking_v0_20260813 `
+  --gold-slice runs\browsecomp_plus_v0\dev_gold_answer_reserve_nonthinking_v0_5.json `
+  --candidate-id qwen3-embedding-0.6b `
+  --model-dir runs\_external\models\Qwen3-Embedding-0.6B `
+  --index-root runs\_external\browsecomp-plus-indexes-direct `
+  --output runs\browsecomp_plus_v0\retrieval_replay.json
+```
 
 After predictions are frozen, convert them without reading gold into the exact
 outer shape consumed by the official evaluator:
 
 ```powershell
 python -m deepresearch_harness.cli export-pi-browsecomp-runs `
-  --source-dir runs\browsecomp_plus_v0\pi_flash_standard_smoke_20260813 `
-  --output-dir runs\browsecomp_plus_v0\pi_flash_official_input_20260813
+  --source-dir runs\browsecomp_plus_v0\pi_flash_dense_nonthinking_v1_20260813 `
+  --output-dir runs\browsecomp_plus_v0\pi_flash_dense_nonthinking_v1_official_input_20260813
 ```
 
 The export manifest binds every evaluator file to its source run and prediction
@@ -212,6 +238,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - The recorded B0/B1 semantic pass is explicitly AI-assisted calibration; registered human semantic metrics remain **planned**.
 - GitHub repository search is public and unauthenticated; DuckDuckGo Lite/Bing RSS are unofficial best-effort fallbacks. Dynamic pages, PDFs, and anti-bot pages are not handled reliably.
 - The LiveDRBench preview score is a five-task compatibility diagnostic. The official judge was not run, and exact normalized matching is deliberately stricter and narrower than the official evaluator.
+- BrowseComp-Plus exact/recall values are development diagnostics. Official Qwen3-32B accuracy and every leaderboard claim remain `planned_not_run`.
 
 ## Repository map
 
@@ -222,6 +249,9 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/public_benchmark.py`: pinned LiveDRBench loading, structured predictions, exact compatibility scoring, and batch audit summary.
 - `src/deepresearch_harness/browsecomp_plus.py`: strict benchmark pins, leakage-safe query split/extraction, and Pi run contracts.
 - `src/deepresearch_harness/bm25_server.py`: loopback-only pinned BM25/top-5/Qwen-tokenizer search service.
+- `src/deepresearch_harness/dense_server.py`: loopback-only pinned dense/top-5 service backed by the same document store and snippet contract.
+- `src/deepresearch_harness/retrieval_replay.py`: hash-bound dense and RRF counterfactual replay over frozen agent queries.
+- `src/deepresearch_harness/browsecomp_evaluation.py`: post-prediction development-gold boundary and explicitly non-official diagnostics.
 - `src/deepresearch_harness/pi_browsecomp.py`: auditable smoke orchestration, aggregate usage trace, and hash-bound official-run export.
 - `integrations/pi-browsecomp/`: pinned Pi/DeepSeek tool-loop adapter with no coding-agent prompt or ambient context.
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.
@@ -236,6 +266,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `docs/pilot_design.md`: B0/B1/B2 comparison and stage gates.
 - `docs/architecture.md`: current boundaries and next-stage extension points.
 - `docs/experiment_protocol.md`: fair-comparison and bad-case evaluation protocol.
+- `docs/browsecomp_plus_layered_results_2026-08-13.zh-CN.md`: Chinese experiment results, failed controls, hashes, and next gates.
 - `docs/b1_b2_token_v1.md`: retained negative B2 v1 result and causal follow-up.
 - `docs/b1_b2_token_v2.md`: retained B2 v2 tie and search-layer diagnosis.
 - `docs/b1_b2_v3_results.md`: token/cost automatic results and current claim boundary.

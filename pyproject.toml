@@ -19,6 +19,14 @@ browsecomp-plus = [
     "sentencepiece==0.2.2",
     "transformers==4.53.2",
 ]
+browsecomp-plus-dense = [
+    "accelerate>=1.9,<2",
+    "faiss-cpu>=1.11,<2",
+    "peft>=0.16,<0.18",
+    "torch>=2.6",
+    "transformers==4.53.2",
+    "tevatron @ git+https://github.com/texttron/tevatron.git@67eb67604c0e7d1753fefe3b232ddfb84795f5ea",
+]
 
 [project.scripts]
 deepresearch-harness = "deepresearch_harness.cli:main"

@@ -22,8 +22,9 @@ CLI input
 The BrowseComp-Plus path has a deliberately separate adapter boundary. Pi
 0.84.1 supplies only the generic DeepSeek tool loop. The project disables Pi's
 coding prompt and all ambient resources, injects the pinned benchmark prompt,
-serves the pinned BM25/Qwen-tokenizer contract over loopback, and validates the
-result back in Python with strict Pydantic contracts. Query preparation projects
+serves pinned BM25 or dense top-5 retrieval over loopback with the same
+Qwen-tokenizer snippet contract, and validates the result back in Python with
+strict Pydantic contracts. Query preparation projects
 only `query_id` and encrypted `query` columns; answer and evidence columns never
 enter generation. Decrypted questions and raw traces are restricted to ignored
 `runs/` paths. The adapter clamps each provider turn to the remaining global
@@ -32,7 +33,10 @@ another model round is allowed. Provider-reported overshoot is retained as a
 separate audit field; a terminal answer remains scoreable, while an unfinished
 tool loop becomes `budget_exhausted`. A hash-verifying exporter then projects
 these traces into the official evaluator's run shape without reading benchmark
-gold or altering prediction text.
+gold or altering prediction text. A separate replay boundary sends frozen agent
+queries through a pinned dense index, compares BM25/dense/RRF docids, and opens
+development docid labels only after prediction hashes exist. This separates a
+retriever effect from a query-policy or provider effect before another paid run.
 
 Two machine-readable snapshots close the external-version boundary:
 `deepseek_provider_snapshot.json` binds API aliases to documented served
@@ -74,7 +78,8 @@ B2 keeps B1's three provider calls and the same collector boundary, but turns th
 | public benchmark adapter | pinned five-task LiveDRBench preview compatibility pilot | stable search comparison and official evaluator integration |
 | reviewer presentation | English source plus validated `zh-CN` reading aid | additional packet-bound locales |
 | benchmark agent loop | pinned Pi adapter with empty system prompt | evidence-debt controller policies owned by this project |
-| BrowseComp retrieval | pinned local BM25, top-5, 512 Qwen tokens | same-index constraint query portfolios and replay |
+| BrowseComp retrieval | pinned local BM25 and Qwen3-Embedding-0.6B, top-5, 512 Qwen tokens | only replay-justified retrievers or rerankers |
+| BrowseComp control | strict global/phase limits and non-thinking answer compilation | evidence-debt marginal-value stopping after larger bad-case clustering |
 
 Do not add DAG fan-out, critic loops, or automatic re-planning until a saved bad case makes their decision boundary measurable.
 

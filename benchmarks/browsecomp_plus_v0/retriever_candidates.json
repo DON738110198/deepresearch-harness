@@ -1,0 +1,53 @@
+{
+  "schema_version": "browsecomp-plus-retriever-candidates-v0",
+  "target_manifest_sha256": "dad4e291d9bf1223cd2e4e56067948883736b6a8732d29b57cc06a03d1b140c0",
+  "candidates": [
+    {
+      "candidate_id": "qwen3-embedding-0.6b",
+      "kind": "dense_faiss",
+      "model": {
+        "name": "Qwen/Qwen3-Embedding-0.6B",
+        "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+        "model_file": "model.safetensors",
+        "model_file_sha256": "0437e45c94563b09e13cb7a64478fc406947a93cb34a7e05870fc8dcd48e23fd"
+      },
+      "index": {
+        "dataset": "Tevatron/browsecomp-plus-indexes",
+        "revision": "b3f37f70c33829eb09d04784a54277a31871fd63",
+        "subdirectory": "qwen3-embedding-0.6b",
+        "shards": [
+          {
+            "filename": "corpus.shard1_of_4.pkl",
+            "sha256": "dcbe89464488f5dd03c70be5d580c3359a5a71795bf1011cdfe8dfe8567d572c"
+          },
+          {
+            "filename": "corpus.shard2_of_4.pkl",
+            "sha256": "8ee02040dd54deee6d3280c66dcd14429ec21833cc51196fe1d2f67dfdc4a4df"
+          },
+          {
+            "filename": "corpus.shard3_of_4.pkl",
+            "sha256": "bc89d5d90e8bdf127a194db6e1a352e26ca9c7a882d1da8feebbe19271c9c796"
+          },
+          {
+            "filename": "corpus.shard4_of_4.pkl",
+            "sha256": "6638bed8f88f4d8286af05d3c4bb232c83c2e869d1908bd400047889fe9b34bf"
+          }
+        ]
+      },
+      "query_prefix": "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:",
+      "pooling": "eos",
+      "normalize": true,
+      "max_length": 512,
+      "top_k": 5
+    }
+  ],
+  "replay": {
+    "source_queries": "frozen_agent_search_calls",
+    "baseline": "stored_bm25_top5",
+    "candidate_depth": 5,
+    "fusion": "reciprocal_rank_fusion",
+    "fusion_k": 60,
+    "fused_depth": 5,
+    "official_metric_status": "diagnostic_not_official"
+  }
+}

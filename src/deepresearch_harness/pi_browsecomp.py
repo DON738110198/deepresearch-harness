@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .browsecomp_plus import (
     PiBrowseCompRun,
+    has_required_answer_schema,
     load_browsecomp_plus_target,
     load_development_queries,
     load_pi_browsecomp_run,
@@ -27,6 +28,17 @@ class StrictContract(BaseModel):
 class PiSmokeItem(StrictContract):
     query_id: str = Field(min_length=1)
     status: Literal["succeeded", "failed", "budget_exhausted"]
+    control_policy: Literal[
+        "standard",
+        "answer_reserve_v0",
+        "answer_reserve_v1",
+        "answer_reserve_nonthinking_v0",
+        "first_tool_deadline_v0",
+        "tool_bootstrap_v0",
+        "rare_anchor_portfolio_v0",
+    ] = "standard"
+    answer_schema_complete: bool | None = None
+    answer_compiler_invoked: bool = False
     run_path: str | None = None
     run_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     prediction_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
@@ -50,11 +62,26 @@ class PiSmokeSummary(StrictContract):
     development_queries_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     model: Literal["deepseek-v4-flash", "deepseek-v4-pro"]
     thinking_level: Literal["high"] = "high"
+    control_policy: Literal[
+        "standard",
+        "answer_reserve_v0",
+        "answer_reserve_v1",
+        "answer_reserve_nonthinking_v0",
+        "first_tool_deadline_v0",
+        "tool_bootstrap_v0",
+        "rare_anchor_portfolio_v0",
+    ] = "standard"
     system_prompt_policy: Literal["empty"] = "empty"
+    retriever_id: str = Field(default="bm25", min_length=1)
+    retriever_manifest_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
     query_count: int = Field(gt=0)
     succeeded: int = Field(ge=0)
     budget_exhausted: int = Field(ge=0)
     failed: int = Field(ge=0)
+    schema_complete: int | None = Field(default=None, ge=0)
+    answer_compiler_invocations: int = Field(default=0, ge=0)
     total_search_calls: int = Field(ge=0)
     total_output_tokens: int = Field(ge=0)
     total_output_budget_overshoot_tokens: int = Field(ge=0)
@@ -75,6 +102,9 @@ class PiSmokeSummary(StrictContract):
                 item.status == "budget_exhausted" for item in self.items
             ),
             "failed": sum(item.status == "failed" for item in self.items),
+            "answer_compiler_invocations": sum(
+                item.answer_compiler_invoked for item in self.items
+            ),
             "total_search_calls": sum(item.search_calls for item in self.items),
             "total_output_tokens": sum(item.output_tokens for item in self.items),
             "total_output_budget_overshoot_tokens": sum(
@@ -84,6 +114,18 @@ class PiSmokeSummary(StrictContract):
             "total_cost_usd": sum(item.cost_usd for item in self.items),
             "total_latency_ms": sum(item.latency_ms for item in self.items),
         }
+        if self.schema_complete is not None:
+            if any(item.answer_schema_complete is None for item in self.items):
+                raise ValueError("schema_complete requires per-item schema flags")
+            expected["schema_complete"] = sum(
+                bool(item.answer_schema_complete) for item in self.items
+            )
+        if any(item.control_policy != self.control_policy for item in self.items):
+            raise ValueError("item control policy does not match summary")
+        if self.retriever_id == "bm25" and self.retriever_manifest_sha256 is not None:
+            raise ValueError("BM25 summary cannot record a dense retriever manifest")
+        if self.retriever_id != "bm25" and self.retriever_manifest_sha256 is None:
+            raise ValueError("non-BM25 summary requires a retriever manifest hash")
         for field_name, expected_value in expected.items():
             actual_value = getattr(self, field_name)
             if isinstance(expected_value, float):
@@ -144,7 +186,18 @@ def run_pi_unscored_smoke(
     adapter_dir: Path,
     search_url: str,
     model: Literal["deepseek-v4-flash", "deepseek-v4-pro"],
+    control_policy: Literal[
+        "standard",
+        "answer_reserve_v0",
+        "answer_reserve_v1",
+        "answer_reserve_nonthinking_v0",
+        "first_tool_deadline_v0",
+        "tool_bootstrap_v0",
+        "rare_anchor_portfolio_v0",
+    ] = "standard",
     timeout_seconds: int,
+    retriever_id: str = "bm25",
+    retriever_manifest_path: Path | None = None,
 ) -> PiSmokeSummary:
     if timeout_seconds <= 0:
         raise ValueError("timeout_seconds must be positive")
@@ -160,6 +213,17 @@ def run_pi_unscored_smoke(
         raise ValueError("benchmark traces must be written under ignored runs/")
     if output_dir.exists() and any(output_dir.iterdir()):
         raise ValueError("benchmark output directory must be empty")
+    if not retriever_id.strip():
+        raise ValueError("retriever_id must not be blank")
+    if retriever_id == "bm25" and retriever_manifest_path is not None:
+        raise ValueError("BM25 uses the target manifest, not a retriever manifest")
+    if retriever_id != "bm25" and retriever_manifest_path is None:
+        raise ValueError("non-BM25 runs require a pinned retriever manifest")
+    retriever_manifest_sha256 = (
+        normalized_text_file_sha256(retriever_manifest_path)
+        if retriever_manifest_path is not None
+        else None
+    )
 
     manifest = load_browsecomp_plus_target(manifest_path)
     queries = load_development_queries(
@@ -189,6 +253,7 @@ def run_pi_unscored_smoke(
             "question": query.question,
             "model": model,
             "thinking_level": track_by_model[model].thinking_level,
+            "control_policy": control_policy,
             "max_output_tokens": contract.max_output_tokens,
             "max_iterations": contract.max_iterations,
             "search": {"kind": "http", "url": search_url, "timeout_ms": 120_000},
@@ -223,6 +288,8 @@ def run_pi_unscored_smoke(
                 PiSmokeItem(
                     query_id=query.query_id,
                     status="failed",
+                    control_policy=control_policy,
+                    answer_schema_complete=False,
                     search_calls=0,
                     output_tokens=0,
                     output_budget_overshoot_tokens=0,
@@ -238,10 +305,17 @@ def run_pi_unscored_smoke(
         target_manifest_sha256=normalized_text_file_sha256(manifest_path),
         development_queries_sha256=normalized_text_file_sha256(queries_path),
         model=model,
+        control_policy=control_policy,
+        retriever_id=retriever_id,
+        retriever_manifest_sha256=retriever_manifest_sha256,
         query_count=len(items),
         succeeded=sum(item.status == "succeeded" for item in items),
         budget_exhausted=sum(item.status == "budget_exhausted" for item in items),
         failed=sum(item.status == "failed" for item in items),
+        schema_complete=sum(bool(item.answer_schema_complete) for item in items),
+        answer_compiler_invocations=sum(
+            item.answer_compiler_invoked for item in items
+        ),
         total_search_calls=sum(item.search_calls for item in items),
         total_output_tokens=sum(item.output_tokens for item in items),
         total_output_budget_overshoot_tokens=sum(
@@ -282,6 +356,17 @@ def export_pi_runs_for_official_evaluator(
             evaluator_status: Literal["completed", "incomplete"] = "incomplete"
             model = summary.model
             thinking_level = summary.thinking_level
+            compilation_thinking_level = (
+                "off"
+                if summary.control_policy
+                in {
+                    "answer_reserve_nonthinking_v0",
+                    "first_tool_deadline_v0",
+                    "tool_bootstrap_v0",
+                    "rare_anchor_portfolio_v0",
+                }
+                else summary.thinking_level
+            )
             query_id = item.query_id
             search_calls = item.search_calls
             input_tokens = max(item.total_tokens - item.output_tokens, 0)
@@ -306,6 +391,7 @@ def export_pi_runs_for_official_evaluator(
             evaluator_status = "completed" if run.status == "succeeded" else "incomplete"
             model = run.model
             thinking_level = run.thinking_level
+            compilation_thinking_level = run.compilation_thinking_level
             query_id = run.query_id
             search_calls = len(run.search_calls)
             input_tokens = run.usage.input_tokens
@@ -326,7 +412,11 @@ def export_pi_runs_for_official_evaluator(
             "metadata": {
                 "model": model,
                 "reasoning": {"effort": thinking_level},
+                "compilation_reasoning": {"effort": compilation_thinking_level},
                 "max_tokens": 10_000,
+                "control_policy": summary.control_policy,
+                "retriever_id": summary.retriever_id,
+                "retriever_manifest_sha256": summary.retriever_manifest_sha256,
                 "source_run_sha256": run_hash,
                 "target_manifest_sha256": summary.target_manifest_sha256,
             },
@@ -388,6 +478,9 @@ def _summarize_run(run: PiBrowseCompRun, run_path: Path, run_bytes: bytes) -> Pi
     return PiSmokeItem(
         query_id=run.query_id,
         status=run.status,
+        control_policy=run.control_policy,
+        answer_schema_complete=has_required_answer_schema(run.answer_text),
+        answer_compiler_invoked=run.answer_compiler_invoked,
         run_path=str(run_path),
         run_sha256=sha256(run_bytes).hexdigest(),
         prediction_sha256=sha256(run.answer_text.encode("utf-8")).hexdigest(),

@@ -23,6 +23,35 @@ compliant. If that terminal response already contains a final answer and no
 tool call, it remains scoreable as `succeeded`; otherwise it is
 `budget_exhausted`.
 
+Adapter v1 explicitly sends DeepSeek's documented `max_tokens` field. Pi
+0.84.1 otherwise auto-detects `max_completion_tokens` for this provider; that
+field was accepted but did not cap generated reasoning in the observed V4
+calls. Every v1 provider-attempt trace therefore records
+`output_limit_field=max_tokens`, and Python rejects a v1 trace without it.
+
+Adapter v6 also records the sampling boundary. DeepSeek documents temperature,
+top-p, and penalty fields as unsupported in thinking mode, so the adapter omits
+them there rather than pretending they control randomness. Non-thinking phases
+use `temperature=0`. Because this API contract exposes no seed, effectiveness
+experiments require repeated runs and report dispersion instead of selecting
+the best trace.
+
+The `answer_reserve_nonthinking_v0` candidate holds the registered total at
+10,000 while limiting high-thinking exploration to 8,000 output tokens. If the
+exploration turn has not already produced the complete benchmark schema, it
+disables Search and thinking, then spends at most the remaining 2,000-token
+phase allowance on a fixed answer-compiler prompt. Provider-reported overshoot
+remains an explicit protocol violation; it is never treated as a Token-matched
+result. Traces bind every request to its phase and observed thinking type.
+
+`first_tool_deadline_v0`, `tool_bootstrap_v0`, and
+`rare_anchor_portfolio_v0` are retained experimental controls for a saved
+zero-search bad case. They respectively test a capped first turn, a deterministic
+non-thinking tool phase, and a three-query constraint portfolio. All three
+failed the relevance/accuracy diagnostic and are not promoted candidate
+policies. Their prompts, phase allocations, and negative traces remain auditable
+so the failed hypotheses are not silently discarded.
+
 Transient provider retries are fixed at three. Every attempted provider
 request receives its own indexed limit record, so a retry cannot disappear from
 the audit trail.

@@ -32,8 +32,11 @@ It also removes the uncontrolled live-search failure that dominated the first
 LiveDRBench preview. LiveDRBench remains a useful live-web transfer test, but is
 not the primary optimization target.
 
-The official end-to-end evaluator uses Qwen3-32B as its judge. Running that
-evaluator and reproducing its environment are currently `planned`, not done.
+The official end-to-end evaluator uses Qwen3-32B as its judge. Its revision and
+decoding contract are pinned, and hash-bound evaluator inputs have been
+exported. Inference remains `planned_not_run`: the local 4 GiB GPU cannot host
+the judge, and the checked remote GPUs were occupied, so no other workload was
+preempted.
 
 ## Frozen Leaderboard Snapshot
 
@@ -61,10 +64,12 @@ Target ladder:
 4. Reach the frozen top-20 threshold of 63.86% accuracy.
 5. Stretch: reach the frozen top-10 threshold of 78.41% accuracy.
 
-The gold-free runtime portion of item 1 has passed on five development queries;
-the official Qwen3-32B evaluator is still `planned_not_run`, so item 1 is not
-complete. Items 2-5 remain `planned`. No rank or effectiveness claim has been
-earned.
+The gold-free runtime portion of item 1 has passed on five development queries.
+A strict-budget Flash candidate with phase-adaptive reasoning and pinned dense
+retrieval is exported for the evaluator, but Qwen3-32B is still
+`planned_not_run`, so item 1 is not complete. Items 2-5 remain `planned`. The
+current five-query exact and retrieval values are diagnostic evidence, not an
+accuracy, effectiveness, or rank claim.
 
 ## One Thesis, Several Layers
 
@@ -157,15 +162,30 @@ maximum search calls, Token/cost budget, concurrency, and evaluator are fixed.
 
 ## Immediate Execution Order
 
-The five-query standard-budget smoke found the first measured bottleneck: four
-of five Flash traces exhausted the 10,000-token allowance before producing the
-required answer schema. Retrieval quality cannot be compared honestly while
-most outputs are unscoreable, so the next step starts at the smallest causal
-boundary rather than mechanically beginning with Layer 1.
+The first causal sequence is now complete. The true strict standard baseline
+produced 0/5 schema-complete answers. An 8k high-thinking exploration plus 2k
+non-thinking compilation policy reached 4/5 without exceeding the same 10k
+allowance. Frozen-query counterfactual replay then justified a dense retriever
+run. In the corrected, exactly matched snippet contract, end-to-end evidence
+recall rose from 40.00% to 54.92% on the five-query development diagnostic,
+schema completion reached 5/5, and strict exact remained 1/5. Two further
+answers appear semantically equivalent and await the official judge. An earlier
+stronger-looking dense run is excluded from the primary comparison because it
+normalized short snippets differently; the run-to-run difference also requires
+repeat trials rather than selecting the best trace.
 
-1. Keep the completed standard scaffold as the frozen baseline; do not discard its four incomplete predictions.
-2. Test a Layer 3/4 answer reserve: exploration may use at most 8,000 of the same 10,000 generated-token allowance, leaving 2,000 for one forced answer-compilation turn.
-3. Accept that mechanism for development only if at least 4/5 outputs are schema-complete with model, prompt, BM25, top-k, and total allowance unchanged.
-4. Freeze predictions, then run the pinned official Qwen3-32B judge on development queries and cluster failures into retrieval, evidence integration, stopping, and compilation.
-5. Implement the smallest layer that matches the largest measured cluster; require same-model search-call-, Token-, and cost-matched ablations before promotion.
-6. Keep the 655-query holdout sealed until the mechanism and thresholds are preregistered; use DeepSeek V4 Pro only as a separate final track.
+The remaining zero-recall case was not fixed by a first-turn deadline, one
+forced bootstrap search, or a three-query rare-anchor portfolio. Those negative
+controls localize the issue to query compilation, but further tuning on one
+question would overfit the development slice.
+
+1. Run the pinned Qwen3-32B judge on both frozen BM25 and dense five-query predictions; require zero parse failures and retain every per-query judgment.
+2. Under adapter v6, run at least three independent paired trials per query for BM25 and dense; report means, standard deviations, and paired wins without best-run selection.
+3. Freeze a 25-query development slice and stop changing prompts before running the same-model, same-phase-policy BM25/dense paired ablation.
+4. Promote dense retrieval only if evidence recall improves by at least 10 percentage points and official accuracy does not decline; report search calls, Token, cost, and latency together.
+5. Cluster at least ten retrieval failures before designing Constraint Portfolio v1. First require query-only replay gains; do not pay for end-to-end runs until recall moves.
+6. Run all 175 development queries only after the candidate policy and acceptance thresholds are frozen.
+7. Keep the 655-query holdout sealed until the mechanism and thresholds are preregistered; use DeepSeek V4 Pro only as a separate final track.
+
+Exact run hashes, costs, rejected controls, and the inference boundary are in
+`browsecomp_plus_layered_results_2026-08-13.zh-CN.md`.

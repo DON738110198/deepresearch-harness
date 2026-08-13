@@ -66,14 +66,42 @@ adapter. The exporter may map a terminal Pi answer to `completed` and an
 unfinished tool loop to `incomplete`, but it must not rewrite response text,
 drop failed queries, read gold, or call a judge.
 
-The query-ID split is now frozen at 175 development and 655 sealed-holdout
+The query-ID split is frozen at 175 development and 655 sealed-holdout
 questions. Development-question extraction projects only the encrypted query
 column and writes plaintext only below ignored `runs/`; it does not select or
-decrypt answers, gold documents, negatives, or evidence documents. The first
-corrected five-query DeepSeek V4 Flash standard-budget run is explicitly
-`unscored_smoke`: it validates the runtime and exposes search/token cost plus a
-1/5 answer-schema completion failure, but it is not an accuracy or leaderboard
-result. Earlier adapter-mismatch runs are retained as excluded diagnostics.
+decrypt answers, gold documents, negatives, or evidence documents. Predictions
+and per-run hashes are frozen before a development-only scorer may project the
+question, answer, and gold/evidence docids. It never persists gold document
+text, URLs, or negatives. Holdout gold remains sealed.
+
+The true strict five-query standard run used the documented `max_tokens` field,
+generated exactly 50,000 output tokens in total, recorded zero overshoot, and
+produced 0/5 schema-complete answers. Earlier runs using Pi's auto-selected
+`max_completion_tokens` are protocol diagnostics only: observed provider output
+could exceed the requested cap, so they are excluded from every matched-budget
+comparison even when their answers look better.
+
+The phase-adaptive BM25 candidate keeps the same 10,000-token allowance but
+uses high thinking for at most 8,000 exploration tokens and disables thinking
+for a fixed answer-compilation turn of at most 2,000. It reached 4/5 schema
+completion; this is a harness reasoning policy ablation, not a model capability
+claim. Its strict exact and retrieval diagnostics are explicitly non-official.
+
+DeepSeek documents temperature and top-p as unsupported in thinking mode and
+does not expose a seed in the pinned Chat Completions contract. Therefore a
+single run is not a reliability estimate. Adapter v6 omits unsupported sampling
+fields during thinking, pins non-thinking phases to `temperature=0`, and records
+the effective request policy. Registered effectiveness comparisons use at
+least three independent runs per development query and report mean, standard
+deviation, and paired win/loss counts. The best replicate may not be selected
+as the headline result.
+
+Retriever experiments first replay exactly the frozen agent queries and saved
+BM25 rankings. Model, query strings, query count, top-k, corpus, and relevance
+labels are held fixed while only the retriever changes. A live dense run is
+allowed only after replay clears its preregistered recall gate. Dense and BM25
+are separate retriever variants and must never be described as a same-retriever
+comparison.
 
 The standard-loop adapter pins Pi 0.84.1 but clears Pi's system prompt and all
 ambient coding context. Pi is held fixed in harness ablations and is not an

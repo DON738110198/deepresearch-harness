@@ -13,6 +13,10 @@ from .browsecomp_plus import (
     load_deepseek_provider_snapshot,
     load_official_evaluator_manifest,
 )
+from .browsecomp_evaluation import (
+    freeze_development_gold_slice,
+    score_gold_diagnostic,
+)
 from .contracts import HarnessConfig
 from .experiment import validate_experiment_manifest
 from .pipeline import (
@@ -32,6 +36,13 @@ from .public_benchmark import (
 from .review import prepare_blind_review, score_blind_review
 from .review_translation import translate_review_packet
 from .review_workspace import render_review_workspace, validate_review_submission_file
+from .retrieval_replay import (
+    QwenDenseReplaySearcher,
+    collect_frozen_search_queries,
+    load_retriever_candidates,
+    score_retrieval_replay,
+    select_candidate,
+)
 from .web_research import live_collector_from_config
 
 
@@ -130,7 +141,7 @@ def main() -> int:
     prepare_browsecomp_plus.add_argument("--limit", type=int)
     run_pi_browsecomp = subparsers.add_parser(
         "run-pi-browsecomp-smoke",
-        help="Run a gold-free development smoke through Pi and the local BM25 endpoint.",
+        help="Run a gold-free development smoke through Pi and a recorded local retriever.",
     )
     run_pi_browsecomp.add_argument("--manifest", type=Path, required=True)
     run_pi_browsecomp.add_argument("--partitions", type=Path, required=True)
@@ -144,13 +155,58 @@ def main() -> int:
         choices=["deepseek-v4-flash", "deepseek-v4-pro"],
         default="deepseek-v4-flash",
     )
+    run_pi_browsecomp.add_argument(
+        "--control-policy",
+        choices=[
+            "standard",
+            "answer_reserve_v0",
+            "answer_reserve_v1",
+            "answer_reserve_nonthinking_v0",
+            "first_tool_deadline_v0",
+            "tool_bootstrap_v0",
+            "rare_anchor_portfolio_v0",
+        ],
+        default="standard",
+    )
     run_pi_browsecomp.add_argument("--timeout-seconds", type=int, default=900)
+    run_pi_browsecomp.add_argument("--retriever-id", default="bm25")
+    run_pi_browsecomp.add_argument("--retriever-manifest", type=Path)
     export_pi_browsecomp = subparsers.add_parser(
         "export-pi-browsecomp-runs",
         help="Convert frozen Pi traces into the official evaluator input shape.",
     )
     export_pi_browsecomp.add_argument("--source-dir", type=Path, required=True)
     export_pi_browsecomp.add_argument("--output-dir", type=Path, required=True)
+    prepare_browsecomp_gold = subparsers.add_parser(
+        "prepare-browsecomp-plus-dev-gold",
+        help="After predictions are frozen, decrypt only evaluator fields for development IDs.",
+    )
+    prepare_browsecomp_gold.add_argument("--manifest", type=Path, required=True)
+    prepare_browsecomp_gold.add_argument("--partitions", type=Path, required=True)
+    prepare_browsecomp_gold.add_argument("--source-summary", type=Path, required=True)
+    prepare_browsecomp_gold.add_argument("--output", type=Path, required=True)
+    score_browsecomp_diagnostic = subparsers.add_parser(
+        "score-browsecomp-plus-diagnostic",
+        help="Run strict exact-answer and retrieval diagnostics; not the official judge.",
+    )
+    score_browsecomp_diagnostic.add_argument("--source-dir", type=Path, required=True)
+    score_browsecomp_diagnostic.add_argument("--gold-slice", type=Path, required=True)
+    score_browsecomp_diagnostic.add_argument("--output", type=Path, required=True)
+    replay_browsecomp_retrieval = subparsers.add_parser(
+        "replay-browsecomp-plus-retrieval",
+        help="Replay frozen agent queries through a pinned dense retriever and BM25+dense fusion.",
+    )
+    replay_browsecomp_retrieval.add_argument("--manifest", type=Path, required=True)
+    replay_browsecomp_retrieval.add_argument(
+        "--retriever-manifest", type=Path, required=True
+    )
+    replay_browsecomp_retrieval.add_argument("--source-dir", type=Path, required=True)
+    replay_browsecomp_retrieval.add_argument("--gold-slice", type=Path, required=True)
+    replay_browsecomp_retrieval.add_argument("--candidate-id", required=True)
+    replay_browsecomp_retrieval.add_argument("--model-dir", type=Path, required=True)
+    replay_browsecomp_retrieval.add_argument("--index-root", type=Path, required=True)
+    replay_browsecomp_retrieval.add_argument("--output", type=Path, required=True)
+    replay_browsecomp_retrieval.add_argument("--batch-size", type=int, default=8)
     prepare_review = subparsers.add_parser("prepare-review", help="Create blinded two-variant review artifacts.")
     prepare_review.add_argument("--summary", type=Path, required=True)
     prepare_review.add_argument("--suite", type=Path, required=True)
@@ -343,12 +399,20 @@ def main() -> int:
             adapter_dir=args.adapter_dir,
             search_url=args.search_url,
             model=args.model,
+            control_policy=args.control_policy,
             timeout_seconds=args.timeout_seconds,
+            retriever_id=args.retriever_id,
+            retriever_manifest_path=args.retriever_manifest,
         )
         print(
             f"output={args.output_dir}\nstatus={summary.status}\n"
+            f"control_policy={summary.control_policy}\n"
+            f"retriever_id={summary.retriever_id}\n"
             f"queries={summary.query_count}\nsucceeded={summary.succeeded}\n"
             f"budget_exhausted={summary.budget_exhausted}\nfailed={summary.failed}\n"
+            f"schema_complete={summary.schema_complete}\n"
+            "answer_compiler_invocations="
+            f"{summary.answer_compiler_invocations}\n"
             f"search_calls={summary.total_search_calls}\n"
             f"output_tokens={summary.total_output_tokens}\n"
             "output_budget_overshoot_tokens="
@@ -366,6 +430,78 @@ def main() -> int:
             f"output={args.output_dir}\nqueries={export.query_count}\n"
             f"completed={export.completed}\nincomplete={export.incomplete}\n"
             f"source_summary_sha256={export.source_summary_sha256}"
+        )
+        return 0
+    if args.command == "prepare-browsecomp-plus-dev-gold":
+        gold = freeze_development_gold_slice(
+            manifest_path=args.manifest,
+            partitions_path=args.partitions,
+            source_summary_path=args.source_summary,
+            output_path=args.output,
+        )
+        print(
+            f"output={args.output}\nqueries={gold.query_count}\n"
+            f"source_summary_sha256={gold.source_summary_sha256}\n"
+            f"prediction_set_sha256={gold.prediction_set_sha256}\n"
+            "partition=development\ngold_accessed=true"
+        )
+        return 0
+    if args.command == "score-browsecomp-plus-diagnostic":
+        diagnostic = score_gold_diagnostic(
+            source_dir=args.source_dir,
+            gold_slice_path=args.gold_slice,
+            output_path=args.output,
+        )
+        print(
+            f"output={args.output}\nstatus={diagnostic.status}\n"
+            f"queries={diagnostic.query_count}\n"
+            f"schema_complete={diagnostic.schema_complete}\n"
+            f"normalized_exact_match={diagnostic.normalized_exact_match}\n"
+            f"normalized_exact_match_percent="
+            f"{diagnostic.normalized_exact_match_percent:.2f}\n"
+            f"evidence_recall_percent={diagnostic.evidence_recall_percent}\n"
+            f"gold_recall_percent={diagnostic.gold_recall_percent}\n"
+            f"official_accuracy_status={diagnostic.official_accuracy_status}"
+        )
+        return 0
+    if args.command == "replay-browsecomp-plus-retrieval":
+        retriever_manifest = load_retriever_candidates(
+            args.retriever_manifest, target_manifest_path=args.manifest
+        )
+        candidate = select_candidate(retriever_manifest, args.candidate_id)
+        searcher = QwenDenseReplaySearcher(
+            candidate=candidate,
+            model_dir=args.model_dir,
+            index_root=args.index_root,
+            batch_size=args.batch_size,
+        )
+        frozen_queries = collect_frozen_search_queries(args.source_dir)
+        candidate_results = searcher.search_many(frozen_queries)
+        replay = score_retrieval_replay(
+            source_dir=args.source_dir,
+            gold_slice_path=args.gold_slice,
+            retriever_manifest_path=args.retriever_manifest,
+            target_manifest_path=args.manifest,
+            candidate_id=args.candidate_id,
+            candidate_results=candidate_results,
+            runtime=searcher.runtime_snapshot,
+            output_path=args.output,
+        )
+        print(
+            f"output={args.output}\nstatus={replay.status}\n"
+            f"candidate={replay.candidate_id}\nqueries={replay.query_count}\n"
+            f"search_calls={replay.search_calls}\n"
+            f"unique_search_queries={replay.unique_search_queries}\n"
+            f"baseline_evidence_recall_percent="
+            f"{replay.baseline_evidence_recall_percent}\n"
+            f"candidate_evidence_recall_percent="
+            f"{replay.candidate_evidence_recall_percent}\n"
+            f"fused_evidence_recall_percent={replay.fused_evidence_recall_percent}\n"
+            f"evidence_recall_delta_candidate_pp="
+            f"{replay.evidence_recall_delta_candidate_pp}\n"
+            f"evidence_recall_delta_fused_pp="
+            f"{replay.evidence_recall_delta_fused_pp}\n"
+            "official_accuracy_status=planned_not_run"
         )
         return 0
     if args.command == "run-experiment":
