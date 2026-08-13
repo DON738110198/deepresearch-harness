@@ -1,0 +1,22 @@
+{
+  "schema_version": "browsecomp-plus-promotion-gates-v0",
+  "target_manifest_sha256": "dad4e291d9bf1223cd2e4e56067948883736b6a8732d29b57cc06a03d1b140c0",
+  "candidate_layer": "dense_retrieval_v0",
+  "baseline_retriever_id": "bm25",
+  "candidate_retriever_id": "qwen3-embedding-0.6b",
+  "candidate_retriever_manifest_sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899",
+  "threshold_registration_status": "formalized_after_generation_from_precommitted_thresholds",
+  "threshold_source_commit": "dd25e78b90f6f83a85009461585e2d75604c004c",
+  "threshold_source_documents": [
+    "docs/browsecomp_plus_layered_results_2026-08-13.zh-CN.md",
+    "docs/research_goal_and_benchmark_strategy.md"
+  ],
+  "required_registration_status": "pre_generation",
+  "minimum_trials": 3,
+  "minimum_queries_per_trial": 25,
+  "minimum_evidence_recall_delta_pp": 10.0,
+  "minimum_official_accuracy_delta_pp": 0.0,
+  "require_zero_judge_parse_failures": true,
+  "sealed_holdout_eligible": false,
+  "notes": "Development-only promotion gate. Passing selects a harness layer for the next frozen experiment; it is not a model-capability or leaderboard claim."
+}

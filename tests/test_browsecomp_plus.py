@@ -32,6 +32,7 @@ from deepresearch_harness.browsecomp_evaluation import (
     normalize_exact_answer,
     score_gold_diagnostic,
 )
+from deepresearch_harness.browsecomp_decision import PromotionGateManifest
 from deepresearch_harness.pi_browsecomp import (
     _archive_source_summary,
     _build_request,
@@ -51,6 +52,7 @@ EVALUATOR_MANIFEST = ROOT / "benchmarks" / "browsecomp_plus_v0" / "official_eval
 PROVIDER_SNAPSHOT = (
     ROOT / "benchmarks" / "browsecomp_plus_v0" / "deepseek_provider_snapshot.json"
 )
+PROMOTION_GATES = ROOT / "benchmarks" / "browsecomp_plus_v0" / "promotion_gates.json"
 
 
 def test_target_manifest_is_strict_and_pinned() -> None:
@@ -65,6 +67,25 @@ def test_target_manifest_is_strict_and_pinned() -> None:
         "deepseek-v4-flash",
         "deepseek-v4-pro",
     }
+
+
+def test_layer_promotion_gates_are_target_bound_and_development_only() -> None:
+    gates = PromotionGateManifest.model_validate_json(
+        PROMOTION_GATES.read_text(encoding="utf-8")
+    )
+
+    assert gates.target_manifest_sha256 == normalized_text_file_sha256(MANIFEST)
+    assert gates.minimum_trials == 3
+    assert gates.minimum_queries_per_trial == 25
+    assert gates.baseline_retriever_id == "bm25"
+    assert gates.candidate_retriever_id == "qwen3-embedding-0.6b"
+    assert gates.candidate_retriever_manifest_sha256 == normalized_text_file_sha256(
+        ROOT / "benchmarks" / "browsecomp_plus_v0" / "retriever_candidates.json"
+    )
+    assert gates.threshold_source_commit == "dd25e78b90f6f83a85009461585e2d75604c004c"
+    assert gates.minimum_evidence_recall_delta_pp == 10.0
+    assert gates.minimum_official_accuracy_delta_pp == 0.0
+    assert gates.sealed_holdout_eligible is False
 
 
 def test_target_manifest_rejects_unknown_fields() -> None:

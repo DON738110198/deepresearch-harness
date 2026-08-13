@@ -18,6 +18,7 @@ from .browsecomp_evaluation import (
     freeze_development_gold_slice,
     score_gold_diagnostic,
 )
+from .browsecomp_decision import decide_browsecomp_layer_promotion
 from .browsecomp_judge import (
     aggregate_official_judge_results,
     prepare_official_judge_batch,
@@ -282,6 +283,36 @@ def main() -> int:
     )
     aggregate_official_judge.add_argument("--output", type=Path, required=True)
     aggregate_official_judge.add_argument("--validate-existing", action="store_true")
+    decide_browsecomp_layer = subparsers.add_parser(
+        "decide-browsecomp-plus-layer",
+        help="Apply frozen development gates and classify official-judge bad cases.",
+    )
+    decide_browsecomp_layer.add_argument(
+        "--repeat-experiment", type=Path, required=True
+    )
+    decide_browsecomp_layer.add_argument(
+        "--repeat-comparison", type=Path, required=True
+    )
+    decide_browsecomp_layer.add_argument(
+        "--target-manifest", type=Path, required=True
+    )
+    decide_browsecomp_layer.add_argument(
+        "--promotion-gates", type=Path, required=True
+    )
+    decide_browsecomp_layer.add_argument(
+        "--judge-batch-manifest", type=Path, required=True
+    )
+    decide_browsecomp_layer.add_argument(
+        "--judge-execution-registration", type=Path, required=True
+    )
+    decide_browsecomp_layer.add_argument(
+        "--judge-execution-result", type=Path, required=True
+    )
+    decide_browsecomp_layer.add_argument(
+        "--judge-comparison", type=Path, required=True
+    )
+    decide_browsecomp_layer.add_argument("--output", type=Path, required=True)
+    decide_browsecomp_layer.add_argument("--validate-existing", action="store_true")
     prepare_review = subparsers.add_parser("prepare-review", help="Create blinded two-variant review artifacts.")
     prepare_review.add_argument("--summary", type=Path, required=True)
     prepare_review.add_argument("--suite", type=Path, required=True)
@@ -656,6 +687,29 @@ def main() -> int:
             f"candidate_wins={comparison.paired.candidate_wins}\n"
             f"baseline_wins={comparison.paired.baseline_wins}\n"
             f"ties={comparison.paired.ties}\nleaderboard_status=not_submitted"
+        )
+        return 0
+    if args.command == "decide-browsecomp-plus-layer":
+        decision = decide_browsecomp_layer_promotion(
+            repeat_experiment_path=args.repeat_experiment,
+            repeat_comparison_path=args.repeat_comparison,
+            target_manifest_path=args.target_manifest,
+            promotion_gates_path=args.promotion_gates,
+            judge_batch_manifest_path=args.judge_batch_manifest,
+            judge_execution_registration_path=args.judge_execution_registration,
+            judge_execution_result_path=args.judge_execution_result,
+            judge_comparison_path=args.judge_comparison,
+            output_path=args.output,
+            validate_existing=args.validate_existing,
+        )
+        print(
+            f"output={args.output}\ndecision={decision.decision}\n"
+            f"claim_qualifier={decision.claim_qualifier}\n"
+            f"evidence_recall_delta_pp={decision.evidence_recall_delta_pp:.2f}\n"
+            f"official_accuracy_delta_pp={decision.official_accuracy_delta_pp:.2f}\n"
+            f"persistent_failure_queries="
+            f"{decision.failure_aggregate.persistent_failure_queries}\n"
+            f"next_action={decision.next_action}\nleaderboard_status=not_submitted"
         )
         return 0
     if args.command == "run-experiment":

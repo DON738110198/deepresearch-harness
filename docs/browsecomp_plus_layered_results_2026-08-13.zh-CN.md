@@ -101,6 +101,25 @@ upstream evaluator、ground truth、30 份预测和 decoding 参数后，三轮�
 声称 60% 的完整 benchmark accuracy 或排行榜位置。它完成的是进入 25 题扩展
 实验所需的门槛。
 
+把同一批 repeat、diagnostic 与官方 Judge 结果送入可审计的 layer-promotion gate
+后，evidence recall 差为 +42.64 pp、官方 accuracy 差为 +40.00 pp，两个机制门槛
+均通过；但 5 题小于预注册的 25 题下限，且旧 repeat manifest 是
+`reconstructed_after_interruption`，因此最终机器决策是
+`insufficient_scope`，不是 `promote`。这阻止我们拿漂亮的 5 题结果提前宣布
+dense 已成为最终方案。
+
+候选的 15 个官方判断中有 6 个错误：5 个属于“没有召回任何 gold/evidence
+文档”，1 个属于“已召回相关文档但答案仍错”，0 个属于格式失败；按题统计为
+1 个三轮持续失败、2 个不稳定、2 个三轮稳定成功。这个分层诊断说明当前下一步
+仍应完成 25 题检索层门槛，而不是立刻添加 Critic 或更多 Agent。机器决策文件
+保存在 ignored `runs/`，SHA-256 为
+`0226e3a842862ec5ebc87354865136a27c9218df4597ee2291e52992fae5cfa4`。
+机器文件是在部分运行后补成，但阈值并非看过分数后选择：`+10 pp recall`
+和“官方 accuracy 不下降”已经存在于运行前提交
+`dd25e78b90f6f83a85009461585e2d75604c004c`。因此它记录为
+`formalized_after_generation_from_precommitted_thresholds`，不伪装成提前冻结的
+文件哈希。
+
 ## 25 题配对扩展：余额中断，不报中间分数
 
 `pre_generation` 的三轮 BM25/dense 交替网格共有 150 个 query-variant
@@ -204,6 +223,8 @@ source summary。失败尝试消耗的 Token、费用、搜索和延迟继续计
 - 25 题 artifact normalized file SHA-256：`d3925f67fcce34b6e9bb3fec86ff6560afdfedf82ebcf2b12480436e69d3b923`
 - 25 题 corrected `pre_generation` manifest raw SHA-256：`b9833b69cd19672b83ad0a172d2382efd5a0981e207412494ec25a889f998fa2`
 - 25 题 partial final-variant summary SHA-256：`6c3d88b1673a26bf29423916f7a4485a0048a3cd721f0183734a3162af8208f2`
+- layer-promotion gate manifest SHA-256：`dbf69941239f3cea0ac9ef84874805b0a79a5f73a3c05d3d859fd1bdefafa99e`
+- 5 题 layer decision SHA-256：`0226e3a842862ec5ebc87354865136a27c9218df4597ee2291e52992fae5cfa4`
 - dense model revision：`97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3`
 - index dataset revision：`b3f37f70c33829eb09d04784a54277a31871fd63`
 

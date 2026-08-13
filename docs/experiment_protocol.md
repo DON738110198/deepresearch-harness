@@ -135,6 +135,31 @@ matched-budget reporting. The official evaluator receives only the latest
 successful prediction. Any retry rule introduced after an observed provider
 failure must be disclosed as an operational amendment; it cannot upgrade the
 experiment to stronger confirmatory status.
+All newly registered repeat grids use contract v1, which freezes this recovery
+policy before generation and caps a variant at three resume invocations. A v0
+manifest is never edited in place to appear preregistered after a failure.
+
+Layer promotion uses
+`benchmarks/browsecomp_plus_v0/promotion_gates.json`, not an informal reading of
+the result table. A candidate must have at least three trials and 25 fixed
+development questions, `pre_generation` registration, zero official-Judge
+parse failures, evidence-recall improvement of at least 10 percentage points,
+and no decrease in mean official accuracy. All gates are conjunctive. A
+five-question run may validate the mechanism and tooling but returns
+`insufficient_scope`. Passing promotes a harness component into the next frozen
+development experiment only; it is not a sealed-holdout, model-capability, or
+leaderboard claim.
+The JSON gate was formalized after the current partial run, but its two effect
+thresholds are bound to pre-run commit `dd25e78`; this provenance distinction
+must remain visible in the decision artifact and report.
+
+After judging, incorrect candidate observations are assigned one mutually
+exclusive diagnostic class: malformed answer contract, zero gold/evidence
+document recall, or relevant-document recall with an incorrect answer. The
+next intervention follows the dominant reproducible class: retrieval misses
+justify query/retriever replay, while evidence-present failures justify an
+answer-control experiment. No new prompt layer is paid for until this report is
+complete.
 
 Retriever experiments first replay exactly the frozen agent queries and saved
 BM25 rankings. Model, query strings, query count, top-k, corpus, and relevance

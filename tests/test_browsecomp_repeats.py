@@ -11,13 +11,17 @@ from deepresearch_harness.browsecomp_evaluation import (
     DiagnosticSummary,
     _prediction_set_sha256,
 )
+from deepresearch_harness.browsecomp_decision import decide_browsecomp_layer_promotion
 from deepresearch_harness.browsecomp_plus import normalized_text_file_sha256
 from deepresearch_harness.browsecomp_judge import (
     aggregate_official_judge_results,
     prepare_official_judge_batch,
     validate_official_judge_batch,
 )
-from deepresearch_harness.browsecomp_repeats import aggregate_repeat_experiment
+from deepresearch_harness.browsecomp_repeats import (
+    RepeatExperimentManifest,
+    aggregate_repeat_experiment,
+)
 from deepresearch_harness.pi_browsecomp import (
     PiSmokeItem,
     PiSmokeSummary,
@@ -29,6 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "benchmarks" / "browsecomp_plus_v0" / "target_manifest.json"
 RETRIEVERS = ROOT / "benchmarks" / "browsecomp_plus_v0" / "retriever_candidates.json"
 EVALUATOR = ROOT / "benchmarks" / "browsecomp_plus_v0" / "official_evaluator.json"
+PROMOTION_GATES = ROOT / "benchmarks" / "browsecomp_plus_v0" / "promotion_gates.json"
 
 
 def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
@@ -41,7 +46,7 @@ def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
     target_hash = normalized_text_file_sha256(TARGET)
     retriever_hash = normalized_text_file_sha256(RETRIEVERS)
     pairs = []
-    recalls = [(0.0, 0.5), (0.25, 0.75), (0.5, 1.0)]
+    recalls = [(0.0, 0.0), (0.25, 0.75), (0.5, 1.0)]
     for index, (baseline_first_recall, candidate_first_recall) in enumerate(
         recalls, start=1
     ):
@@ -116,6 +121,29 @@ def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
         "minimum_trials": 3,
         "pairs": pairs,
     }
+    v1_without_retry_policy = {
+        **manifest,
+        "schema_version": "browsecomp-plus-repeat-experiment-v1",
+    }
+    with pytest.raises(ValueError, match="preregister provider retry policy"):
+        RepeatExperimentManifest.model_validate(v1_without_retry_policy)
+    v1_manifest = {
+        **v1_without_retry_policy,
+        "provider_failure_retry_policy": {
+            "schema_version": "provider-failure-retry-v0",
+            "eligible_statuses": ["failed"],
+            "immutable_statuses": ["succeeded", "budget_exhausted"],
+            "max_resume_invocations": 3,
+            "preserve_attempt_artifacts": True,
+            "cumulative_usage_accounting": True,
+            "generation_controls": "identical_to_registered_variant",
+        },
+    }
+    assert (
+        RepeatExperimentManifest.model_validate(v1_manifest)
+        .provider_failure_retry_policy.max_resume_invocations
+        == 3
+    )
     manifest_path = tmp_path / "runs" / "repeat_manifest.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     output_path = tmp_path / "runs" / "comparison.json"
@@ -132,7 +160,7 @@ def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
     assert comparison.paired_query_observations == 6
     assert comparison.baseline.evidence_recall_percent.mean == 37.5
     assert comparison.baseline.evidence_recall_percent.sample_stddev == 12.5
-    assert comparison.candidate.evidence_recall_percent.mean == 62.5
+    assert comparison.candidate.evidence_recall_percent.mean == 54.166667
     assert comparison.candidate.strict_exact_percent.mean == 100.0
     exact = next(
         metric for metric in comparison.paired_metrics if metric.metric == "strict_exact"
@@ -144,9 +172,9 @@ def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
     )
     assert (exact.candidate_wins, exact.baseline_wins, exact.ties) == (3, 0, 3)
     assert (evidence.candidate_wins, evidence.baseline_wins, evidence.ties) == (
-        3,
+        2,
         0,
-        3,
+        4,
     )
     assert comparison.official_accuracy_status == "planned_not_run"
     assert output_path.is_file()
@@ -192,12 +220,12 @@ def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
     assert judge_comparison.status == "official_evaluator_development_slice"
     assert judge_comparison.evaluations == 12
     assert judge_comparison.baseline.trial_accuracy_percent.mean == 50.0
-    assert judge_comparison.candidate.trial_accuracy_percent.mean == 100.0
+    assert judge_comparison.candidate.trial_accuracy_percent.mean == 66.666667
     assert (
         judge_comparison.paired.candidate_wins,
         judge_comparison.paired.baseline_wins,
         judge_comparison.paired.ties,
-    ) == (3, 0, 3)
+    ) == (1, 0, 5)
     assert (
         aggregate_official_judge_results(
             batch_manifest_path=batch_dir / "batch_manifest.json",
@@ -207,6 +235,43 @@ def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
             validate_existing=True,
         )
         == judge_comparison
+    )
+
+    decision_path = tmp_path / "runs" / "layer-decision.json"
+    decision = decide_browsecomp_layer_promotion(
+        repeat_experiment_path=manifest_path,
+        repeat_comparison_path=output_path,
+        target_manifest_path=TARGET,
+        promotion_gates_path=PROMOTION_GATES,
+        judge_batch_manifest_path=batch_dir / "batch_manifest.json",
+        judge_execution_registration_path=registration_path,
+        judge_execution_result_path=execution_result_path,
+        judge_comparison_path=judge_comparison_path,
+        output_path=decision_path,
+    )
+    assert decision.decision == "insufficient_scope"
+    assert decision.evidence_recall_delta_pp == 16.666667
+    assert decision.official_accuracy_delta_pp == 16.666667
+    assert decision.failure_aggregate.candidate_incorrect == 2
+    assert decision.failure_aggregate.no_relevant_doc_retrieved == 1
+    assert decision.failure_aggregate.relevant_doc_retrieved_but_incorrect == 1
+    assert decision.failure_aggregate.unstable_queries == 1
+    assert decision.failure_aggregate.stable_success_queries == 1
+    assert decision.next_action == "complete_25_query_gate"
+    assert (
+        decide_browsecomp_layer_promotion(
+            repeat_experiment_path=manifest_path,
+            repeat_comparison_path=output_path,
+            target_manifest_path=TARGET,
+            promotion_gates_path=PROMOTION_GATES,
+            judge_batch_manifest_path=batch_dir / "batch_manifest.json",
+            judge_execution_registration_path=registration_path,
+            judge_execution_result_path=execution_result_path,
+            judge_comparison_path=judge_comparison_path,
+            output_path=decision_path,
+            validate_existing=True,
+        )
+        == decision
     )
 
     bad_manifest = {**manifest, "pairs": manifest["pairs"][:2]}
@@ -634,7 +699,9 @@ def _write_official_judge_execution(batch_dir: Path) -> tuple[Path, Path]:
             (batch_dir / item["staged_input_path"]).read_text(encoding="utf-8")
         )
         response = source["result"][-1]["output"]
-        correct = item["variant"] == "candidate" or item["query_id"] == "q-2"
+        correct = item["query_id"] == "q-2" or (
+            item["variant"] == "candidate" and item["trial_id"] == "trial-03"
+        )
         payload = {
             "query_id": item["query_id"],
             "question": f"fixture question {item['query_id']}",

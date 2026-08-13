@@ -50,10 +50,35 @@ class RepeatPairInput(StrictContract):
     candidate: RepeatVariantInput
 
 
-class RepeatExperimentManifest(StrictContract):
-    schema_version: Literal["browsecomp-plus-repeat-experiment-v0"] = (
-        "browsecomp-plus-repeat-experiment-v0"
+class ProviderFailureRetryPolicy(StrictContract):
+    schema_version: Literal["provider-failure-retry-v0"] = (
+        "provider-failure-retry-v0"
     )
+    eligible_statuses: tuple[Literal["failed"], ...] = ("failed",)
+    immutable_statuses: tuple[
+        Literal["succeeded", "budget_exhausted"], ...
+    ] = ("succeeded", "budget_exhausted")
+    max_resume_invocations: int = Field(default=3, ge=1, le=10)
+    preserve_attempt_artifacts: Literal[True] = True
+    cumulative_usage_accounting: Literal[True] = True
+    generation_controls: Literal["identical_to_registered_variant"] = (
+        "identical_to_registered_variant"
+    )
+
+    @model_validator(mode="after")
+    def statuses_are_complete_and_disjoint(self) -> "ProviderFailureRetryPolicy":
+        if self.eligible_statuses != ("failed",):
+            raise ValueError("only failed provider runs may be retried")
+        if set(self.immutable_statuses) != {"succeeded", "budget_exhausted"}:
+            raise ValueError("completed and budget-exhausted runs must be immutable")
+        return self
+
+
+class RepeatExperimentManifest(StrictContract):
+    schema_version: Literal[
+        "browsecomp-plus-repeat-experiment-v0",
+        "browsecomp-plus-repeat-experiment-v1",
+    ] = "browsecomp-plus-repeat-experiment-v1"
     registered_at: str = Field(min_length=1)
     registration_status: Literal[
         "pre_generation", "reconstructed_after_interruption"
@@ -68,6 +93,7 @@ class RepeatExperimentManifest(StrictContract):
     baseline_retriever_id: Literal["bm25"] = "bm25"
     candidate_retriever_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]*$")
     candidate_retriever_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    provider_failure_retry_policy: ProviderFailureRetryPolicy | None = None
     minimum_trials: int = Field(default=3, ge=3)
     pairs: list[RepeatPairInput] = Field(min_length=3)
 
@@ -78,6 +104,16 @@ class RepeatExperimentManifest(StrictContract):
             and self.development_queries_sha256 is None
         ):
             raise ValueError("pre-generation repeats must bind the query artifact hash")
+        if (
+            self.schema_version == "browsecomp-plus-repeat-experiment-v1"
+            and self.provider_failure_retry_policy is None
+        ):
+            raise ValueError("v1 repeat manifest must preregister provider retry policy")
+        if (
+            self.schema_version == "browsecomp-plus-repeat-experiment-v0"
+            and self.provider_failure_retry_policy is not None
+        ):
+            raise ValueError("v0 repeat manifest cannot contain a retry policy")
         if len(self.pairs) < self.minimum_trials:
             raise ValueError("repeat manifest does not meet its minimum trial count")
         if self.candidate_retriever_id == self.baseline_retriever_id:
@@ -210,10 +246,28 @@ class RepeatComparisonSummary(StrictContract):
     trial_count: int = Field(ge=3)
     queries_per_trial: int = Field(gt=0)
     paired_query_observations: int = Field(gt=0)
+    recovery_policy_status: Literal[
+        "none",
+        "preregistered",
+        "post_failure_operational_amendment",
+    ] = "none"
+    resumed_variants: int = Field(default=0, ge=0)
+    additional_provider_attempts: int = Field(default=0, ge=0)
     baseline: VariantRepeatAggregate
     candidate: VariantRepeatAggregate
     paired_metrics: list[PairedMetricSummary] = Field(min_length=1)
     trials: list[RepeatTrialResult] = Field(min_length=3)
+
+    @model_validator(mode="after")
+    def recovery_counts_are_consistent(self) -> "RepeatComparisonSummary":
+        if self.resumed_variants > self.trial_count * 2:
+            raise ValueError("resumed variant count exceeds the experiment grid")
+        has_retries = self.additional_provider_attempts > 0
+        if has_retries != (self.resumed_variants > 0):
+            raise ValueError("resume and additional-attempt counts disagree")
+        if has_retries != (self.recovery_policy_status != "none"):
+            raise ValueError("recovery status disagrees with retry counts")
+        return self
 
 
 @dataclass(frozen=True)
@@ -358,6 +412,32 @@ def aggregate_repeat_experiment(
 
     assert expected_query_ids is not None
     paired_metrics = _paired_metrics(baseline_loaded, candidate_loaded)
+    loaded_variants = [*baseline_loaded, *candidate_loaded]
+    resumed_variants = sum(
+        loaded.summary.resume_count > 0 for loaded in loaded_variants
+    )
+    additional_provider_attempts = sum(
+        item.attempt_count - 1
+        for loaded in loaded_variants
+        for item in loaded.summary.items
+    )
+    retry_policy = manifest.provider_failure_retry_policy
+    if retry_policy is not None and any(
+        loaded.summary.resume_count > retry_policy.max_resume_invocations
+        for loaded in loaded_variants
+    ):
+        raise ValueError("repeat summary exceeds the preregistered resume limit")
+    recovery_policy_status: Literal[
+        "none",
+        "preregistered",
+        "post_failure_operational_amendment",
+    ] = "none"
+    if additional_provider_attempts:
+        recovery_policy_status = (
+            "preregistered"
+            if retry_policy is not None
+            else "post_failure_operational_amendment"
+        )
     artifact = RepeatComparisonSummary(
         created_at=(
             existing.created_at
@@ -373,6 +453,9 @@ def aggregate_repeat_experiment(
         trial_count=len(manifest.pairs),
         queries_per_trial=len(expected_query_ids),
         paired_query_observations=len(manifest.pairs) * len(expected_query_ids),
+        recovery_policy_status=recovery_policy_status,
+        resumed_variants=resumed_variants,
+        additional_provider_attempts=additional_provider_attempts,
         baseline=_aggregate_variant(
             baseline_loaded,
             retriever_id=manifest.baseline_retriever_id,

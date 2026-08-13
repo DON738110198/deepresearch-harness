@@ -202,6 +202,14 @@ accuracy. Because the first process was interrupted after trial 1 BM25 and gold
 was opened before resume, the unchanged-policy result is exploratory rather
 than preregistered confirmatory evidence.
 
+The frozen layer-decision gate makes that boundary executable. On the five
+questions, evidence-recall and official-accuracy deltas pass (+42.64 and +40.00
+points), but the 25-query minimum and pre-generation registration requirements
+fail, so the decision remains `insufficient_scope`. Candidate errors split into
+five no-relevant-document cases and one evidence-present answer error, with no
+format failures. The evidence therefore supports completing the retrieval
+experiment, not adding a critic, planner, or multi-agent layer yet.
+
 1. Completed: run the pinned Qwen3-32B judge on all six frozen repeat exports; 30/30 per-query judgments were retained with zero parse failures.
 2. Paused for provider balance: finish the frozen 25-query `pre_generation` grid for the same-model, same-phase-policy BM25/dense paired ablation. Five variants are complete; the sixth has 20 succeeded and 5 failed after `402 Insufficient Balance`.
 3. Promote dense retrieval only if evidence recall improves by at least 10 percentage points and official accuracy does not decline; report search calls, Token, cost, and latency together.

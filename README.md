@@ -114,6 +114,10 @@ remain in cumulative experiment totals rather than disappearing.
 Use `-RegisterOnly` to freeze a larger-slice manifest without making a provider
 call; later execution must pass `-Resume` with the same model, query artifact,
 trial count, and run label or the script rejects the change.
+New manifests use repeat-contract v1 and preregister a three-resume ceiling,
+failed-only eligibility, immutable completed records, artifact preservation,
+and cumulative usage accounting. The already-running 25-query v0 manifest is
+not rewritten; its post-failure recovery remains explicitly qualified.
 The next 25-query Flash comparison was registered this way before generation.
 Its paid execution began only after the five-query official-Judge gate passed.
 Five of six variants completed; the final dense variant retained 20 successful
@@ -214,6 +218,38 @@ python -m deepresearch_harness.cli aggregate-browsecomp-plus-official-judge `
 
 An official evaluator score on a development slice remains distinct from a
 full 830-query leaderboard submission.
+
+Layer selection is also a tracked, machine-readable decision rather than a
+post-hoc reading of the best metric. `promotion_gates.json` requires at least
+three trials and 25 development questions, evidence-recall delta >= 10 points,
+non-negative official-accuracy delta, pre-generation registration, and zero
+judge parse failures. The decision command revalidates every upstream artifact,
+reports resource deltas, and classifies candidate failures before naming the
+next experiment:
+
+```powershell
+python -m deepresearch_harness.cli decide-browsecomp-plus-layer `
+  --repeat-experiment <repeat_experiment.json> `
+  --repeat-comparison <repeat_comparison.json> `
+  --target-manifest benchmarks\browsecomp_plus_v0\target_manifest.json `
+  --promotion-gates benchmarks\browsecomp_plus_v0\promotion_gates.json `
+  --judge-batch-manifest <batch_manifest.json> `
+  --judge-execution-registration <execution_registration.json> `
+  --judge-execution-result <execution_result.json> `
+  --judge-comparison <official-judge-comparison.json> `
+  --output runs\browsecomp_plus_v0\layer-decision.json
+```
+
+Applied to the existing five-question slice, the mechanism gates pass
+(+42.64 evidence-recall points and +40.00 official-accuracy points), but the
+decision is correctly `insufficient_scope` because the query-count and clean
+registration gates fail. It does not promote the layer or claim a benchmark
+result.
+
+The machine-readable file was formalized after the partial 25-query execution,
+so it says so explicitly; its `+10 pp recall / no accuracy decline` thresholds
+are provenance-bound to commit `dd25e78`, where they were documented before
+the first 25-query provider call.
 
 ## Live Chinese research
 
@@ -359,9 +395,9 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/dense_server.py`: loopback-only pinned dense/top-5 service backed by the same document store and snippet contract.
 - `src/deepresearch_harness/retrieval_replay.py`: hash-bound dense and RRF counterfactual replay over frozen agent queries.
 - `src/deepresearch_harness/browsecomp_evaluation.py`: post-prediction development-gold boundary and explicitly non-official diagnostics.
-- `src/deepresearch_harness/browsecomp_judge.py`: self-contained judge batch, execution contracts, and hash-valid official-result aggregation.
 - `src/deepresearch_harness/browsecomp_repeats.py`: strict paired-repeat validation, artifact binding, distributions, and query-level win/loss aggregation.
 - `src/deepresearch_harness/browsecomp_judge.py`: self-contained official-judge batches, execution contracts, result validation, and paired score aggregation.
+- `src/deepresearch_harness/browsecomp_decision.py`: frozen promotion gates, resource deltas, and official-judge bad-case routing.
 - `src/deepresearch_harness/pi_browsecomp.py`: auditable smoke orchestration, aggregate usage trace, and hash-bound official-run export.
 - `integrations/pi-browsecomp/`: pinned Pi/DeepSeek tool-loop adapter with no coding-agent prompt or ambient context.
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.

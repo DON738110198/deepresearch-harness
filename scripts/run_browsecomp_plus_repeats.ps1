@@ -207,6 +207,16 @@ function Invoke-Variant {
             if (-not $Resume) {
                 throw "Variant has failed queries; pass -Resume to retry only those queries: $Summary"
             }
+            $MaxResumeInvocations = 3
+            if (
+                $ExistingExperiment.provider_failure_retry_policy -and
+                $ExistingExperiment.provider_failure_retry_policy.max_resume_invocations
+            ) {
+                $MaxResumeInvocations = [int]$ExistingExperiment.provider_failure_retry_policy.max_resume_invocations
+            }
+            if ([int]$FrozenSummary.resume_count -ge $MaxResumeInvocations) {
+                throw "Variant reached the provider-failure resume limit ($MaxResumeInvocations): $Summary"
+            }
             $ResumeFailedQueries = $true
             $ResumeNumber = [int]$FrozenSummary.resume_count + 1
             Write-Host "resume_failed_queries=$($FrozenSummary.failed) summary=$Summary"
@@ -293,8 +303,13 @@ if (Test-Path -LiteralPath $ExperimentManifestPath) {
 } elseif (Get-ChildItem -LiteralPath $RunRoot -Recurse -Filter "summary.json") {
     $RegistrationStatus = "reconstructed_after_interruption"
 }
+$ExperimentSchemaVersion = if ($ExistingExperiment) {
+    [string]$ExistingExperiment.schema_version
+} else {
+    "browsecomp-plus-repeat-experiment-v1"
+}
 $Experiment = [ordered]@{
-    schema_version = "browsecomp-plus-repeat-experiment-v0"
+    schema_version = $ExperimentSchemaVersion
     registered_at = $RegisteredAt
     registration_status = $RegistrationStatus
     target_manifest_sha256 = Get-NormalizedTextSha256 $TargetManifest
@@ -305,9 +320,20 @@ $Experiment = [ordered]@{
     baseline_retriever_id = "bm25"
     candidate_retriever_id = "qwen3-embedding-0.6b"
     candidate_retriever_manifest_sha256 = Get-NormalizedTextSha256 $RetrieverManifest
-    minimum_trials = $Trials
-    pairs = $Pairs
 }
+if ($ExperimentSchemaVersion -eq "browsecomp-plus-repeat-experiment-v1") {
+    $Experiment["provider_failure_retry_policy"] = [ordered]@{
+        schema_version = "provider-failure-retry-v0"
+        eligible_statuses = @("failed")
+        immutable_statuses = @("succeeded", "budget_exhausted")
+        max_resume_invocations = 3
+        preserve_attempt_artifacts = $true
+        cumulative_usage_accounting = $true
+        generation_controls = "identical_to_registered_variant"
+    }
+}
+$Experiment["minimum_trials"] = $Trials
+$Experiment["pairs"] = $Pairs
 $ExperimentJson = $Experiment | ConvertTo-Json -Depth 8
 if ($ExistingExperiment) {
     $ExistingCanonical = $ExistingExperiment | ConvertTo-Json -Depth 8 -Compress

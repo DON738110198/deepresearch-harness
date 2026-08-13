@@ -180,6 +180,15 @@ These probes repaired mechanics but not query quality. They are negative
 results, not promoted innovations. Further single-question prompt tuning is
 stopped to avoid development overfitting.
 
+The tracked layer gate was also applied to the complete five-query artifacts.
+Evidence recall delta (+42.64 points), official accuracy delta (+40.00 points),
+trial count, and parse integrity passed. Query count (5 < 25) and clean
+registration status failed, so the machine decision is `insufficient_scope`.
+Of six incorrect candidate judgments, five had zero gold/evidence recall and
+one retrieved a relevant document but still answered incorrectly; none was a
+format failure. This diagnostic selects completion of the 25-query retrieval
+gate, not another prompt or critic layer.
+
 ## Next Gate
 
 1. Completed: run the pinned official Qwen3-32B judge on all six frozen repeat
