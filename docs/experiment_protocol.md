@@ -31,6 +31,8 @@ Persist the question ID, config digest, corpus/tool version, model and provider,
 
 The B0/B1 token-matched provider run and an AI-assisted blind calibration are recorded in `pilot_v0_calibration.md`. The registered human semantic evaluation remains **planned**. The calibration is evidence for rubric debugging and mechanism selection only.
 
+As of 2026-08-13, full manual blind annotation is paused and is no longer an implementation gate. The prepared workspaces remain optional audit artifacts. Near-term comparisons use deterministic checks plus a fixed, versioned LLM Judge; only Judge disagreements, source-fetch failures, and selected bad cases are manually inspected. This changes the workflow, not the status of any earlier metric: unrun human results remain `planned`.
+
 The following metrics remain required for registered comparisons:
 
 - citation support rate: claims whose cited evidence supports the claim;

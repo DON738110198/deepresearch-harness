@@ -2,6 +2,8 @@
 
 A small, auditable baseline for improving end-to-end Deep Research task execution **without changing model weights**. It calls an OpenAI-compatible chat-completions API and evaluates harness behavior, not intrinsic model capability.
 
+> **Current direction (2026-08-13):** full manual blind annotation is paused because it imposed more reviewer work than the current synthetic pilot could justify. The workspaces remain optional audit artifacts, not the next-stage gate. The project is moving first toward a usable live Search/Fetch -> Chinese cited report loop, followed by deterministic checks and a versioned LLM Judge. See [`docs/market_research_and_pivot_2026-08.md`](docs/market_research_and_pivot_2026-08.md).
+
 The first MVP is deliberately narrow:
 
 ```text
@@ -143,7 +145,8 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 
 ## Next implementation order
 
-1. Complete blind human annotation for both prepared B1/B2 v3 packets; acceptance: 20/20 candidate annotations pass the mechanical review lock for each budget.
-2. Compare semantic obligation coverage, citation support, irrelevant claims, and conflict handling against the registered gates.
-3. Select Critic-Repair, re-planning, or no additional mechanism from repeated human-reviewed bad cases only.
-4. Expand to a 20-50 task external-source evaluation set only after the controlled pilot's contracts and human rubric are stable.
+1. Add one real Search/Fetch adapter and produce a Chinese report with clickable source citations; acceptance: the trace records queries, URLs, provider usage, cost, and latency without credentials.
+2. Add a simple plan-confirmation and report view that exposes research progress without evaluation-internal IDs.
+3. Add deterministic citation/link checks plus a versioned rubric Judge that returns `pass/fail`, reason, and report evidence; full manual annotation is not required.
+4. Save the first real search, grounding, or budget bad case, then test the smallest Evidence Debt change under fixed model/tool and token- or cost-matched controls.
+5. Run a 5-10 task public benchmark slice before deciding whether the evidence justifies broader evaluation or a more complex mechanism.
