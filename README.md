@@ -2,7 +2,12 @@
 
 A small, auditable baseline for improving end-to-end Deep Research task execution **without changing model weights**. It calls an OpenAI-compatible chat-completions API and evaluates harness behavior, not intrinsic model capability.
 
-> **Current direction (2026-08-13):** full manual blind annotation is paused because it imposed more reviewer work than the current synthetic pilot could justify. The workspaces remain optional audit artifacts, not the next-stage gate. The project is moving first toward a usable live Search/Fetch -> Chinese cited report loop, followed by deterministic checks and a versioned LLM Judge. See [`docs/market_research_and_pivot_2026-08.md`](docs/market_research_and_pivot_2026-08.md).
+> **Current direction (2026-08-13):** full manual blind annotation is paused
+> because it imposed more reviewer work than the synthetic pilot could justify.
+> The workspaces remain optional audit artifacts. BrowseComp-Plus plus its
+> version-pinned official judge is now the primary experimental path; the live
+> Chinese Search/Fetch flow remains a transfer test. See
+> [`docs/market_research_and_pivot_2026-08.md`](docs/market_research_and_pivot_2026-08.md).
 
 > **Active research target:** use frozen DeepSeek V4 Flash/Pro to test a coherent,
 > evidence-debt-driven stack across retrieval, verification, budgeted control,
@@ -32,6 +37,50 @@ python -m pytest
 ```
 
 The demo writes `runs/smoke/<run-id>/state.json` and `report.md`. `state.json` is the audit artifact; it includes prompts only as stage metadata, not credentials.
+
+## BrowseComp-Plus baseline
+
+The active benchmark path pins the repository, datasets, BM25 index, Qwen
+snippet tokenizer, query prompt, empty system-prompt policy, DeepSeek model
+tracks, and deterministic 20/80 query-ID split. Validate the public contract:
+
+```powershell
+python -m pip install -e ".[dev,browsecomp-plus]"
+python -m deepresearch_harness.cli validate-browsecomp-plus-target `
+  --manifest benchmarks\browsecomp_plus_v0\target_manifest.json
+```
+
+The same validator binds the documented DeepSeek served versions and dated
+price table. Cost-matched experiments must refresh that snapshot when provider
+pricing changes.
+
+`benchmarks/browsecomp_plus_v0/query_partitions.json` contains query IDs and
+partition labels only. Plaintext benchmark questions and all model traces stay
+under ignored `runs/`. The thin Pi adapter is in
+`integrations/pi-browsecomp`; Pi provides the tool loop, not the project's
+research contribution. The current five-query DeepSeek V4 Flash run is an
+unscored runtime smoke; its standard-budget status is recorded rather than
+silently converted into an answer when the provider overshoots the requested
+output allowance. See `docs/browsecomp_plus_preflight_2026-08-13.md` for
+observed calls, tokens, cost, latency, and limits.
+
+After the ignored Java, Python, and BM25 artifacts described there are present,
+`scripts/run_browsecomp_plus_smoke.ps1` starts and stops the loopback search
+server around one traceable run. It never accepts an API key argument.
+
+After predictions are frozen, convert them without reading gold into the exact
+outer shape consumed by the official evaluator:
+
+```powershell
+python -m deepresearch_harness.cli export-pi-browsecomp-runs `
+  --source-dir runs\browsecomp_plus_v0\pi_flash_standard_smoke_20260813 `
+  --output-dir runs\browsecomp_plus_v0\pi_flash_official_input_20260813
+```
+
+The export manifest binds every evaluator file to its source run and prediction
+hash. `benchmarks/browsecomp_plus_v0/official_evaluator.json` pins the judge
+weights and inference settings. The exporter does not run or substitute for the
+official Qwen3-32B judge.
 
 ## Live Chinese research
 
@@ -171,6 +220,10 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/pipeline.py`: baseline orchestration and persistence.
 - `src/deepresearch_harness/web_research.py`: no-key repository/web search, bounded fetch, text extraction, and request trace.
 - `src/deepresearch_harness/public_benchmark.py`: pinned LiveDRBench loading, structured predictions, exact compatibility scoring, and batch audit summary.
+- `src/deepresearch_harness/browsecomp_plus.py`: strict benchmark pins, leakage-safe query split/extraction, and Pi run contracts.
+- `src/deepresearch_harness/bm25_server.py`: loopback-only pinned BM25/top-5/Qwen-tokenizer search service.
+- `src/deepresearch_harness/pi_browsecomp.py`: auditable smoke orchestration, aggregate usage trace, and hash-bound official-run export.
+- `integrations/pi-browsecomp/`: pinned Pi/DeepSeek tool-loop adapter with no coding-agent prompt or ambient context.
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.
 - `src/deepresearch_harness/batch.py`: frozen two-variant batch execution and automatic aggregation.
 - `src/deepresearch_harness/review.py`: deterministic variant-blind review, validation, and aggregation.

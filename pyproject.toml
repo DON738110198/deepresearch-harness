@@ -12,6 +12,13 @@ dependencies = ["pydantic>=2.8"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+browsecomp-plus = [
+    "duckdb>=1.4,<2",
+    "openai==1.97.0",
+    "pyserini==1.2.0",
+    "sentencepiece==0.2.2",
+    "transformers==4.53.2",
+]
 
 [project.scripts]
 deepresearch-harness = "deepresearch_harness.cli:main"
@@ -22,4 +29,3 @@ addopts = "-q"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-

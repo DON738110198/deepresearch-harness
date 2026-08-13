@@ -19,7 +19,22 @@ Run each configuration under two separately reported budgets:
 1. **Token-matched:** same maximum input plus output token budget per task.
 2. **Cost-matched:** same maximum provider/tool monetary budget per task, with the price table version recorded.
 
-The provider hard-limits output with `max_tokens`. Total billed tokens and estimated fee use provider-returned usage and are enforced between calls; therefore the response that crosses an observed cap is still billable and the run terminates with `stop_reason=budget_exhausted`. Reports must not describe these observed guards as exact pre-call billing caps.
+For DeepSeek tracks, bind the API model alias to the documented served model
+version and dated price table in
+`benchmarks/browsecomp_plus_v0/deepseek_provider_snapshot.json`. A cost-matched
+run is valid only while that snapshot's price window applies; after a provider
+price or served-version change, refresh the snapshot and start a new comparison
+block rather than mixing estimates across regimes.
+
+The harness sends the remaining output allowance with `max_tokens` on every
+provider request. This is not assumed to be an exact hard cap: a provider can
+report more generated tokens than requested, especially when reasoning tokens
+are involved. Total billed tokens and estimated fee therefore use
+provider-returned usage and are enforced between calls. A response that crosses
+the global cap is still billable. Matching the reference loop, a terminal answer
+from that response remains scoreable while its overshoot is recorded; a response
+that still asks for tools terminates with `status=budget_exhausted`. Reports must
+preserve and quantify either case.
 
 Do not substitute a stronger model, fresher search index, or different tool allowance in one condition. If any control differs, label the result as an ablation or exploratory result rather than a fair head-to-head comparison.
 
@@ -45,6 +60,33 @@ evaluator-only boundary. Freeze and hash predictions before holdout scoring.
 Report the sealed-holdout result separately from the official full-set
 leaderboard submission. Until the official tool/index/evaluator contract is
 reproduced, every BrowseComp-Plus score and rank remains `planned`.
+
+Before scoring, export frozen traces through the hash-verifying official-run
+adapter. The exporter may map a terminal Pi answer to `completed` and an
+unfinished tool loop to `incomplete`, but it must not rewrite response text,
+drop failed queries, read gold, or call a judge.
+
+The query-ID split is now frozen at 175 development and 655 sealed-holdout
+questions. Development-question extraction projects only the encrypted query
+column and writes plaintext only below ignored `runs/`; it does not select or
+decrypt answers, gold documents, negatives, or evidence documents. The first
+corrected five-query DeepSeek V4 Flash standard-budget run is explicitly
+`unscored_smoke`: it validates the runtime and exposes search/token cost plus a
+1/5 answer-schema completion failure, but it is not an accuracy or leaderboard
+result. Earlier adapter-mismatch runs are retained as excluded diagnostics.
+
+The standard-loop adapter pins Pi 0.84.1 but clears Pi's system prompt and all
+ambient coding context. Pi is held fixed in harness ablations and is not an
+innovation variable. Matching the reference loop, tool calls already emitted
+by the terminal model response are executed before the next-turn budget check.
+Search calls include every successful or failed invocation. Repeated-context
+provider tokens are counted as reported, even when the same evidence appears
+across several model turns.
+
+The official evaluator contract is separately pinned in
+`benchmarks/browsecomp_plus_v0/official_evaluator.json`. Its Qwen3-32B revision
+and decoding settings are evaluation controls, not a replacement research
+agent and not part of either candidate's generation budget.
 
 Gold answers are fetched only inside the scorer after generation. Generation receives the public question and fetched web evidence, while saved public artifacts contain predictions, hashes, and aggregate counts rather than copied benchmark gold. Parser or post-generation failures must still load persisted `RunState` usage so paid calls are not reported as zero-cost failures.
 

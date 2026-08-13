@@ -1,0 +1,32 @@
+{
+  "schema_version": "deepseek-provider-snapshot-v0",
+  "target_manifest_sha256": "dad4e291d9bf1223cd2e4e56067948883736b6a8732d29b57cc06a03d1b140c0",
+  "fetched_at": "2026-08-13",
+  "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+  "openai_base_url": "https://api.deepseek.com",
+  "pricing_effective_until": "2026-08-16T16:00:00Z",
+  "models": [
+    {
+      "api_model": "deepseek-v4-flash",
+      "documented_model_version": "DeepSeek-V4-Flash-0731",
+      "context_tokens": 1000000,
+      "maximum_output_tokens": 384000,
+      "pricing": {
+        "cache_hit_input_usd_per_million": 0.0028,
+        "cache_miss_input_usd_per_million": 0.14,
+        "output_usd_per_million": 0.28
+      }
+    },
+    {
+      "api_model": "deepseek-v4-pro",
+      "documented_model_version": "DeepSeek-V4-Pro-0813",
+      "context_tokens": 1000000,
+      "maximum_output_tokens": 384000,
+      "pricing": {
+        "cache_hit_input_usd_per_million": 0.003625,
+        "cache_miss_input_usd_per_million": 0.435,
+        "output_usd_per_million": 0.87
+      }
+    }
+  ]
+}

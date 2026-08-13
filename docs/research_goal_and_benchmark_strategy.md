@@ -61,7 +61,10 @@ Target ladder:
 4. Reach the frozen top-20 threshold of 63.86% accuracy.
 5. Stretch: reach the frozen top-10 threshold of 78.41% accuracy.
 
-Items 1-5 are all `planned`. No rank or effectiveness claim has been earned.
+The gold-free runtime portion of item 1 has passed on five development queries;
+the official Qwen3-32B evaluator is still `planned_not_run`, so item 1 is not
+complete. Items 2-5 remain `planned`. No rank or effectiveness claim has been
+earned.
 
 ## One Thesis, Several Layers
 
@@ -154,9 +157,15 @@ maximum search calls, Token/cost budget, concurrency, and evaluator are fixed.
 
 ## Immediate Execution Order
 
-1. Reproduce the BrowseComp-Plus data/index/tool contract on five queries without scoring.
-2. Freeze the development/holdout manifest before opening gold data.
-3. Run a standard-scaffold DeepSeek V4 Flash baseline on the development split.
-4. Diagnose its largest error cluster and implement only Layer 1's smallest justified change.
-5. Promote a layer only after a same-model matched-budget ablation passes its gate.
-6. Use DeepSeek V4 Pro only after the Flash pipeline is stable; do not hide model substitution inside a harness comparison.
+The five-query standard-budget smoke found the first measured bottleneck: four
+of five Flash traces exhausted the 10,000-token allowance before producing the
+required answer schema. Retrieval quality cannot be compared honestly while
+most outputs are unscoreable, so the next step starts at the smallest causal
+boundary rather than mechanically beginning with Layer 1.
+
+1. Keep the completed standard scaffold as the frozen baseline; do not discard its four incomplete predictions.
+2. Test a Layer 3/4 answer reserve: exploration may use at most 8,000 of the same 10,000 generated-token allowance, leaving 2,000 for one forced answer-compilation turn.
+3. Accept that mechanism for development only if at least 4/5 outputs are schema-complete with model, prompt, BM25, top-k, and total allowance unchanged.
+4. Freeze predictions, then run the pinned official Qwen3-32B judge on development queries and cluster failures into retrieval, evidence integration, stopping, and compilation.
+5. Implement the smallest layer that matches the largest measured cluster; require same-model search-call-, Token-, and cost-matched ablations before promotion.
+6. Keep the 655-query holdout sealed until the mechanism and thresholds are preregistered; use DeepSeek V4 Pro only as a separate final track.

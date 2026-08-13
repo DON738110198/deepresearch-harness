@@ -1,0 +1,18 @@
+{
+  "schema_version": "browsecomp-plus-official-evaluator-v0",
+  "status": "planned_not_run",
+  "target_manifest_sha256": "dad4e291d9bf1223cd2e4e56067948883736b6a8732d29b57cc06a03d1b140c0",
+  "repository_commit": "046949032b0328319cc9a02663a759ec601d9402",
+  "evaluator_script": "scripts_evaluation/evaluate_run.py",
+  "judge": {
+    "name": "Qwen/Qwen3-32B",
+    "revision": "9216db5781bf21249d130ec9da846c4624c16137"
+  },
+  "inference": {
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 20,
+    "max_output_tokens": 4096,
+    "enable_thinking": false
+  }
+}

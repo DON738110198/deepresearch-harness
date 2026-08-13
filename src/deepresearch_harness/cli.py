@@ -6,6 +6,13 @@ from pathlib import Path
 
 from .benchmark import FailureFocus, validate_suite_assets
 from .batch import run_experiment_batch
+from .browsecomp_plus import (
+    fetch_development_queries,
+    freeze_query_partitions,
+    load_browsecomp_plus_target,
+    load_deepseek_provider_snapshot,
+    load_official_evaluator_manifest,
+)
 from .contracts import HarnessConfig
 from .experiment import validate_experiment_manifest
 from .pipeline import (
@@ -15,6 +22,7 @@ from .pipeline import (
     PrimarySourceResearchPipeline,
     SearchWritePipeline,
 )
+from .pi_browsecomp import export_pi_runs_for_official_evaluator, run_pi_unscored_smoke
 from .providers import FakeProvider, provider_from_config
 from .public_benchmark import (
     load_livedrbench_manifest,
@@ -100,6 +108,49 @@ def main() -> int:
     score_public.add_argument("--manifest", type=Path, required=True)
     score_public.add_argument("--predictions", type=Path, required=True)
     score_public.add_argument("--output", type=Path, required=True)
+    validate_browsecomp_plus = subparsers.add_parser(
+        "validate-browsecomp-plus-target",
+        help="Validate pinned BrowseComp-Plus targets without reading benchmark gold.",
+    )
+    validate_browsecomp_plus.add_argument("--manifest", type=Path, required=True)
+    freeze_browsecomp_plus = subparsers.add_parser(
+        "freeze-browsecomp-plus-split",
+        help="Freeze query-ID partitions from a TSV without persisting query text.",
+    )
+    freeze_browsecomp_plus.add_argument("--manifest", type=Path, required=True)
+    freeze_browsecomp_plus.add_argument("--query-ids-tsv", type=Path, required=True)
+    freeze_browsecomp_plus.add_argument("--output", type=Path, required=True)
+    prepare_browsecomp_plus = subparsers.add_parser(
+        "prepare-browsecomp-plus-dev-queries",
+        help="Project and decrypt development questions only; never reads gold columns.",
+    )
+    prepare_browsecomp_plus.add_argument("--manifest", type=Path, required=True)
+    prepare_browsecomp_plus.add_argument("--partitions", type=Path, required=True)
+    prepare_browsecomp_plus.add_argument("--output", type=Path, required=True)
+    prepare_browsecomp_plus.add_argument("--limit", type=int)
+    run_pi_browsecomp = subparsers.add_parser(
+        "run-pi-browsecomp-smoke",
+        help="Run a gold-free development smoke through Pi and the local BM25 endpoint.",
+    )
+    run_pi_browsecomp.add_argument("--manifest", type=Path, required=True)
+    run_pi_browsecomp.add_argument("--partitions", type=Path, required=True)
+    run_pi_browsecomp.add_argument("--queries", type=Path, required=True)
+    run_pi_browsecomp.add_argument("--output-dir", type=Path, required=True)
+    run_pi_browsecomp.add_argument("--node", type=Path, required=True)
+    run_pi_browsecomp.add_argument("--adapter-dir", type=Path, required=True)
+    run_pi_browsecomp.add_argument("--search-url", default="http://127.0.0.1:8765/search")
+    run_pi_browsecomp.add_argument(
+        "--model",
+        choices=["deepseek-v4-flash", "deepseek-v4-pro"],
+        default="deepseek-v4-flash",
+    )
+    run_pi_browsecomp.add_argument("--timeout-seconds", type=int, default=900)
+    export_pi_browsecomp = subparsers.add_parser(
+        "export-pi-browsecomp-runs",
+        help="Convert frozen Pi traces into the official evaluator input shape.",
+    )
+    export_pi_browsecomp.add_argument("--source-dir", type=Path, required=True)
+    export_pi_browsecomp.add_argument("--output-dir", type=Path, required=True)
     prepare_review = subparsers.add_parser("prepare-review", help="Create blinded two-variant review artifacts.")
     prepare_review.add_argument("--summary", type=Path, required=True)
     prepare_review.add_argument("--suite", type=Path, required=True)
@@ -212,6 +263,109 @@ def main() -> int:
             f"macro_exact_recall={scores.macro_exact_recall:.4f}\n"
             f"macro_exact_f1={scores.macro_exact_f1:.4f}\n"
             f"official_evaluator={scores.official_evaluator_status}"
+        )
+        return 0
+    if args.command == "validate-browsecomp-plus-target":
+        manifest = load_browsecomp_plus_target(args.manifest)
+        evaluator_path = args.manifest.with_name("official_evaluator.json")
+        evaluator = (
+            load_official_evaluator_manifest(
+                evaluator_path, target_manifest_path=args.manifest
+            )
+            if evaluator_path.is_file()
+            else None
+        )
+        provider_snapshot_path = args.manifest.with_name(
+            "deepseek_provider_snapshot.json"
+        )
+        provider_snapshot = (
+            load_deepseek_provider_snapshot(
+                provider_snapshot_path, target_manifest_path=args.manifest
+            )
+            if provider_snapshot_path.is_file()
+            else None
+        )
+        print(
+            f"benchmark={manifest.benchmark.name}\nstatus={manifest.status}\n"
+            f"repository_commit={manifest.benchmark.repository_commit}\n"
+            f"query_dataset={manifest.benchmark.query_dataset.name}@"
+            f"{manifest.benchmark.query_dataset.revision}\n"
+            f"split={manifest.split.version}\nmodels="
+            + ",".join(track.model for track in manifest.model_tracks)
+            + (
+                f"\njudge={evaluator.judge.name}@{evaluator.judge.revision}"
+                if evaluator
+                else "\njudge=unbound"
+            )
+            + (
+                "\nprovider_versions="
+                + ",".join(
+                    f"{model.api_model}:{model.documented_model_version}"
+                    for model in provider_snapshot.models
+                )
+                if provider_snapshot
+                else "\nprovider_versions=unbound"
+            )
+        )
+        return 0
+    if args.command == "freeze-browsecomp-plus-split":
+        artifact = freeze_query_partitions(
+            manifest_path=args.manifest,
+            query_ids_tsv=args.query_ids_tsv,
+            output_path=args.output,
+        )
+        print(
+            f"output={args.output}\nqueries={artifact.query_count}\n"
+            f"development={artifact.development_count}\n"
+            f"sealed_holdout={artifact.sealed_holdout_count}\n"
+            f"query_ids_sha256={artifact.query_ids_sha256}"
+        )
+        return 0
+    if args.command == "prepare-browsecomp-plus-dev-queries":
+        artifact = fetch_development_queries(
+            manifest_path=args.manifest,
+            partitions_path=args.partitions,
+            output_path=args.output,
+            limit=args.limit,
+        )
+        print(
+            f"output={args.output}\npartition={artifact.partition}\n"
+            f"queries={artifact.query_count}\nqueries_sha256={artifact.queries_sha256}"
+        )
+        return 0
+    if args.command == "run-pi-browsecomp-smoke":
+        summary = run_pi_unscored_smoke(
+            manifest_path=args.manifest,
+            partitions_path=args.partitions,
+            queries_path=args.queries,
+            output_dir=args.output_dir,
+            node_executable=args.node,
+            adapter_dir=args.adapter_dir,
+            search_url=args.search_url,
+            model=args.model,
+            timeout_seconds=args.timeout_seconds,
+        )
+        print(
+            f"output={args.output_dir}\nstatus={summary.status}\n"
+            f"queries={summary.query_count}\nsucceeded={summary.succeeded}\n"
+            f"budget_exhausted={summary.budget_exhausted}\nfailed={summary.failed}\n"
+            f"search_calls={summary.total_search_calls}\n"
+            f"output_tokens={summary.total_output_tokens}\n"
+            "output_budget_overshoot_tokens="
+            f"{summary.total_output_budget_overshoot_tokens}\n"
+            f"tokens={summary.total_tokens}\ncost_usd={summary.total_cost_usd:.8f}\n"
+            "gold_accessed=false"
+        )
+        return 0 if summary.succeeded == summary.query_count else 1
+    if args.command == "export-pi-browsecomp-runs":
+        export = export_pi_runs_for_official_evaluator(
+            source_dir=args.source_dir,
+            output_dir=args.output_dir,
+        )
+        print(
+            f"output={args.output_dir}\nqueries={export.query_count}\n"
+            f"completed={export.completed}\nincomplete={export.incomplete}\n"
+            f"source_summary_sha256={export.source_summary_sha256}"
         )
         return 0
     if args.command == "run-experiment":
