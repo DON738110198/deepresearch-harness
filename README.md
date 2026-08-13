@@ -71,6 +71,23 @@ python -m deepresearch_harness.cli render-review `
 
 Open `index.html` directly. The workspace shows candidates `A/B`, saves progress in browser local storage, imports/exports JSON drafts, and enables final export only after every claim and citation is classified. It embeds the blinded packet but never reads the answer key.
 
+For a Chinese reading-aid workspace, first translate only the blinded packet, then render it with the validated bundle:
+
+```powershell
+python -m deepresearch_harness.cli translate-review `
+  --packet runs\reviews\<review-id>\review_packet.json `
+  --config config.local.json `
+  --output runs\reviewer_workspaces\<review-id>\translations.zh-CN.json
+
+python -m deepresearch_harness.cli render-review `
+  --packet runs\reviews\<review-id>\review_packet.json `
+  --locale zh-CN `
+  --translations runs\reviewer_workspaces\<review-id>\translations.zh-CN.json `
+  --output runs\reviewer_workspaces\<review-id>\index.zh-CN.html
+```
+
+The Chinese view keeps a one-click English-original toggle. Translation provenance, usage, cost, latency, and the source packet hash are stored in the bundle. Translation is a reading aid, not a second judge or an experiment metric; when wording is ambiguous, score against the English original.
+
 Before unblinding, lock the exported submission and record its hash:
 
 ```powershell
@@ -112,6 +129,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.
 - `src/deepresearch_harness/batch.py`: frozen two-variant batch execution and automatic aggregation.
 - `src/deepresearch_harness/review.py`: deterministic variant-blind review, validation, and aggregation.
+- `src/deepresearch_harness/review_translation.py`: packet-bound Chinese reading-aid translations with provider trace.
 - `src/deepresearch_harness/review_workspace.py`: standalone browser workspace for blind human annotation.
 - `experiments/pilot_v0/`: token-matched and cost-matched manifests with pinned corpus hashes and pricing.
 - `benchmarks/pilot_v0/`: ten controlled diagnostic tasks and a synthetic corpus.

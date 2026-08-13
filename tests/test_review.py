@@ -15,6 +15,7 @@ from deepresearch_harness.review import (
     score_blind_review,
     validate_blind_submission,
 )
+from deepresearch_harness.review_translation import translate_review_packet
 from deepresearch_harness.review_workspace import render_review_workspace, validate_review_submission_file
 
 
@@ -101,6 +102,48 @@ def test_review_packet_hides_variants_and_writes_separate_key(tmp_path: Path) ->
     assert validated_count == 20
     assert len(annotation_hash) == 64
     assert reviewer_type == "ai_assisted"
+
+    translations_path = tmp_path / "review" / "translations.zh-CN.json"
+    bundle = translate_review_packet(
+        packet_path=packet_path,
+        output_path=translations_path,
+        provider=FakeProvider(),
+        max_chunk_characters=2_000,
+    )
+    assert bundle.packet_sha256 == result.packet_sha256
+    assert bundle.locale == "zh-CN"
+    assert bundle.provider == "fake"
+    assert len(bundle.entries) > 20
+    assert len(bundle.trace) > 1
+    assert bundle.total_usage.input_tokens > 0
+
+    chinese_workspace_path = render_review_workspace(
+        packet_path=packet_path,
+        output_path=tmp_path / "review" / "review_workspace.zh-CN.html",
+        locale="zh-CN",
+        translations_path=translations_path,
+    )
+    chinese_workspace = chinese_workspace_path.read_text(encoding="utf-8")
+    assert '<html lang="zh-CN">' in chinese_workspace
+    assert "人工盲审工作台" in chinese_workspace
+    assert "中文辅助翻译" in chinese_workspace
+    assert "查看英文原文" in chinese_workspace
+    assert packet.tasks[0].question in chinese_workspace
+    assert "b0_search_write" not in chinese_workspace
+    assert "b1_plan_search_ledger_write" not in chinese_workspace
+    assert "answer_key" not in chinese_workspace
+    assert 'reviewer_type: "human"' in chinese_workspace
+
+    mismatched = bundle.model_copy(update={"packet_sha256": "0" * 64})
+    mismatched_path = tmp_path / "review" / "translations.mismatched.json"
+    mismatched_path.write_text(mismatched.model_dump_json(indent=2), encoding="utf-8")
+    with pytest.raises(ValueError, match="packet_sha256"):
+        render_review_workspace(
+            packet_path=packet_path,
+            output_path=tmp_path / "review" / "should-not-render.html",
+            locale="zh-CN",
+            translations_path=mismatched_path,
+        )
 
     incomplete = submission.model_copy(deep=True)
     incomplete.annotations[0].supported_claim_ids.pop()

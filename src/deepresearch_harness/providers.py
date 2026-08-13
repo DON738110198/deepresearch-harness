@@ -140,6 +140,20 @@ class FakeProvider(LLMProvider):
             for item in evidence:
                 lines.append(f"- [{item['id']}] {item['title']}: {item['url']}")
             text = json.dumps({"claims": claims, "report": "\n".join(lines) + "\n"})
+        elif stage == "review_translate":
+            payload = json.loads(prompt)
+            text = json.dumps(
+                {
+                    "translations": [
+                        {
+                            "id": item["id"],
+                            "text": f"中文辅助翻译：{item['source']}",
+                        }
+                        for item in payload["items"]
+                    ]
+                },
+                ensure_ascii=False,
+            )
         else:
             raise ValueError(f"unsupported fake stage: {stage}")
         latency_ms = int((time.perf_counter() - started) * 1000)

@@ -52,3 +52,9 @@ When comparing B0 and B1 reports, use the generated blind-review packet rather t
 The scorer enforces a mechanical review lock before reading the answer key: all candidates must be present, every claim and cited claim must be classified exactly once, and all referenced obligation/claim IDs must exist in the packet. `ai_assisted` review is calibration-only and must not be reported as a human result.
 
 The static reviewer workspace is generated from `review_packet.json` only and should be placed outside the directory containing `answer_key.json`. The exported submission must pass `validate-review`; record its SHA-256 before running `score-review`. Browser local storage and draft exports are convenience state, not accepted experiment artifacts until the Python validator succeeds.
+
+## Translated reviewer view
+
+The `zh-CN` workspace is a reading aid for the same blinded human review, not an AI-assisted annotation. Generate translations from `review_packet.json` only, bind the translation bundle to the packet SHA-256, and retain provider/model/token/cost/latency provenance separately from the evaluated harness runs. The renderer rejects a bundle with a different packet hash, a missing/extra source string, or changed citation markers, URLs, or claim/evidence identifiers.
+
+The reviewer may toggle every translated task, report, evidence excerpt, and claim back to its English original. In any ambiguity, the English original controls. Translation calls must not be added to either variant's token-matched or cost-matched budget and must not be reported as research-agent cost or performance.

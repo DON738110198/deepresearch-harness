@@ -3,16 +3,46 @@ from __future__ import annotations
 import json
 from html import escape
 from pathlib import Path
+from typing import Literal
 
 from .review import BlindReviewPacket, BlindReviewSubmission, file_sha256, validate_blind_submission
+from .review_translation import load_review_translation_bundle
 
 
-def render_review_workspace(*, packet_path: Path, output_path: Path) -> Path:
+def render_review_workspace(
+    *,
+    packet_path: Path,
+    output_path: Path,
+    locale: Literal["en", "zh-CN"] = "en",
+    translations_path: Path | None = None,
+) -> Path:
     packet = BlindReviewPacket.model_validate_json(packet_path.read_text(encoding="utf-8"))
     packet_json = json.dumps(packet.model_dump(mode="json"), ensure_ascii=True).replace("</", "<\\/")
-    html = _HTML_TEMPLATE.replace("__EXPERIMENT_ID__", escape(packet.experiment_id))
+    translations: dict[str, str] = {}
+    translator_model = ""
+    if locale == "zh-CN":
+        if translations_path is None:
+            raise ValueError("translations_path is required for locale zh-CN")
+        bundle = load_review_translation_bundle(
+            packet_path=packet_path,
+            translations_path=translations_path,
+        )
+        translations = {item.source: item.translated for item in bundle.entries}
+        translator_model = bundle.model
+
+    html = _HTML_TEMPLATE
+    if locale == "zh-CN":
+        for source, translated in sorted(_ZH_REPLACEMENTS.items(), key=lambda item: len(item[0]), reverse=True):
+            html = html.replace(source, translated)
+    translation_json = json.dumps(translations, ensure_ascii=True).replace("</", "<\\/")
+    html = html.replace("__HTML_LANG__", "zh-CN" if locale == "zh-CN" else "en")
+    html = html.replace("__EXPERIMENT_ID__", escape(packet.experiment_id))
     html = html.replace("__PACKET_SHA256__", file_sha256(packet_path))
     html = html.replace("__PACKET_JSON__", packet_json)
+    html = html.replace("__TRANSLATION_JSON__", translation_json)
+    html = html.replace("__TRANSLATOR_MODEL__", escape(translator_model))
+    html = html.replace("__LOCALE__", locale)
+    html = html.replace("__TRANSLATION_ONLY_CLASS__", "" if locale == "zh-CN" else "hidden")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(html, encoding="utf-8")
     return output_path
@@ -25,8 +55,53 @@ def validate_review_submission_file(*, packet_path: Path, annotations_path: Path
     return len(validated), file_sha256(annotations_path), submission.reviewer_type.value
 
 
+_ZH_REPLACEMENTS = {
+    "Blind Semantic Review": "人工盲审工作台",
+    "Blind Review": "人工盲审",
+    "0 / 20 candidates complete": "0 / 20 个候选已完成",
+    "candidates complete": "个候选已完成",
+    "Import draft": "导入草稿",
+    "Download draft": "下载草稿",
+    "Export final": "导出最终标注",
+    "Review tasks": "评审任务",
+    "Review criteria": "评审标准",
+    "Forbidden shortcuts": "禁止的捷径",
+    "Review A/B reports for obligation coverage, claim support, and citation match. Do not guess which system variant produced a candidate.": "逐项判断 A/B 报告的回答义务覆盖、Claim 支持和引用匹配；不要猜测候选由哪个系统版本生成。",
+    "Tasks": "任务",
+    "Packet SHA-256": "盲审包 SHA-256",
+    "Candidate report": "候选报告",
+    "Evidence supplied to this candidate": "候选使用的证据",
+    "Obligation coverage": "回答义务覆盖",
+    "Claim and citation review": "Claim 与引用审核",
+    "Reviewer notes": "评审备注",
+    "Record the concrete reason for omissions, mismatches, or ambiguity.": "记录遗漏、不匹配或歧义的具体原因。",
+    "Claim classifications incomplete": "Claim 分类尚未完成",
+    "Candidate classification complete": "本候选已完成",
+    "Previous": "上一个",
+    "Next": "下一个",
+    "View English original": "查看英文原文",
+    "View Chinese translation": "查看中文辅助翻译",
+    "Decision context": "决策背景",
+    "Open source": "打开来源",
+    "Counter-evidence acknowledged and reconciled": "已识别并处理反向证据",
+    "Claim support": "Claim 支持情况",
+    "Supports exact claim": "精确支持该 Claim",
+    "Supported": "有证据支持",
+    "Unsupported": "无证据支持",
+    "Citation match": "引用匹配",
+    "Mismatch": "不匹配",
+    "Decision-irrelevant claim": "与决策无关",
+    "Candidate ${": "候选 ${",
+    '" - Complete"': '" - 已完成"',
+    "Evidence:": "证据：",
+    "Draft does not match this human review packet.": "草稿与当前人工盲审包不匹配。",
+    "Unknown candidate": "未知候选",
+    "Draft imported.": "草稿已导入。",
+}
+
+
 _HTML_TEMPLATE = r"""<!doctype html>
-<html lang="en">
+<html lang="__HTML_LANG__">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -139,7 +214,14 @@ _HTML_TEMPLATE = r"""<!doctype html>
     .task-context { padding-bottom: 18px; border-bottom: 1px solid var(--line); }
     .task-context h2 { margin: 0 0 8px; font-size: 20px; line-height: 1.35; }
     .context { margin: 0; color: var(--muted); }
+    .review-purpose { margin: 0 0 8px; color: var(--accent); font-weight: 600; }
     .rubric-line { margin-top: 12px; padding: 10px 12px; background: var(--warning-soft); border-left: 3px solid var(--warning); }
+    .translation-note { margin-top: 10px; color: var(--muted); font-size: 12px; }
+    .review-guidance { margin-top: 12px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+    .review-guidance summary { cursor: pointer; font-weight: 700; }
+    .review-guidance ul { margin: 8px 0 0; padding-left: 20px; }
+    .review-guidance li + li { margin-top: 4px; }
+    .shortcut-label { margin: 10px 0 0; color: var(--warning); font-weight: 700; }
 
     .obligation-grid {
       display: grid;
@@ -256,6 +338,7 @@ _HTML_TEMPLATE = r"""<!doctype html>
     </div>
     <div class="header-actions">
       <div class="progress" id="progressText">0 / 20 candidates complete</div>
+      <button class="button __TRANSLATION_ONLY_CLASS__" id="languageButton" type="button">View English original</button>
       <button class="button" id="importButton" type="button">Import draft</button>
       <button class="button" id="draftButton" type="button">Download draft</button>
       <button class="button primary" id="exportButton" type="button" disabled>Export final</button>
@@ -273,8 +356,16 @@ _HTML_TEMPLATE = r"""<!doctype html>
     <main>
       <div class="task-context">
         <h2 id="question"></h2>
+        <p class="review-purpose">Review A/B reports for obligation coverage, claim support, and citation match. Do not guess which system variant produced a candidate.</p>
         <p class="context" id="context"></p>
         <div class="rubric-line" id="acceptance"></div>
+        <div class="translation-note __TRANSLATION_ONLY_CLASS__">中文内容为机器辅助翻译，不作为独立评分依据；如有歧义，请以英文原文为准。翻译模型：__TRANSLATOR_MODEL__。</div>
+        <details class="review-guidance" open>
+          <summary>Review criteria</summary>
+          <ul id="rubricList"></ul>
+          <div class="shortcut-label">Forbidden shortcuts</div>
+          <ul id="shortcutList"></ul>
+        </details>
         <div class="obligation-grid" id="obligationSummary"></div>
       </div>
 
@@ -322,17 +413,21 @@ _HTML_TEMPLATE = r"""<!doctype html>
   <script>
     const packet = __PACKET_JSON__;
     const packetSha256 = "__PACKET_SHA256__";
+    const locale = "__LOCALE__";
+    const translationMap = __TRANSLATION_JSON__;
     const storageKey = `deepresearch-review:${packetSha256}`;
     const candidateKeys = packet.tasks.flatMap(task => task.candidates.map(candidate => `${task.task_id}::${candidate.candidate_id}`));
     let annotations = loadLocal();
     let taskIndex = 0;
     let candidateIndex = 0;
+    let showOriginal = false;
 
     const byId = id => document.getElementById(id);
     const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"})[char]);
     const currentTask = () => packet.tasks[taskIndex];
     const currentCandidate = () => currentTask().candidates[candidateIndex];
     const currentKey = () => `${currentTask().task_id}::${currentCandidate().candidate_id}`;
+    const contentText = value => locale === "zh-CN" && !showOriginal ? (translationMap[value] || value) : value;
 
     function emptyAnnotation(task, candidate) {
       return {
@@ -401,30 +496,33 @@ _HTML_TEMPLATE = r"""<!doctype html>
       const task = currentTask();
       const candidate = currentCandidate();
       const annotation = getAnnotation(task, candidate);
-      byId("question").textContent = task.question;
-      byId("context").textContent = `Decision context: ${task.decision_context}`;
-      byId("acceptance").textContent = task.acceptance_notes.join(" ");
+      byId("question").textContent = contentText(task.question);
+      byId("context").textContent = `Decision context: ${contentText(task.decision_context)}`;
+      byId("acceptance").textContent = task.acceptance_notes.map(contentText).join(" ");
+      byId("rubricList").innerHTML = packet.rubric.map(item => `<li>${escapeHtml(contentText(item))}</li>`).join("");
+      byId("shortcutList").innerHTML = task.forbidden_shortcuts.map(item => `<li>${escapeHtml(contentText(item))}</li>`).join("");
       byId("obligationSummary").innerHTML = task.obligations.map(item => `
-        <div class="obligation"><span class="obligation-id">${escapeHtml(item.id)}</span>${escapeHtml(item.description)}</div>
+        <div class="obligation"><span class="obligation-id">${escapeHtml(item.id)}</span>${escapeHtml(contentText(item.description))}</div>
       `).join("");
       renderCandidateTabs(task);
-      byId("report").textContent = candidate.report;
+      byId("report").textContent = contentText(candidate.report);
       byId("evidenceList").innerHTML = candidate.evidence.map(item => `
         <div class="evidence-item">
-          <div class="evidence-head"><span class="evidence-id">${escapeHtml(item.id)}</span><span class="evidence-title">${escapeHtml(item.title)}</span><a class="source-link" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">Open source</a></div>
-          <p class="evidence-excerpt">${escapeHtml(item.excerpt)}</p>
+          <div class="evidence-head"><span class="evidence-id">${escapeHtml(item.id)}</span><span class="evidence-title">${escapeHtml(contentText(item.title))}</span><a class="source-link" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">Open source</a></div>
+          <p class="evidence-excerpt">${escapeHtml(contentText(item.excerpt))}</p>
         </div>
       `).join("");
       renderCoverage(task, annotation);
       renderClaims(candidate, annotation);
       byId("notes").value = annotation.notes.join("\n");
+      byId("languageButton").textContent = showOriginal ? "View Chinese translation" : "View English original";
       updateCandidateState();
       updateProgress();
     }
 
     function renderTaskList() {
       byId("taskList").innerHTML = packet.tasks.map((task, index) => `
-        <button class="task-button ${index === taskIndex ? "active" : ""}" type="button" data-task="${index}" title="${escapeHtml(task.question)}">
+        <button class="task-button ${index === taskIndex ? "active" : ""}" type="button" data-task="${index}" title="${escapeHtml(contentText(task.question))}">
           <span class="task-number">${String(index + 1).padStart(2, "0")}</span>
           <span class="task-name">${escapeHtml(task.task_id)}</span>
           <span class="task-status ${taskStatus(task)}" aria-label="${taskStatus(task)}"></span>
@@ -457,7 +555,7 @@ _HTML_TEMPLATE = r"""<!doctype html>
           <div class="check-row">
             <input type="checkbox" id="covered-${escapeHtml(obligation.id)}" data-covered="${escapeHtml(obligation.id)}" ${annotation.covered_obligation_ids.includes(obligation.id) ? "checked" : ""}>
             <div class="check-detail">
-              <label for="covered-${escapeHtml(obligation.id)}"><span class="check-id">${escapeHtml(obligation.id)}</span> ${escapeHtml(obligation.description)}</label>
+              <label for="covered-${escapeHtml(obligation.id)}"><span class="check-id">${escapeHtml(obligation.id)}</span> ${escapeHtml(contentText(obligation.description))}</label>
               ${hasConflict ? `<div class="conflict-note"><label><input type="checkbox" data-conflict="${escapeHtml(obligation.id)}" ${annotation.conflict_handled_obligation_ids.includes(obligation.id) ? "checked" : ""}> Counter-evidence acknowledged and reconciled</label></div>` : ""}
             </div>
           </div>
@@ -476,7 +574,7 @@ _HTML_TEMPLATE = r"""<!doctype html>
         return `
           <div class="claim-item ${complete ? "" : "incomplete"}" data-claim-card="${escapeHtml(claim.id)}">
             <div class="claim-head"><span class="claim-id">${escapeHtml(claim.id)}</span><span class="claim-evidence">Evidence: ${escapeHtml(claim.evidence_ids.join(", "))}</span></div>
-            <div class="claim-text">${escapeHtml(claim.text)}</div>
+            <div class="claim-text">${escapeHtml(contentText(claim.text))}</div>
             <div class="field-label">Claim support</div>
             <div class="choice-row">
               <label class="choice"><input type="radio" name="support-${escapeHtml(claim.id)}" data-support="${escapeHtml(claim.id)}" value="positive" ${support === "positive" ? "checked" : ""}> Supported</label>
@@ -557,6 +655,10 @@ _HTML_TEMPLATE = r"""<!doctype html>
     });
     byId("previousButton").addEventListener("click", () => move(-1));
     byId("nextButton").addEventListener("click", () => move(1));
+    byId("languageButton").addEventListener("click", () => {
+      showOriginal = !showOriginal;
+      render();
+    });
     byId("draftButton").addEventListener("click", () => download("review_annotations.draft.json"));
     byId("exportButton").addEventListener("click", () => download("review_annotations.final.json"));
     byId("importButton").addEventListener("click", () => byId("importFile").click());

@@ -32,6 +32,7 @@ B2 keeps B1's three provider calls and the same collector boundary, but turns th
 - `Citation` explicitly connects a report marker to evidence and claim IDs.
 - The collector has a small `EvidenceCollector` interface. The MVP implementation is a deterministic local corpus collector that ranks each query independently and fills top-k round-robin, so one obligation cannot consume every evidence slot. It avoids untracked network behavior in smoke tests.
 - Human review uses a static workspace generated from the blind packet only. Draft state stays in browser local storage or reviewer-exported JSON; Python validates a complete submission and records its hash before a separate command can read the answer key.
+- Optional reviewer translation is a packet-bound presentation layer. `ReviewTranslationBundle` records the source hash, exact source/translation pairs, provider/model, token/cost/latency trace, and exposes the untouched English source in the workspace. It never reads the answer key and is excluded from harness evaluation budgets.
 
 ## Extension boundaries, not implemented behavior
 
@@ -43,6 +44,7 @@ B2 keeps B1's three provider calls and the same collector boundary, but turns th
 | `RunState.trace` | append-only persisted events | budget controller and trace exporters |
 | claim ledger | atomic claims plus B2 obligation/evidence-debt links | entailment critic and repair queue |
 | benchmark contract | controlled pilot, batch aggregation, blinded semantic review | larger registered evaluation sets |
+| reviewer presentation | English source plus validated `zh-CN` reading aid | additional packet-bound locales |
 
 Do not add DAG fan-out, critic loops, or automatic re-planning until a saved bad case makes their decision boundary measurable.
 

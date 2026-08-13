@@ -11,6 +11,7 @@ from .experiment import validate_experiment_manifest
 from .pipeline import BaselineResearchPipeline, LocalCorpusCollector, ObligationEvidenceDebtPipeline, SearchWritePipeline
 from .providers import FakeProvider, provider_from_config
 from .review import prepare_blind_review, score_blind_review
+from .review_translation import translate_review_packet
 from .review_workspace import render_review_workspace, validate_review_submission_file
 
 
@@ -75,6 +76,14 @@ def main() -> int:
     render_review = subparsers.add_parser("render-review", help="Build a static human-review workspace from a blind packet.")
     render_review.add_argument("--packet", type=Path, required=True)
     render_review.add_argument("--output", type=Path, required=True)
+    render_review.add_argument("--locale", choices=("en", "zh-CN"), default="en")
+    render_review.add_argument("--translations", type=Path)
+    translate_review = subparsers.add_parser("translate-review", help="Build an auditable Chinese reading-aid bundle.")
+    translate_review.add_argument("--packet", type=Path, required=True)
+    translate_review.add_argument("--config", type=Path, required=True)
+    translate_review.add_argument("--output", type=Path, required=True)
+    translate_review.add_argument("--max-chunk-characters", type=int, default=6000)
+    translate_review.add_argument("--max-output-tokens", type=int, default=8192)
     validate_review = subparsers.add_parser("validate-review", help="Lock a complete review submission without reading the answer key.")
     validate_review.add_argument("--packet", type=Path, required=True)
     validate_review.add_argument("--annotations", type=Path, required=True)
@@ -147,8 +156,30 @@ def main() -> int:
             )
         return 0
     if args.command == "render-review":
-        output = render_review_workspace(packet_path=args.packet, output_path=args.output)
+        output = render_review_workspace(
+            packet_path=args.packet,
+            output_path=args.output,
+            locale=args.locale,
+            translations_path=args.translations,
+        )
         print(f"review_workspace={output}")
+        return 0
+    if args.command == "translate-review":
+        settings = HarnessConfig.model_validate_json(args.config.read_text(encoding="utf-8"))
+        provider = provider_from_config(settings)
+        bundle = translate_review_packet(
+            packet_path=args.packet,
+            output_path=args.output,
+            provider=provider,
+            max_chunk_characters=args.max_chunk_characters,
+            max_output_tokens=args.max_output_tokens,
+        )
+        print(
+            f"translations={args.output}\nlocale={bundle.locale}\nentries={len(bundle.entries)}\n"
+            f"provider={bundle.provider}\nmodel={bundle.model}\ncalls={len(bundle.trace)}\n"
+            f"tokens={bundle.total_usage.input_tokens + bundle.total_usage.output_tokens}\n"
+            f"estimated_cost_usd={bundle.total_usage.estimated_cost_usd:.8f}"
+        )
         return 0
     if args.command == "validate-review":
         try:

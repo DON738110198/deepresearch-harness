@@ -61,3 +61,14 @@ Two blinded 20-candidate packets are ready:
 - Cost packet SHA-256: `7573797756a18bcb13000459528706f86aaeceb4e9286eee6c1d4ed2f1668f09`
 
 Both packets were checked for variant-name and retrieval-query leakage. The next admissible evidence is completed blind human annotation, not another architecture feature.
+
+## Chinese reviewer workspaces
+
+On 2026-08-13, `deepseek-v4-flash` generated packet-bound Simplified Chinese reading aids for both blinded workspaces. These calls are reviewer support tooling and are excluded from both variants' experiment budgets and performance results.
+
+| Workspace | Entries | Calls | Tokens | Estimated cost | Traced latency | Bundle SHA-256 |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Token-matched | 156 | 6 | 17,826 | $0.00373646 | 55,343 ms | `bb0ba0d9cbae5b887571d1538e228de538d70072d5a20b05bf0f7a6e86c79c80` |
+| Cost-matched | 159 | 6 | 17,519 | $0.00365582 | 55,697 ms | `1b000f361687ae73171b7058b1a1fc4a521df2d5ec00b7b0194a5fe25aabe93e` |
+
+Every translated entry contained Chinese text, and citation marker preservation checks reported zero mismatches. The workspaces retain a one-click English-original view; the English text controls any ambiguous judgment.
