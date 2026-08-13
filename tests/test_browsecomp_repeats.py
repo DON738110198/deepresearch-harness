@@ -12,6 +12,11 @@ from deepresearch_harness.browsecomp_evaluation import (
     _prediction_set_sha256,
 )
 from deepresearch_harness.browsecomp_plus import normalized_text_file_sha256
+from deepresearch_harness.browsecomp_judge import (
+    aggregate_official_judge_results,
+    prepare_official_judge_batch,
+    validate_official_judge_batch,
+)
 from deepresearch_harness.browsecomp_repeats import aggregate_repeat_experiment
 from deepresearch_harness.pi_browsecomp import (
     PiSmokeItem,
@@ -23,6 +28,7 @@ from deepresearch_harness.pi_browsecomp import (
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "benchmarks" / "browsecomp_plus_v0" / "target_manifest.json"
 RETRIEVERS = ROOT / "benchmarks" / "browsecomp_plus_v0" / "retriever_candidates.json"
+EVALUATOR = ROOT / "benchmarks" / "browsecomp_plus_v0" / "official_evaluator.json"
 
 
 def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
@@ -100,6 +106,7 @@ def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
         "registered_at": "2026-08-13T00:00:00Z",
         "registration_status": "pre_generation",
         "target_manifest_sha256": target_hash,
+        "development_queries_sha256": "a" * 64,
         "expected_adapter_version": "pi-browsecomp-v6",
         "model": "deepseek-v4-flash",
         "control_policy": "answer_reserve_nonthinking_v0",
@@ -153,6 +160,55 @@ def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
         == comparison
     )
 
+    batch_dir = tmp_path / "runs" / "judge-batch"
+    batch = prepare_official_judge_batch(
+        repeat_experiment_path=manifest_path,
+        repeat_comparison_path=output_path,
+        target_manifest_path=TARGET,
+        official_evaluator_path=EVALUATOR,
+        output_dir=batch_dir,
+    )
+    assert batch.input_count == 12
+    assert batch.trial_count == 3
+    assert batch.queries_per_trial == 2
+    assert validate_official_judge_batch(batch_dir / "batch_manifest.json") == batch
+    staged_path = batch_dir / batch.items[0].staged_input_path
+    staged_bytes = staged_path.read_bytes()
+    staged_path.write_text("{}", encoding="utf-8")
+    with pytest.raises(ValueError, match="staged input hash mismatch"):
+        validate_official_judge_batch(batch_dir / "batch_manifest.json")
+    staged_path.write_bytes(staged_bytes)
+
+    registration_path, execution_result_path = _write_official_judge_execution(
+        batch_dir
+    )
+    judge_comparison_path = tmp_path / "runs" / "official-comparison.json"
+    judge_comparison = aggregate_official_judge_results(
+        batch_manifest_path=batch_dir / "batch_manifest.json",
+        execution_registration_path=registration_path,
+        execution_result_path=execution_result_path,
+        output_path=judge_comparison_path,
+    )
+    assert judge_comparison.status == "official_evaluator_development_slice"
+    assert judge_comparison.evaluations == 12
+    assert judge_comparison.baseline.trial_accuracy_percent.mean == 50.0
+    assert judge_comparison.candidate.trial_accuracy_percent.mean == 100.0
+    assert (
+        judge_comparison.paired.candidate_wins,
+        judge_comparison.paired.baseline_wins,
+        judge_comparison.paired.ties,
+    ) == (3, 0, 3)
+    assert (
+        aggregate_official_judge_results(
+            batch_manifest_path=batch_dir / "batch_manifest.json",
+            execution_registration_path=registration_path,
+            execution_result_path=execution_result_path,
+            output_path=judge_comparison_path,
+            validate_existing=True,
+        )
+        == judge_comparison
+    )
+
     bad_manifest = {**manifest, "pairs": manifest["pairs"][:2]}
     bad_path = tmp_path / "runs" / "bad_manifest.json"
     bad_path.write_text(json.dumps(bad_manifest), encoding="utf-8")
@@ -161,6 +217,17 @@ def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
             manifest_path=bad_path,
             target_manifest_path=TARGET,
             output_path=tmp_path / "runs" / "bad_comparison.json",
+        )
+
+    unbound_queries = {**manifest}
+    unbound_queries.pop("development_queries_sha256")
+    unbound_path = tmp_path / "runs" / "unbound_queries_manifest.json"
+    unbound_path.write_text(json.dumps(unbound_queries), encoding="utf-8")
+    with pytest.raises(ValueError, match="bind the query artifact hash"):
+        aggregate_repeat_experiment(
+            manifest_path=unbound_path,
+            target_manifest_path=TARGET,
+            output_path=tmp_path / "runs" / "unbound_queries_comparison.json",
         )
 
     non_alternating = json.loads(json.dumps(manifest))
@@ -183,6 +250,40 @@ def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
             manifest_path=manifest_path,
             target_manifest_path=TARGET,
             output_path=output_path,
+            validate_existing=True,
+        )
+
+    registration_bytes = registration_path.read_bytes()
+    execution_result_bytes = execution_result_path.read_bytes()
+    changed_registration = json.loads(registration_bytes)
+    max_tokens_index = changed_registration["command"].index("--max_output_tokens")
+    changed_registration["command"][max_tokens_index + 1] = "2048"
+    registration_path.write_text(json.dumps(changed_registration), encoding="utf-8")
+    changed_execution = json.loads(execution_result_bytes)
+    changed_execution["registration_sha256"] = sha256(
+        registration_path.read_bytes()
+    ).hexdigest()
+    execution_result_path.write_text(json.dumps(changed_execution), encoding="utf-8")
+    with pytest.raises(ValueError, match="inference contract"):
+        aggregate_official_judge_results(
+            batch_manifest_path=batch_dir / "batch_manifest.json",
+            execution_registration_path=registration_path,
+            execution_result_path=execution_result_path,
+            output_path=judge_comparison_path,
+            validate_existing=True,
+        )
+    registration_path.write_bytes(registration_bytes)
+    execution_result_path.write_bytes(execution_result_bytes)
+
+    execution = json.loads(execution_result_path.read_text(encoding="utf-8"))
+    first_result_path = execution_result_path.parent / execution["output_files"][0]["path"]
+    first_result_path.write_text("{}", encoding="utf-8")
+    with pytest.raises(ValueError, match="output hash mismatch"):
+        aggregate_official_judge_results(
+            batch_manifest_path=batch_dir / "batch_manifest.json",
+            execution_registration_path=registration_path,
+            execution_result_path=execution_result_path,
+            output_path=judge_comparison_path,
             validate_existing=True,
         )
 
@@ -422,3 +523,170 @@ def _v6_run_payload(
         ],
         "messages": [],
     }
+
+
+def _write_official_judge_execution(batch_dir: Path) -> tuple[Path, Path]:
+    batch_manifest_path = batch_dir / "batch_manifest.json"
+    batch_bytes = batch_manifest_path.read_bytes()
+    batch = json.loads(batch_bytes)
+    execution_dir = batch_dir.parent / "judge-execution"
+    eval_dir = execution_dir / "evals" / "batch" / "inputs"
+    eval_dir.mkdir(parents=True)
+    registration = {
+        "schema_version": "browsecomp-plus-official-judge-execution-v0",
+        "registered_at": "2026-08-14T00:00:00Z",
+        "status": "registered_pre_inference",
+        "batch_manifest_sha256": sha256(batch_bytes).hexdigest(),
+        "official_evaluator_manifest_sha256": batch[
+            "official_evaluator_manifest_sha256"
+        ],
+        "launcher_path": "audit/run_browsecomp_plus_official_judge.py",
+        "launcher_sha256": "e" * 64,
+        "asset_verification_path": "audit/judge_asset_verification.json",
+        "asset_verification_sha256": "f" * 64,
+        "judge_assets_manifest_sha256": batch["judge_assets_manifest_sha256"],
+        "repository_commit": batch["repository_commit"],
+        "repository_clean": True,
+        "evaluator_script_sha256": batch["evaluator_script_sha256"],
+        "uv_lock_sha256": batch["uv_lock_sha256"],
+        "judge_model": batch["judge_model"],
+        "judge_revision": batch["judge_revision"],
+        "model_dir": "/fixture/Qwen3-32B",
+        "runtime": {
+            "python": "3.12.0",
+            "torch": "2.7.0+cu126",
+            "transformers": "4.53.2",
+            "vllm": "0.9.0.1",
+            "cuda_available": True,
+            "cuda_device_count": 2,
+        },
+        "gpu_ids": [0, 1],
+        "gpu_checks": [
+            {
+                "captured_at": f"2026-08-14T00:00:0{index}Z",
+                "devices": [
+                    {
+                        "index": gpu_id,
+                        "uuid": f"GPU-{gpu_id}",
+                        "memory_used_mib": 0,
+                        "memory_total_mib": 49140,
+                        "utilization_percent": 0,
+                        "compute_pids": [],
+                    }
+                    for gpu_id in (0, 1)
+                ],
+            }
+            for index in range(3)
+        ],
+        "inference": batch["inference"],
+        "batch_size": batch["input_count"],
+        "tensor_parallel_size": 2,
+        "command": [
+            "python",
+            "/fixture/official/scripts_evaluation/evaluate_run.py",
+            "--input_dir",
+            "/fixture/batch/inputs",
+            "--ground_truth",
+            "/fixture/batch/ground_truth/development_ground_truth.jsonl",
+            "--eval_dir",
+            "/fixture/execution/evals",
+            "--model",
+            "/fixture/Qwen3-32B",
+            "--temperature",
+            "0.7",
+            "--top_p",
+            "0.8",
+            "--top_k",
+            "20",
+            "--max_output_tokens",
+            "4096",
+            "--batch_size",
+            str(batch["input_count"]),
+            "--tensor_parallel_size",
+            "2",
+            "--qrel_evidence",
+            "/fixture/official/topics-qrels/qrel_evidence.txt",
+        ],
+    }
+    registration_path = execution_dir / "execution_registration.json"
+    verification_path = execution_dir / registration["asset_verification_path"]
+    verification_path.parent.mkdir(parents=True)
+    launcher_path = execution_dir / registration["launcher_path"]
+    launcher_path.write_text("fixture launcher\n", encoding="utf-8")
+    registration["launcher_sha256"] = sha256(launcher_path.read_bytes()).hexdigest()
+    verification_payload = {
+        "passed": True,
+        "matched": 24,
+        "file_count": 24,
+        "model": batch["judge_model"],
+        "revision": batch["judge_revision"],
+        "manifest_sha256": batch["judge_assets_manifest_sha256"],
+    }
+    verification_path.write_text(json.dumps(verification_payload), encoding="utf-8")
+    registration["asset_verification_sha256"] = sha256(
+        verification_path.read_bytes()
+    ).hexdigest()
+    registration_path.write_text(json.dumps(registration), encoding="utf-8")
+
+    output_files = []
+    for item in batch["items"]:
+        source = json.loads(
+            (batch_dir / item["staged_input_path"]).read_text(encoding="utf-8")
+        )
+        response = source["result"][-1]["output"]
+        correct = item["variant"] == "candidate" or item["query_id"] == "q-2"
+        payload = {
+            "query_id": item["query_id"],
+            "question": f"fixture question {item['query_id']}",
+            "response": response,
+            "correct_answer": "right",
+            "is_completed": True,
+            "judge_response": (
+                "extracted_final_answer: fixture\nreasoning: fixture\n"
+                f"correct: {'yes' if correct else 'no'}\nconfidence: 80"
+            ),
+            "judge_result": {
+                "extracted_final_answer": "fixture",
+                "reasoning": "fixture",
+                "correct": correct,
+                "confidence": 80.0,
+                "parse_error": False,
+            },
+            "model_info": {
+                "judge_model": registration["model_dir"],
+                "max_output_tokens": 4096,
+            },
+        }
+        result_path = eval_dir / f"{item['batch_id']}_eval.json"
+        result_path.write_text(json.dumps(payload), encoding="utf-8")
+        output_files.append(
+            {
+                "path": result_path.relative_to(execution_dir).as_posix(),
+                "sha256": sha256(result_path.read_bytes()).hexdigest(),
+            }
+        )
+    stdout_path = execution_dir / "evaluator.stdout.log"
+    stderr_path = execution_dir / "evaluator.stderr.log"
+    stdout_path.write_text("fixture success\n", encoding="utf-8")
+    stderr_path.write_text("", encoding="utf-8")
+    execution_result = {
+        "schema_version": "browsecomp-plus-official-judge-execution-result-v0",
+        "started_at": "2026-08-14T00:01:00Z",
+        "completed_at": "2026-08-14T00:02:00Z",
+        "status": "succeeded",
+        "exit_code": 0,
+        "registration_sha256": sha256(registration_path.read_bytes()).hexdigest(),
+        "batch_manifest_sha256": sha256(batch_bytes).hexdigest(),
+        "stdout": {
+            "path": stdout_path.relative_to(execution_dir).as_posix(),
+            "sha256": sha256(stdout_path.read_bytes()).hexdigest(),
+        },
+        "stderr": {
+            "path": stderr_path.relative_to(execution_dir).as_posix(),
+            "sha256": sha256(stderr_path.read_bytes()).hexdigest(),
+        },
+        "output_files": output_files,
+    }
+    execution_result_path = execution_dir / "execution_result.json"
+    execution_result_path.write_text(json.dumps(execution_result), encoding="utf-8")
+    return registration_path, execution_result_path

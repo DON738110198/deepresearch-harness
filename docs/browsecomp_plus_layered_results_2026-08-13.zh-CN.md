@@ -2,9 +2,9 @@
 
 ## 结论边界
 
-当前结果来自 5 道 development 题，只用于机制诊断，不是官方准确率，也不能用于声称排行榜名次。模型参数始终冻结；变化来自检索器、推理阶段调度、提示和预算控制，不能表述为模型能力提升。
+当前结果来自 5 道 development 题，只用于机制门槛，不能代表 175 题 development、655 题 sealed holdout 或排行榜名次。模型参数始终冻结；变化来自检索器、推理阶段调度、提示和预算控制，不能表述为模型能力提升。
 
-官方 Qwen3-32B Judge 尚未运行，状态为 `planned_not_run`。本页的 normalized exact match 是刻意严格的字符串指标，会把带单位、解释或等价改写的答案判错。
+固定 revision 的官方 Qwen3-32B evaluator 已对三轮共 30 份冻结输出完成评分，零 parse failure。本页会把这个结果明确称为“5 题 official-evaluator development slice”，而不是完整 benchmark accuracy。normalized exact match 仍是刻意严格的字符串诊断，会把带单位、解释或等价改写的答案判错。
 
 ## 先定位问题
 
@@ -27,7 +27,7 @@
 | 8k high explore + 2k non-thinking compile | BM25 | 5 | 4/5 | 1/5 | 40.00% | 40.00% | 70 | 43,120 | 0.06867 | 通过格式门槛，形成当前控制基线 |
 | 同一控制策略 | Qwen3-Embedding-0.6B | 5 | 5/5 | 1/5 | 54.92% | 60.00% | 31 | 28,854 | 0.02690 | 修正 snippet 合同后的可比运行 |
 
-稠密检索输出中，另外两题与参考答案语义一致，但分别多了括号说明或单位，因此当前运行按语义推断约为 3/5；在 Qwen3-32B 实际给出判定前，这不能写成官方 60% 准确率。
+稠密检索输出中，另外两题与参考答案语义一致但分别多了括号说明或单位。后续官方 evaluator 的三轮 dense 分数为 40%、60%、80%，说明单次“约 3/5”的人工推断不能替代重复评测。
 
 更早一次 dense 运行得到 2/5 strict exact、77.14% evidence recall，并可能有 4/5 语义正确，但当时短 snippet 会被 tokenizer 重新 decode，而 BM25 短 snippet 保留原文。这个差异很小，却破坏了“完全相同 snippet 合同”，所以该运行保留为诊断、从主表排除。修正后重跑的差异同时提醒我们：DeepSeek thinking mode 不支持 temperature/top-p 控制，接口也没有 seed，单次运行不能代表可靠性。
 
@@ -68,7 +68,58 @@ preflight、恢复与聚合代码，没有改动生成 prompt、adapter、模型
 检索器。尽管如此，它的 manifest 必须诚实标为
 `reconstructed_after_interruption`，因此本结果仍是探索性诊断，不是预注册
 确认性实验。下一次 25 题运行必须在第一次 API 调用前写好完整 manifest。
-官方 Qwen3-32B Judge 仍未运行，46.67% 不能写成官方 accuracy。
+46.67% 仍只是 strict exact；官方 evaluator 的对应重复结果单列如下，二者不能混报。
+
+## 官方 evaluator 五题门槛
+
+冻结 Qwen3-32B revision `9216db5781bf21249d130ec9da846c4624c16137`、
+upstream evaluator、ground truth、30 份预测和 decoding 参数后，三轮结果为：
+
+| trial | 执行顺序 | BM25 | Dense |
+| --- | --- | ---: | ---: |
+| trial-01 | baseline first | 20% | 40% |
+| trial-02 | candidate first | 20% | 60% |
+| trial-03 | baseline first | 20% | 80% |
+| mean +/- sample std |  | 20.00% +/- 0.00 | 60.00% +/- 20.00 |
+
+30 个 query-trial 判断全部解析成功；15 个配对观察中 dense 为 7 胜、1 负、
+7 平。execution registration、execution result 和本地 comparison 的 SHA-256
+分别为 `ef65a0f8687f3f54bb81d9061da4dd525a41c438c907ea237493f5ec50d87f1a`、
+`c211d2f6eea0f14506c4184d154d17d3e1171f20eb8ade3cb486b525a0238388` 和
+`af281142b924778851d17ede5eae18d7fd4f49b26885077b1cdcc4da7308e7ef`。
+逐题运行产物继续保存在 ignored `runs/`，仓库文档只记录稳定哈希和聚合结论，
+不提交 benchmark 派生 payload。
+
+第一次执行在 NCCL communicator 初始化处约 10 分钟无进展，未进入权重加载、
+未生成任何判断，随后只终止本次登记的进程组并保留失败目录。重试显式记录
+`NCCL_P2P_DISABLE=1`，通过 shared-memory transport 完成；这只改变运行时通信
+路径，不改变模型、预测、官方脚本或 decoding。成功执行耗时约 13.5 分钟，
+其中 471.9 秒用于从共享盘加载权重。该失败与修复属于基础设施诊断，不是可调
+分数的 harness 创新。
+
+这仍然只重复使用 5 道固定题，不能把 30 个判断当成 30 道独立题，也不能据此
+声称 60% 的完整 benchmark accuracy 或排行榜位置。它完成的是进入 25 题扩展
+实验所需的门槛。
+
+## 25 题配对扩展：余额中断，不报中间分数
+
+`pre_generation` 的三轮 BM25/dense 交替网格共有 150 个 query-variant
+观测。当前五个 variant 已完整结束，最后一个 dense variant 完成 20/25 后，
+DeepSeek 返回 `402 Insufficient Balance`：一条失败记录保留了中断前的部分
+Token/费用，另外四条在调用开始即失败。当前合计 145 succeeded、5 failed，
+2,259 次搜索、1,132,443 output Token、46,839,467 total Token，已记录的
+DeepSeek API 费用为 2.098859336 USD。
+
+这些只是运行进度和资源账本，不是 25 题效果结果。六个 variant 尚未全部冻结，
+所以不计算、不挑选也不报告任何中间 accuracy、recall 或胜负。中断 summary 的
+SHA-256 为 `6c3d88b1673a26bf29423916f7a4485a0048a3cd721f0183734a3162af8208f2`。
+
+余额恢复后，同一个 manifest 的 `-Resume` 只会重试这五条 `failed` 记录：
+先校验当前 request/run/prediction 与既有 attempt 链，再归档被替代的失败尝试和
+source summary。失败尝试消耗的 Token、费用、搜索和延迟继续计入累计预算；
+已成功的 145 条不会重跑。这个恢复规则是在观察到 402 后新增的运维修正，因此
+最终结果必须标注为“预注册生成网格 + 事后披露的失败恢复规则”，不能把它写成
+完全未受中断影响的确认性实验。
 
 ## Counterfactual Replay
 
@@ -146,6 +197,13 @@ preflight、恢复与聚合代码，没有改动生成 prompt、adapter、模型
 - official Judge 资产校验结果：24/24 通过；审计文件 SHA-256 为 `f919e78fe5e8346aa84432616cbbec8bc32588387eebd18ce7d893c919215719`
 - upstream evaluator SHA-256：`1a21233937c377ab6323c98ff9af67742756a57fbacab4ebf9bc30852eae530a`
 - official Judge `uv.lock` SHA-256：`45d3e6d00719dbf732160b25e3419ed4599121e5d832723357ff2fea01477c43`
+- official evaluator manifest SHA-256：`6a011f90894c1222de81654ffafe16cf266d52f74a9f93e619f40580afa8faf1`
+- self-contained Judge batch manifest SHA-256：`2e924c1322a33225cee59d194c0515ada41e8db0ada5c6997700d11db373220c`
+- 30 份 Judge 输入的 canonical set SHA-256：`7607a6fe4548c9e4420ca0270ee4ecb3d4437d050ecc773e043a154e009b92f0`
+- 25 题 question-only artifact 内容 SHA-256：`e62a37c48e1482fb39771d9366e3c6b1cefb33624e1955dc014855f49c9669ed`
+- 25 题 artifact normalized file SHA-256：`d3925f67fcce34b6e9bb3fec86ff6560afdfedf82ebcf2b12480436e69d3b923`
+- 25 题 corrected `pre_generation` manifest raw SHA-256：`b9833b69cd19672b83ad0a172d2382efd5a0981e207412494ec25a889f998fa2`
+- 25 题 partial final-variant summary SHA-256：`6c3d88b1673a26bf29423916f7a4485a0048a3cd721f0183734a3162af8208f2`
 - dense model revision：`97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3`
 - index dataset revision：`b3f37f70c33829eb09d04784a54277a31871fd63`
 
@@ -153,17 +211,34 @@ preflight、恢复与聚合代码，没有改动生成 prompt、adapter、模型
 
 ## 下一阶段与验收标准
 
-1. **先跑官方 Judge**：使用 pinned Qwen3-32B revision 和固定 decoding，给三轮共 6 组冻结预测打分。验收：30/30 有逐题原始结果、零 parse failure，并聚合 official accuracy 的均值、标准差和 paired win/loss；5 题仍只作管线门槛。
-2. **冻结 25 题开发切片**：不再针对 `1005` 调 prompt。第一次生成前写入 `pre_generation` manifest，运行相同 DeepSeek V4 Flash、phase policy 和 10k 预算的 BM25/dense paired ablation。验收：官方 accuracy、recall、search calls、Token、费用和延迟全部齐全。
+1. **已通过官方 Judge 门槛**：pinned Qwen3-32B 对 30/30 份冻结输出完成评分，零 parse failure；结果只标记为 5 题 development slice。
+2. **25 题开发切片等待余额恢复**：不再针对 `1005` 调 prompt。第一次生成前已写入 `pre_generation` manifest；当前五个 variant 完成，最后一个为 20 succeeded/5 failed。恢复后只补失败项。验收：六个 variant 全部成功、官方 accuracy、recall、search calls、累计 Token、累计费用和延迟齐全，且披露事后恢复规则。
 3. **检索层晋升门槛**：dense 相对 BM25 的 evidence recall 至少 +10 pp，且官方 accuracy 不下降；否则回退，不堆 reranker。
 4. **再诊断 query 编译**：只有 25 题中至少 10 个失败属于“相关文档未召回”，才开发 Constraint Portfolio v1。先 query-only replay，证据召回提升后再付费端到端。
 5. **175 题 development**：冻结候选后运行完整开发集和官方 Judge，形成可信区间与 bad-case 分簇。
 6. **655 题 sealed holdout**：只在机制、阈值和预算全部预注册后打开一次。DeepSeek V4 Pro 作为独立模型轨道，不与 Flash 混报。
 7. **排行榜目标**：先越过冻结快照的 top-20 门槛 63.86%，再挑战 top-10 门槛 78.41%。达到阈值仍需同时公开同模型基线、费用、延迟和失败样本。
 
+第 2 步的 25 题问题文件和三轮 BM25/dense 交替执行 manifest 已于
+2026-08-14 用 `-RegisterOnly` 冻结，状态为 `pre_generation`。第一次草稿只绑定了文件路径，我们在启动前识别出
+“同路径替换题目文件”这一协议漏洞，因此将其以 0 次调用状态 supersede；
+corrected v2 同时绑定 normalized file SHA-256。相同参数 resume 保持 manifest
+哈希不变，改用 5 题文件则在 provider call 前被拒绝。5 题官方 Judge 门槛通过
+后，25 题付费运行已经按原 manifest 启动。运行在第六个 variant 的 20/25 处因
+API 余额不足暂停；完成并重新聚合前不报告中间分数。
+
 截至 2026-08-14，官方仓库、锁定依赖、Qwen3-32B 权重、30 份冻结输入和
 development ground truth 已在远端准备完成；通过镜像取得的 17 个权重分片及
 7 个配置/索引/tokenizer 文件已经逐字节匹配 pinned Hugging Face revision。
-当前最近的阻塞只剩官方 Judge 所需 GPU：它需要两张空闲 48 GiB GPU，而最新
-检查时远端 8 张卡都有其他任务，因此没有抢占或停止任何他人进程。官方
-accuracy 仍为 `planned_not_run`。
+两张 48 GiB GPU 空闲后，启动器在 GPU 4/5 上完成三次连续空闲检查并运行成功；
+没有抢占或停止任何他人进程。当前可报告的是 5 题 official-evaluator slice，
+不是完整 benchmark accuracy。
+
+Judge 启动边界已不再依赖手工拼命令：自包含 batch 会绑定每个
+`trial -> variant -> query` 的预测、ground truth、repeat/evaluator/权重清单；
+启动器只接受 clean upstream commit、固定 lockfile、24/24 资产校验和三次连续
+空闲检查均通过的两张 GPU。我们已在真实远端对 GPU 0/1 做过占用失败路径验证：
+检测到占用后在创建 execution 目录前退出，因此没有残留能被误认为评分结果的
+半成品。GPU 4/5 上的第一次正式执行又暴露 NCCL P2P 初始化挂起，审计后的
+transport-only override 修复了运行时问题；第二次执行完整产出 30 个结果并通过
+本地哈希聚合。

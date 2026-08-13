@@ -28,6 +28,7 @@ from .pi_browsecomp import (
     OfficialRunExportManifest,
     PiSmokeItem,
     PiSmokeSummary,
+    validate_pi_attempt_archives,
 )
 
 
@@ -58,6 +59,9 @@ class RepeatExperimentManifest(StrictContract):
         "pre_generation", "reconstructed_after_interruption"
     ]
     target_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    development_queries_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
     expected_adapter_version: Literal["pi-browsecomp-v6"] = "pi-browsecomp-v6"
     model: Literal["deepseek-v4-flash", "deepseek-v4-pro"]
     control_policy: Literal["answer_reserve_nonthinking_v0"]
@@ -69,6 +73,11 @@ class RepeatExperimentManifest(StrictContract):
 
     @model_validator(mode="after")
     def pairs_are_independent_and_unique(self) -> "RepeatExperimentManifest":
+        if (
+            self.registration_status == "pre_generation"
+            and self.development_queries_sha256 is None
+        ):
+            raise ValueError("pre-generation repeats must bind the query artifact hash")
         if len(self.pairs) < self.minimum_trials:
             raise ValueError("repeat manifest does not meet its minimum trial count")
         if self.candidate_retriever_id == self.baseline_retriever_id:
@@ -192,6 +201,9 @@ class RepeatComparisonSummary(StrictContract):
     ]
     experiment_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     target_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    development_queries_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
     adapter_version: Literal["pi-browsecomp-v6"] = "pi-browsecomp-v6"
     model: Literal["deepseek-v4-flash", "deepseek-v4-pro"]
     control_policy: Literal["answer_reserve_nonthinking_v0"]
@@ -275,6 +287,9 @@ def aggregate_repeat_experiment(
             expected_retriever_id=manifest.baseline_retriever_id,
             expected_retriever_manifest_sha256=None,
             expected_target_manifest_sha256=target_hash,
+            expected_development_queries_sha256=(
+                manifest.development_queries_sha256
+            ),
         )
         candidate = _load_variant(
             source=pair.candidate,
@@ -287,6 +302,9 @@ def aggregate_repeat_experiment(
                 manifest.candidate_retriever_manifest_sha256
             ),
             expected_target_manifest_sha256=target_hash,
+            expected_development_queries_sha256=(
+                manifest.development_queries_sha256
+            ),
         )
         query_ids = tuple(sorted(baseline.observations))
         if query_ids != tuple(sorted(candidate.observations)):
@@ -349,6 +367,7 @@ def aggregate_repeat_experiment(
         experiment_manifest_sha256=normalized_text_file_sha256(manifest_path),
         registration_status=manifest.registration_status,
         target_manifest_sha256=target_hash,
+        development_queries_sha256=manifest.development_queries_sha256,
         model=manifest.model,
         control_policy=manifest.control_policy,
         trial_count=len(manifest.pairs),
@@ -387,6 +406,7 @@ def _load_variant(
     expected_retriever_id: str,
     expected_retriever_manifest_sha256: str | None,
     expected_target_manifest_sha256: str,
+    expected_development_queries_sha256: str | None,
 ) -> _LoadedVariant:
     summary_path = _resolve_runs_path(source.summary_path, repository_root)
     gold_slice_path = _resolve_runs_path(source.gold_slice_path, repository_root)
@@ -414,6 +434,12 @@ def _load_variant(
         raise ValueError("gold slice is not bound to the frozen prediction set")
     if summary.target_manifest_sha256 != expected_target_manifest_sha256:
         raise ValueError("repeat summary targets a different benchmark")
+    if (
+        expected_development_queries_sha256 is not None
+        and summary.development_queries_sha256
+        != expected_development_queries_sha256
+    ):
+        raise ValueError("repeat summary changes the frozen query artifact")
     if gold.target_manifest_sha256 != expected_target_manifest_sha256:
         raise ValueError("repeat gold slice targets a different benchmark")
     if summary.model != expected_model or summary.control_policy != expected_control_policy:
@@ -443,7 +469,9 @@ def _load_variant(
     prompt_hashes: dict[str, str] = {}
     run_ids: set[str] = set()
     for item in summary.items:
-        run_path = summary_path.parent / _safe_id(item.query_id) / "run.json"
+        query_root = summary_path.parent / _safe_id(item.query_id)
+        validate_pi_attempt_archives(query_root=query_root, item=item)
+        run_path = query_root / "run.json"
         run_bytes = run_path.read_bytes()
         if item.run_sha256 != sha256(run_bytes).hexdigest():
             raise ValueError(f"repeat run hash mismatch for query {item.query_id}")

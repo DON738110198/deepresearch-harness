@@ -208,6 +208,8 @@ class OfficialEvaluatorManifest(StrictContract):
     target_manifest_sha256: str = Field(pattern=SHA256_PATTERN)
     repository_commit: str = Field(pattern=SHA40_PATTERN)
     evaluator_script: Literal["scripts_evaluation/evaluate_run.py"]
+    evaluator_script_sha256: str = Field(pattern=SHA256_PATTERN)
+    uv_lock_sha256: str = Field(pattern=SHA256_PATTERN)
     judge_assets_manifest: Literal["official_judge_assets.json"]
     judge_assets_sha256: str = Field(pattern=SHA256_PATTERN)
     judge: DatasetPin

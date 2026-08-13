@@ -4,6 +4,8 @@
   "target_manifest_sha256": "dad4e291d9bf1223cd2e4e56067948883736b6a8732d29b57cc06a03d1b140c0",
   "repository_commit": "046949032b0328319cc9a02663a759ec601d9402",
   "evaluator_script": "scripts_evaluation/evaluate_run.py",
+  "evaluator_script_sha256": "1a21233937c377ab6323c98ff9af67742756a57fbacab4ebf9bc30852eae530a",
+  "uv_lock_sha256": "45d3e6d00719dbf732160b25e3419ed4599121e5d832723357ff2fea01477c43",
   "judge_assets_manifest": "official_judge_assets.json",
   "judge_assets_sha256": "0308e17cc6d113fb1871ea6c4c35590575d4ebc924abb80df0a6a443b79bb9a3",
   "judge": {

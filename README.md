@@ -2,7 +2,7 @@
 
 A small, auditable baseline for improving end-to-end Deep Research task execution **without changing model weights**. It calls an OpenAI-compatible chat-completions API and evaluates harness behavior, not intrinsic model capability.
 
-> **Current direction (2026-08-13):** full manual blind annotation is paused
+> **Current direction (2026-08-14):** full manual blind annotation is paused
 > because it imposed more reviewer work than the synthetic pilot could justify.
 > The workspaces remain optional audit artifacts. BrowseComp-Plus plus its
 > version-pinned official judge is now the primary experimental path; the live
@@ -13,8 +13,9 @@ A small, auditable baseline for improving end-to-end Deep Research task executio
 > failure-driven stack across retrieval, evidence control, phase-adaptive
 > reasoning, and answer compilation. BrowseComp-Plus is the primary benchmark,
 > with frozen leaderboard thresholds, leakage controls, and matched-budget gates.
-> A strict five-query diagnostic now exists, but official accuracy and every
-> rank claim remain `planned`. See
+> A pinned Qwen3-32B official-evaluator run now exists for the five-query
+> development gate, but a 25/175-query result and every rank claim remain
+> `planned`. See
 > [`docs/research_goal_and_benchmark_strategy.md`](docs/research_goal_and_benchmark_strategy.md)
 > and [`docs/browsecomp_plus_layered_results_2026-08-13.zh-CN.md`](docs/browsecomp_plus_layered_results_2026-08-13.zh-CN.md).
 
@@ -85,9 +86,14 @@ The official-judge preflight is now reproducible on the configured A6000 host:
 the exact upstream repository and lockfile environment are installed, and all
 24 required Qwen3-32B files (17 weight shards plus model/tokenizer metadata)
 matched the pinned revision byte for byte. The 30 frozen repeat inputs and
-prediction-bound development ground truth are staged. Judge inference is still
-`planned_not_run` because no two 48 GiB GPUs are currently idle; no other
-user's process was preempted.
+prediction-bound development ground truth were staged and evaluated. Across the
+three five-query trials, the official evaluator scored BM25 at 20.00% +/- 0.00
+and dense at 60.00% +/- 20.00; dense won/lost/tied 7/1/7 paired judgments.
+All 30 raw judgments were retained with zero parse failures. This is an official
+evaluator result on five fixed development questions, not a 30-question sample,
+full-benchmark accuracy, submission, or leaderboard result. Runtime artifacts
+remain below ignored `runs/`; the stable hashes are recorded in the experiment
+log without publishing benchmark-derived payloads.
 
 Run an alternating-order, resumable three-trial comparison with:
 
@@ -97,11 +103,34 @@ Run an alternating-order, resumable three-trial comparison with:
   -RunLabel <new-run-label>
 ```
 
-The script writes the experiment manifest before generation, refuses partial
-or mismatched artifacts on resume, exports every frozen answer to the official
-input shape, and aggregates trial means, sample standard deviations, and paired
-query outcomes. `-Resume` reuses only validated frozen summaries and never
-silently restarts an incomplete variant.
+The script writes the experiment manifest before generation, refuses mismatched
+artifacts on resume, exports every frozen answer to the official input shape,
+and aggregates trial means, sample standard deviations, and paired query
+outcomes. `-Resume` reuses successful queries and retries only records whose
+latest status is `failed`. Before retrying, it hash-validates the live request,
+run, prediction, controls, and any earlier attempt chain. Superseded attempts
+and their source summary are archived; their Token, cost, search, and latency
+remain in cumulative experiment totals rather than disappearing.
+Use `-RegisterOnly` to freeze a larger-slice manifest without making a provider
+call; later execution must pass `-Resume` with the same model, query artifact,
+trial count, and run label or the script rejects the change.
+The next 25-query Flash comparison was registered this way before generation.
+Its paid execution began only after the five-query official-Judge gate passed.
+Five of six variants completed; the final dense variant retained 20 successful
+queries and five `402 Insufficient Balance` failures. Across the partial run,
+145/150 query executions succeeded and traced DeepSeek cost is USD 2.098859336.
+No 25-query score is reported from this incomplete grid. After provider balance
+is restored, the exact `-Resume` command retries only those five failures under
+the frozen generation controls and then regenerates hash-bound diagnostics.
+
+```powershell
+& .\scripts\run_browsecomp_plus_repeats.ps1 `
+  -Trials 3 `
+  -RunLabel flash-v6-dense25-paired3-preregistered-v2-20260814 `
+  -Queries runs\browsecomp_plus_v0\dev_queries_25.json `
+  -Model deepseek-v4-flash `
+  -Resume
+```
 
 After the ignored Java, Python, and retrieval artifacts are present,
 `scripts/run_browsecomp_plus_smoke.ps1` starts and stops the loopback search
@@ -150,6 +179,41 @@ python scripts\verify_browsecomp_plus_judge_assets.py `
 The verifier checks all 17 weight shards plus config, index, and tokenizer
 files using the upstream LFS SHA-256 or Git blob SHA-1. A mirror label alone is
 not accepted as evidence that the official judge revision was reproduced.
+
+Build a self-contained official-judge batch only from the already validated
+repeat experiment:
+
+```powershell
+python -m deepresearch_harness.cli prepare-browsecomp-plus-official-judge-batch `
+  --repeat-experiment <repeat-experiment.json> `
+  --repeat-comparison <repeat-comparison.json> `
+  --target-manifest benchmarks\browsecomp_plus_v0\target_manifest.json `
+  --official-evaluator benchmarks\browsecomp_plus_v0\official_evaluator.json `
+  --output-dir runs\browsecomp_plus_v0\official-judge-batch
+```
+
+`scripts/run_browsecomp_plus_official_judge.py` is a fail-closed launcher for
+the upstream evaluator. Before creating an execution directory, it checks the
+batch hashes, clean upstream commit, evaluator and lockfile hashes, verified
+write-protected model files, runtime versions, and three consecutive idle
+snapshots for two distinct GPUs. It never preempts a process or accepts an
+occupied device. On success it freezes a pre-inference registration, logs, and
+every evaluator output hash. `--disable-nccl-p2p` is an explicit, audited
+transport-only workaround for hosts where NCCL peer initialization hangs; it
+does not change model weights, predictions, evaluator code, or decoding values.
+The matching aggregation command rejects missing,
+extra, reparsed, or prediction-mismatched per-query results:
+
+```powershell
+python -m deepresearch_harness.cli aggregate-browsecomp-plus-official-judge `
+  --batch-manifest <batch_manifest.json> `
+  --execution-registration <execution_registration.json> `
+  --execution-result <execution_result.json> `
+  --output runs\browsecomp_plus_v0\official-judge-comparison.json
+```
+
+An official evaluator score on a development slice remains distinct from a
+full 830-query leaderboard submission.
 
 ## Live Chinese research
 
@@ -281,7 +345,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - The recorded B0/B1 semantic pass is explicitly AI-assisted calibration; registered human semantic metrics remain **planned**.
 - GitHub repository search is public and unauthenticated; DuckDuckGo Lite/Bing RSS are unofficial best-effort fallbacks. Dynamic pages, PDFs, and anti-bot pages are not handled reliably.
 - The LiveDRBench preview score is a five-task compatibility diagnostic. The official judge was not run, and exact normalized matching is deliberately stricter and narrower than the official evaluator.
-- BrowseComp-Plus exact/recall values are development diagnostics. Official Qwen3-32B accuracy and every leaderboard claim remain `planned_not_run`.
+- BrowseComp-Plus exact/recall values are development diagnostics. The Qwen3-32B result covers only five fixed development questions; 25/175-query effectiveness, sealed-holdout accuracy, submission, and every leaderboard claim remain `planned`.
 
 ## Repository map
 
@@ -295,7 +359,9 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/dense_server.py`: loopback-only pinned dense/top-5 service backed by the same document store and snippet contract.
 - `src/deepresearch_harness/retrieval_replay.py`: hash-bound dense and RRF counterfactual replay over frozen agent queries.
 - `src/deepresearch_harness/browsecomp_evaluation.py`: post-prediction development-gold boundary and explicitly non-official diagnostics.
+- `src/deepresearch_harness/browsecomp_judge.py`: self-contained judge batch, execution contracts, and hash-valid official-result aggregation.
 - `src/deepresearch_harness/browsecomp_repeats.py`: strict paired-repeat validation, artifact binding, distributions, and query-level win/loss aggregation.
+- `src/deepresearch_harness/browsecomp_judge.py`: self-contained official-judge batches, execution contracts, result validation, and paired score aggregation.
 - `src/deepresearch_harness/pi_browsecomp.py`: auditable smoke orchestration, aggregate usage trace, and hash-bound official-run export.
 - `integrations/pi-browsecomp/`: pinned Pi/DeepSeek tool-loop adapter with no coding-agent prompt or ambient context.
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.

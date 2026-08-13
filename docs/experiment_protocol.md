@@ -115,6 +115,27 @@ that interruption, but the artifact is still labeled
 Future larger-slice runs must pass dependency preflight and persist the complete
 manifest before the first provider call.
 
+For paid larger-slice work, `run_browsecomp_plus_repeats.ps1 -RegisterOnly`
+must be run first. This mode writes the complete experiment grid and exits with
+`generation_started=false`; the later `-Resume` path compares the requested
+configuration to that frozen manifest before any provider call.
+The registered manifest includes the normalized SHA-256 of the complete
+question artifact. A path-only registration is invalid even when no gold is
+present, because an in-place question-file change would otherwise evade the
+resume comparison.
+
+Provider-failure recovery is status-selective. Only an item whose latest
+status is `failed` may be called again; a succeeded or budget-exhausted item is
+never regenerated. Resume must preserve the manifest, model, prompt/control
+policy, retriever, per-attempt 10k output allowance, and question hash. Before
+the new call, the previous request and run/error are hash-validated and
+archived with the exact source summary. All attempt Token, API cost, searches,
+compiler calls, and latency remain in the cumulative summary and therefore in
+matched-budget reporting. The official evaluator receives only the latest
+successful prediction. Any retry rule introduced after an observed provider
+failure must be disclosed as an operational amendment; it cannot upgrade the
+experiment to stronger confirmatory status.
+
 Retriever experiments first replay exactly the frozen agent queries and saved
 BM25 rankings. Model, query strings, query count, top-k, corpus, and relevance
 labels are held fixed while only the retriever changes. A live dense run is
@@ -142,6 +163,21 @@ output, upstream repository commit, evaluator script hash, `uv.lock` hash,
 vLLM version, selected GPU IDs, and raw per-query judgments. A quantized judge,
 different weights, altered evaluator script, or substituted API judge is an
 exploratory evaluator ablation, not the official result.
+
+The official evaluator handoff uses two immutable records. The batch manifest
+is created before judge inference and binds each unique
+`trial -> variant -> query` input to its prediction hash, ground truth export,
+repeat comparison, evaluator contract, and judge asset manifest. The execution
+registration is written after three consecutive idle-GPU checks but before the
+Qwen call; it records runtime versions, GPU IDs, exact command, upstream hashes,
+the copied asset-verification audit, and any allowlisted transport-only
+environment override. `NCCL_P2P_DISABLE=1` is permitted only when explicitly
+registered; it does not authorize weight, evaluator, prediction, or decoding
+changes. The execution result separately binds
+the exit code, stdout/stderr, and every evaluator output. Aggregation requires
+all expected `_eval.json` files and no extras, zero parse failures, unchanged
+response hashes, and exact question/answer bindings. A five-query result is an
+official-evaluator development-slice diagnostic, not a leaderboard submission.
 
 Gold answers are fetched only inside the scorer after generation. Generation receives the public question and fetched web evidence, while saved public artifacts contain predictions, hashes, and aggregate counts rather than copied benchmark gold. Parser or post-generation failures must still load persisted `RunState` usage so paid calls are not reported as zero-cost failures.
 

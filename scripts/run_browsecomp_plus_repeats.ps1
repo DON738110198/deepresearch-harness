@@ -7,6 +7,7 @@ param(
     [string]$Model = "deepseek-v4-flash",
     [string]$Node = "",
     [string]$EvaluationPython = "",
+    [switch]$RegisterOnly,
     [switch]$Resume
 )
 
@@ -84,6 +85,40 @@ function Get-RepositoryRelativePath {
     param([string]$Path)
 
     return [IO.Path]::GetRelativePath($Root, $Path).Replace("\", "/")
+}
+
+function Move-StaleVariantArtifacts {
+    param(
+        [string]$Stem,
+        [int]$ResumeNumber
+    )
+
+    $ResumeLabel = "{0:d2}" -f $ResumeNumber
+    $ArchiveRoot = Join-Path $RunRoot "resume_history\resume-$ResumeLabel\$Stem"
+    $RunRootPrefix = $RunRoot.TrimEnd([char[]]@("\", "/")) + [IO.Path]::DirectorySeparatorChar
+    foreach ($Source in @(
+        (Join-Path $RunRoot "$Stem.gold.json"),
+        (Join-Path $RunRoot "$Stem.diagnostic.json"),
+        (Join-Path $RunRoot "$Stem.official_input")
+    )) {
+        if (-not (Test-Path -LiteralPath $Source)) {
+            continue
+        }
+        $ResolvedSource = [IO.Path]::GetFullPath($Source)
+        if (-not $ResolvedSource.StartsWith($RunRootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Refusing to move a derived artifact outside the repeat run: $ResolvedSource"
+        }
+        [void](New-Item -ItemType Directory -Path $ArchiveRoot -Force)
+        $Destination = Join-Path $ArchiveRoot ([IO.Path]::GetFileName($ResolvedSource))
+        $ResolvedDestination = [IO.Path]::GetFullPath($Destination)
+        if (-not $ResolvedDestination.StartsWith($RunRootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Refusing to move a derived artifact outside the repeat run: $ResolvedDestination"
+        }
+        if (Test-Path -LiteralPath $Destination) {
+            throw "Resume archive already exists: $Destination"
+        }
+        Move-Item -LiteralPath $ResolvedSource -Destination $ResolvedDestination
+    }
 }
 
 function Invoke-Diagnostics {
@@ -165,29 +200,46 @@ function Invoke-Variant {
     $SourceRelative = "$RunRootRelative\$Stem"
     $SourceDirectory = Join-Path $Root $SourceRelative
     $Summary = Join-Path $SourceDirectory "summary.json"
+    $ResumeFailedQueries = $false
     if (Test-Path -LiteralPath $Summary) {
-        Write-Host "reuse_frozen_summary=$Summary"
-    } else {
+        $FrozenSummary = Get-Content -LiteralPath $Summary -Raw | ConvertFrom-Json
+        if ([int]$FrozenSummary.failed -gt 0) {
+            if (-not $Resume) {
+                throw "Variant has failed queries; pass -Resume to retry only those queries: $Summary"
+            }
+            $ResumeFailedQueries = $true
+            $ResumeNumber = [int]$FrozenSummary.resume_count + 1
+            Write-Host "resume_failed_queries=$($FrozenSummary.failed) summary=$Summary"
+        } else {
+            Write-Host "reuse_frozen_summary=$Summary"
+        }
+    }
+    if (-not (Test-Path -LiteralPath $Summary) -or $ResumeFailedQueries) {
         if ((Test-Path -LiteralPath $SourceDirectory) -and (Get-ChildItem $SourceDirectory)) {
-            throw "Cannot resume an incomplete variant without a frozen summary: $SourceDirectory"
+            if (-not $ResumeFailedQueries) {
+                throw "Cannot resume an incomplete variant without a frozen summary: $SourceDirectory"
+            }
+        }
+        $VariantArguments = @{
+            Queries = $Queries
+            OutputDir = $SourceRelative
+            Model = $Model
+            ControlPolicy = $ControlPolicy
+            Node = $Node
+        }
+        if ($ResumeFailedQueries) {
+            $VariantArguments.ResumeFailed = $true
         }
         if ($Variant -eq "baseline") {
-            & $BM25Script `
-                -Queries $Queries `
-                -OutputDir $SourceRelative `
-                -Model $Model `
-                -ControlPolicy $ControlPolicy `
-                -Node $Node | Out-Host
+            & $BM25Script @VariantArguments | Out-Host
         } else {
-            & $DenseScript `
-                -Queries $Queries `
-                -OutputDir $SourceRelative `
-                -Model $Model `
-                -ControlPolicy $ControlPolicy `
-                -Node $Node | Out-Host
+            & $DenseScript @VariantArguments | Out-Host
         }
         if (-not (Test-Path -LiteralPath $Summary)) {
             throw "Variant completed without a frozen summary: $SourceDirectory"
+        }
+        if ($ResumeFailedQueries) {
+            Move-StaleVariantArtifacts -Stem $Stem -ResumeNumber $ResumeNumber
         }
     }
     [void](Invoke-Diagnostics -SourceDirectory $SourceDirectory -Stem $Stem)
@@ -246,6 +298,7 @@ $Experiment = [ordered]@{
     registered_at = $RegisteredAt
     registration_status = $RegistrationStatus
     target_manifest_sha256 = Get-NormalizedTextSha256 $TargetManifest
+    development_queries_sha256 = Get-NormalizedTextSha256 (Join-Path $Root $Queries)
     expected_adapter_version = "pi-browsecomp-v6"
     model = $Model
     control_policy = $ControlPolicy
@@ -268,6 +321,13 @@ if ($ExistingExperiment) {
         $ExperimentJson + [Environment]::NewLine,
         [Text.UTF8Encoding]::new($false)
     )
+}
+
+if ($RegisterOnly) {
+    Write-Output "registration_status=$RegistrationStatus"
+    Write-Output "repeat_experiment=$ExperimentManifestPath"
+    Write-Output "generation_started=false"
+    return
 }
 
 for ($Trial = 1; $Trial -le $Trials; $Trial++) {

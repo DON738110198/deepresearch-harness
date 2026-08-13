@@ -18,7 +18,7 @@ from .browsecomp_plus import (
     load_query_partitions,
     normalized_text_file_sha256,
 )
-from .pi_browsecomp import PiSmokeSummary
+from .pi_browsecomp import PiSmokeSummary, validate_pi_attempt_archives
 
 
 class StrictContract(BaseModel):
@@ -242,7 +242,9 @@ def score_gold_diagnostic(
         reference = gold_by_id.get(item.query_id)
         if reference is None or item.run_sha256 is None or item.prediction_sha256 is None:
             raise ValueError(f"missing frozen run or gold for query {item.query_id}")
-        run_path = source_dir / _safe_id(item.query_id) / "run.json"
+        query_root = source_dir / _safe_id(item.query_id)
+        validate_pi_attempt_archives(query_root=query_root, item=item)
+        run_path = query_root / "run.json"
         run_bytes = run_path.read_bytes()
         if sha256(run_bytes).hexdigest() != item.run_sha256:
             raise ValueError(f"source run hash mismatch for query {item.query_id}")

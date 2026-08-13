@@ -1,7 +1,7 @@
 # BrowseComp-Plus Preflight (2026-08-13)
 
-Status: generation and retrieval preflight passed; official Qwen3-32B judging is
-`planned_not_run`. No official accuracy or leaderboard rank is claimed.
+Status: generation/retrieval preflight and the five-query Qwen3-32B official-
+evaluator gate passed. No 25/175-query accuracy or leaderboard rank is claimed.
 
 The detailed Chinese experiment record is
 `browsecomp_plus_layered_results_2026-08-13.zh-CN.md`.
@@ -52,9 +52,29 @@ Remote preparation completed on 2026-08-14 without running inference:
   development ground truth are staged. The ground-truth JSONL SHA-256 is
   `9a975130c225bc66fa5a1fa206098bb2458ca782150e86339a72b63417c7d259`.
 
-The official judge still requires two idle 48 GiB GPUs for tensor parallelism.
-The latest read-only check found workloads on all eight GPUs. No process was
-stopped and no workload was preempted, so inference remains `planned_not_run`.
+The official judge required two idle 48 GiB GPUs for tensor parallelism. GPUs 4
+and 5 later became idle, passed the launcher's first check plus three consecutive
+post-import checks, and were used without stopping or preempting another process.
+
+The 30 inputs are now also packaged as one self-contained judge batch. Its
+manifest SHA-256 is
+`2e924c1322a33225cee59d194c0515ada41e8db0ada5c6997700d11db373220c`
+and its canonical input-set SHA-256 is
+`7607a6fe4548c9e4420ca0270ee4ecb3d4437d050ecc773e043a154e009b92f0`.
+The local and remote copies have identical hashes for all 30 input files. The
+verified model directory was made read-only after hashing. A live launcher
+preflight against GPUs 0 and 1 correctly rejected the occupied device before
+creating an execution directory, leaving no partial result that could be
+mistaken for a completed evaluation.
+
+The first GPU 4/5 execution stalled before weight loading during NCCL peer
+initialization and produced zero judgments. Only that registered process group
+was terminated, and the failed directory was retained. A second execution used
+the launcher's audited `NCCL_P2P_DISABLE=1` transport override and succeeded
+without changing the model, predictions, evaluator code, or decoding settings.
+Its registration/result SHA-256 values are
+`ef65a0f8687f3f54bb81d9061da4dd525a41c438c907ea237493f5ec50d87f1a`
+and `c211d2f6eea0f14506c4184d154d17d3e1171f20eb8ade3cb486b525a0238388`.
 
 ## Leakage Boundary
 
@@ -92,12 +112,19 @@ phase, and thinking type. Python contracts reject v1+ traces that do not use
 The strict normalized exact diagnostic is 1/5 for both BM25 and dense. Evidence
 recall is 40.00% and 54.92%, respectively. These are development diagnostics,
 not official accuracy. Two additional dense outputs are semantically consistent
-with the references but include extra wording; that inference remains
-unconfirmed until the official judge runs. An earlier dense run reached 2/5
+with the references but include extra wording. An earlier dense run reached 2/5
 strict exact and 77.14% evidence recall, but it is excluded from the primary
 comparison because its short-snippet normalization did not exactly match the
 BM25 contract. The spread between runs requires repeat trials rather than
 best-run selection.
+
+The pinned official evaluator completed all 30 repeat judgments with zero parse
+failures. BM25 trial accuracy was 20.00% +/- 0.00 and dense was 60.00% +/-
+20.00; dense won/lost/tied 7/1/7 paired judgments. The comparison artifact
+SHA-256 is
+`af281142b924778851d17ede5eae18d7fd4f49b26885077b1cdcc4da7308e7ef`.
+These are repeats over five fixed questions, not 30 independent questions or a
+leaderboard submission.
 
 ## Adapter-v6 Paired Repeats
 
@@ -155,13 +182,33 @@ stopped to avoid development overfitting.
 
 ## Next Gate
 
-1. Run the pinned official Qwen3-32B judge on all six frozen repeat exports;
-   retain 30 per-query judgments and require zero parse failures.
-2. Freeze a 25-query development slice and run paired BM25/dense Flash variants
-   without changing prompts.
+1. Completed: run the pinned official Qwen3-32B judge on all six frozen repeat
+   exports; retain 30 per-query judgments and require zero parse failures.
+2. Paused for provider balance: finish the preregistered 25-query paired
+   BM25/dense Flash grid without changing prompts or completed predictions.
 3. Require dense evidence recall to improve by at least 10 percentage points
    with no official-accuracy decline before promotion.
 4. Develop another query compiler only after at least ten larger-slice failures
    share that diagnosis, and require query-only replay gains first.
 5. Keep the 655-query holdout sealed until the final policy, budgets, and gates
    are preregistered.
+
+Step 2 was prepared before generation and started only after step 1 passed. The
+question-only 25-query artifact has
+content SHA-256
+`e62a37c48e1482fb39771d9366e3c6b1cefb33624e1955dc014855f49c9669ed`
+and normalized file SHA-256
+`d3925f67fcce34b6e9bb3fec86ff6560afdfedf82ebcf2b12480436e69d3b923`.
+The corrected `pre_generation` repeat manifest has raw SHA-256
+`b9833b69cd19672b83ad0a172d2382efd5a0981e207412494ec25a889f998fa2`
+and explicitly binds that file hash. Register-only resume was idempotent, while
+substituting the five-query artifact was rejected with the manifest unchanged.
+An earlier path-only registration draft was superseded before generation and
+records zero provider calls. Five variants completed. The sixth retained 20
+succeeded and 5 failed records after the API returned `402 Insufficient
+Balance`, for 145/150 successful query-variant observations overall. No
+25-query score is reported until all frozen variants aggregate successfully.
+The recovery path retries only failed records, archives and hash-binds every
+superseded attempt, and retains abandoned-attempt Token/cost/latency in the
+cumulative totals. Because this recovery rule was formalized after the failure,
+the final report must disclose it as a post-failure operational amendment.

@@ -6,7 +6,8 @@ param(
     [string]$Model = "deepseek-v4-flash",
     [ValidateSet("standard", "answer_reserve_v0", "answer_reserve_v1", "answer_reserve_nonthinking_v0", "first_tool_deadline_v0", "tool_bootstrap_v0", "rare_anchor_portfolio_v0")]
     [string]$ControlPolicy = "answer_reserve_nonthinking_v0",
-    [string]$Node = ""
+    [string]$Node = "",
+    [switch]$ResumeFailed
 )
 
 $ErrorActionPreference = "Stop"
@@ -108,19 +109,25 @@ try {
         throw "Dense server did not become ready. Inspect $ServerErr"
     }
 
-    & $Python -m deepresearch_harness.cli run-pi-browsecomp-smoke `
-        --manifest $Manifest `
-        --partitions $Partitions `
-        --queries (Join-Path $Root $Queries) `
-        --output-dir (Join-Path $Root $OutputDir) `
-        --node $Node `
-        --adapter-dir $Adapter `
-        --search-url "http://127.0.0.1:$Port/search" `
-        --model $Model `
-        --control-policy $ControlPolicy `
-        --retriever-id "qwen3-embedding-0.6b" `
-        --retriever-manifest $RetrieverManifest `
-        --timeout-seconds 900
+    $RunArguments = @(
+        "-m", "deepresearch_harness.cli", "run-pi-browsecomp-smoke",
+        "--manifest", $Manifest,
+        "--partitions", $Partitions,
+        "--queries", (Join-Path $Root $Queries),
+        "--output-dir", (Join-Path $Root $OutputDir),
+        "--node", $Node,
+        "--adapter-dir", $Adapter,
+        "--search-url", "http://127.0.0.1:$Port/search",
+        "--model", $Model,
+        "--control-policy", $ControlPolicy,
+        "--retriever-id", "qwen3-embedding-0.6b",
+        "--retriever-manifest", $RetrieverManifest,
+        "--timeout-seconds", "900"
+    )
+    if ($ResumeFailed) {
+        $RunArguments += "--resume-failed"
+    }
+    & $Python @RunArguments
     if ($LASTEXITCODE -ne 0) {
         throw "BrowseComp-Plus dense smoke returned exit code $LASTEXITCODE"
     }

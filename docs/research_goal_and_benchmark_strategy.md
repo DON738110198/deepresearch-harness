@@ -36,9 +36,21 @@ The official end-to-end evaluator uses Qwen3-32B as its judge. Its revision and
 decoding contract are pinned, and hash-bound evaluator inputs have been
 exported. The exact upstream environment is installed remotely; all 24 required
 model assets passed revision-bound byte verification, and all 30 repeat inputs
-are staged. Inference remains `planned_not_run`: it needs two idle 48 GiB GPUs,
-and the latest check found workloads on all eight, so no other workload was
-preempted.
+were staged. Two idle 48 GiB GPUs later passed the fail-closed checks, and the
+official evaluator completed all 30 judgments without preempting another
+workload.
+
+The evaluator handoff is now automated rather than a manual command. A
+self-contained 30-input batch binds all predictions and audit contracts, while
+the remote launcher refuses dirty code, altered assets, runtime drift, or any
+selected GPU with memory, utilization, or compute processes. Its occupied-GPU
+failure path was exercised on the real host and left no partial execution
+artifact. The first real execution localized a NCCL P2P initialization hang;
+an explicitly registered transport-only override then completed inference.
+Hash-valid aggregation reports BM25 20.00% +/- 0.00 versus dense 60.00% +/-
+20.00 on the five fixed development questions, with 7/1/7 paired wins/losses/
+ties and zero parse failures. This is a development gate, not a full benchmark
+or leaderboard result.
 
 ## Frozen Leaderboard Snapshot
 
@@ -66,14 +78,13 @@ Target ladder:
 4. Reach the frozen top-20 threshold of 63.86% accuracy.
 5. Stretch: reach the frozen top-10 threshold of 78.41% accuracy.
 
-The gold-free runtime portion of item 1 has passed on five development queries.
-A strict-budget Flash candidate with phase-adaptive reasoning and pinned dense
-retrieval is exported for the evaluator. Three alternating-order adapter-v6
-paired trials are also complete, but their manifest is labeled
-`reconstructed_after_interruption` and Qwen3-32B is still
-`planned_not_run`, so item 1 is not complete. Items 2-5 remain `planned`. The
-current five-query exact and retrieval values are diagnostic evidence, not an
-accuracy, effectiveness, or rank claim.
+Item 1 now passes as a five-query pipeline gate: a strict-budget Flash candidate
+with phase-adaptive reasoning and pinned dense retrieval was scored by the
+pinned Qwen3-32B evaluator. The three generation trials remain exploratory
+because their manifest is labeled `reconstructed_after_interruption`; the
+official score also repeats only five unique questions. Item 2 is in progress,
+and items 3-5 remain `planned`. No current result supports a full-benchmark
+effectiveness or rank claim.
 
 ## One Thesis, Several Layers
 
@@ -191,12 +202,26 @@ accuracy. Because the first process was interrupted after trial 1 BM25 and gold
 was opened before resume, the unchanged-policy result is exploratory rather
 than preregistered confirmatory evidence.
 
-1. Run the pinned Qwen3-32B judge on all six frozen repeat exports; require 30/30 retained per-query judgments and zero parse failures.
-2. Freeze a 25-query development slice and write the complete `pre_generation` manifest before running the same-model, same-phase-policy BM25/dense paired ablation.
+1. Completed: run the pinned Qwen3-32B judge on all six frozen repeat exports; 30/30 per-query judgments were retained with zero parse failures.
+2. Paused for provider balance: finish the frozen 25-query `pre_generation` grid for the same-model, same-phase-policy BM25/dense paired ablation. Five variants are complete; the sixth has 20 succeeded and 5 failed after `402 Insufficient Balance`.
 3. Promote dense retrieval only if evidence recall improves by at least 10 percentage points and official accuracy does not decline; report search calls, Token, cost, and latency together.
 4. Cluster at least ten retrieval failures before designing Constraint Portfolio v1. First require query-only replay gains; do not pay for end-to-end runs until recall moves.
 5. Run all 175 development queries only after the candidate policy and acceptance thresholds are frozen.
 6. Keep the 655-query holdout sealed until the mechanism and thresholds are preregistered; use DeepSeek V4 Pro only as a separate final track.
+
+Item 2 was preregistered before any call. The question-only
+artifact contains 25 deterministic development IDs, and the three-trial
+alternating-order manifest binds its normalized file hash alongside the frozen
+model, retrievers, control policy, and budgets. Register-only made no provider
+calls; an exact resume was idempotent and a different query artifact was
+rejected before generation. Execution began only after item 1's official-Judge
+gate passed. Across the partial grid, 145/150 query-variant observations
+succeeded; no effectiveness score is reported. Resume validates and preserves
+every prior attempt, retries only the five failed records, and includes
+abandoned-attempt Token and API cost in aggregate resource metrics. Because
+that operational recovery policy was formalized after the 402 interruption,
+it must be disclosed as a post-failure amendment even though the generation
+grid and harness controls remain frozen.
 
 Exact run hashes, costs, rejected controls, and the inference boundary are in
 `browsecomp_plus_layered_results_2026-08-13.zh-CN.md`.

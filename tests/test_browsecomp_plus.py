@@ -1,5 +1,6 @@
 import base64
 import json
+import subprocess
 from hashlib import sha256
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from deepresearch_harness.browsecomp_plus import (
     load_development_queries,
     load_official_evaluator_manifest,
     load_query_partitions,
+    normalized_text_file_sha256,
     partition_query_id,
 )
 from deepresearch_harness.bm25_server import SearchRequest, truncate_with_tokenizer
@@ -31,9 +33,15 @@ from deepresearch_harness.browsecomp_evaluation import (
     score_gold_diagnostic,
 )
 from deepresearch_harness.pi_browsecomp import (
+    _archive_source_summary,
+    _build_request,
+    _merge_retry_item,
+    _record_prior_attempt,
+    _validate_existing_attempt,
     export_pi_runs_for_official_evaluator,
     PiSmokeItem,
     PiSmokeSummary,
+    run_pi_unscored_smoke,
 )
 
 
@@ -75,6 +83,12 @@ def test_official_evaluator_is_revision_pinned_and_target_bound(tmp_path: Path) 
     assert evaluator.judge.revision == "9216db5781bf21249d130ec9da846c4624c16137"
     assert evaluator.inference.enable_thinking is False
     assert evaluator.judge_assets_manifest == "official_judge_assets.json"
+    assert evaluator.evaluator_script_sha256 == (
+        "1a21233937c377ab6323c98ff9af67742756a57fbacab4ebf9bc30852eae530a"
+    )
+    assert evaluator.uv_lock_sha256 == (
+        "45d3e6d00719dbf732160b25e3419ed4599121e5d832723357ff2fea01477c43"
+    )
 
     crlf_manifest = tmp_path / "target-crlf.json"
     normalized = MANIFEST.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
@@ -454,6 +468,263 @@ def test_pi_smoke_summary_rejects_inconsistent_budget_counts() -> None:
 
     with pytest.raises(ValidationError, match="budget_exhausted does not match items"):
         PiSmokeSummary.model_validate(payload)
+
+
+def test_failed_query_retry_archives_attempt_and_accumulates_usage(tmp_path: Path) -> None:
+    output_dir = tmp_path / "run"
+    query_root = output_dir / "q-1"
+    query_root.mkdir(parents=True)
+    request_v1 = _build_request(
+        output_name="run",
+        query_id="q-1",
+        question="fixture?",
+        model="deepseek-v4-flash",
+        thinking_level="high",
+        control_policy="answer_reserve_nonthinking_v0",
+        max_output_tokens=10_000,
+        max_iterations=100,
+        search_url="http://127.0.0.1:8766/search",
+        attempt_number=1,
+    )
+    (query_root / "request.json").write_text(
+        json.dumps(request_v1, indent=2), encoding="utf-8"
+    )
+    error_text = "402 Insufficient Balance"
+    (query_root / "error.json").write_text(
+        json.dumps({"query_id": "q-1", "error": error_text}, indent=2),
+        encoding="utf-8",
+    )
+    previous = PiSmokeItem(
+        query_id="q-1",
+        status="failed",
+        control_policy="answer_reserve_nonthinking_v0",
+        answer_schema_complete=False,
+        answer_compiler_invoked=False,
+        search_calls=2,
+        output_tokens=100,
+        output_budget_overshoot_tokens=0,
+        total_tokens=400,
+        cost_usd=0.002,
+        latency_ms=500,
+        error=error_text,
+    )
+    _validate_existing_attempt(
+        query_root=query_root,
+        item=previous,
+        request=request_v1,
+        model="deepseek-v4-flash",
+        control_policy="answer_reserve_nonthinking_v0",
+    )
+    summary_bytes = b'{"frozen":"summary"}'
+    summary_path = _archive_source_summary(
+        output_dir=output_dir,
+        summary_bytes=summary_bytes,
+        resume_number=1,
+    )
+    archived = _record_prior_attempt(
+        query_root=query_root,
+        item=previous,
+        source_summary_path=summary_path,
+        source_summary_sha256=sha256(summary_bytes).hexdigest(),
+    )
+    assert not (query_root / "request.json").exists()
+    assert (query_root / "attempts" / "attempt-01" / "error.json").is_file()
+
+    request_v2 = _build_request(
+        output_name="run",
+        query_id="q-1",
+        question="fixture?",
+        model="deepseek-v4-flash",
+        thinking_level="high",
+        control_policy="answer_reserve_nonthinking_v0",
+        max_output_tokens=10_000,
+        max_iterations=100,
+        search_url="http://127.0.0.1:8766/search",
+        attempt_number=2,
+    )
+    (query_root / "request.json").write_text(
+        json.dumps(request_v2, indent=2), encoding="utf-8"
+    )
+    second_error = "provider unavailable"
+    (query_root / "error.json").write_text(
+        json.dumps({"query_id": "q-1", "error": second_error}, indent=2),
+        encoding="utf-8",
+    )
+    current = PiSmokeItem(
+        query_id="q-1",
+        status="failed",
+        control_policy="answer_reserve_nonthinking_v0",
+        answer_schema_complete=False,
+        answer_compiler_invoked=False,
+        latest_attempt_answer_compiler_invoked=False,
+        search_calls=1,
+        output_tokens=25,
+        output_budget_overshoot_tokens=0,
+        total_tokens=80,
+        cost_usd=0.0005,
+        latency_ms=100,
+        error=second_error,
+    )
+    merged = _merge_retry_item(
+        previous=previous,
+        current=current,
+        archived_previous=archived,
+    )
+
+    assert merged.attempt_count == 2
+    assert merged.search_calls == 3
+    assert merged.total_tokens == 480
+    assert merged.cost_usd == pytest.approx(0.0025)
+    assert merged.prior_attempts[0].error == error_text
+    _validate_existing_attempt(
+        query_root=query_root,
+        item=merged,
+        request=request_v2,
+        model="deepseek-v4-flash",
+        control_policy="answer_reserve_nonthinking_v0",
+    )
+    (query_root / "attempts" / "attempt-01" / "error.json").write_text(
+        "tampered", encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="archived error.json hash mismatch"):
+        _validate_existing_attempt(
+            query_root=query_root,
+            item=merged,
+            request=request_v2,
+            model="deepseek-v4-flash",
+            control_policy="answer_reserve_nonthinking_v0",
+        )
+
+
+def test_smoke_resume_retries_only_failed_query_end_to_end(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repository = tmp_path / "repo"
+    benchmark_dir = repository / "benchmarks" / "browsecomp_plus_v0"
+    benchmark_dir.mkdir(parents=True)
+    manifest_path = benchmark_dir / "target_manifest.json"
+    partitions_path = benchmark_dir / "query_partitions.json"
+    manifest_path.write_bytes(MANIFEST.read_bytes())
+    partitions_path.write_bytes(
+        (ROOT / "benchmarks" / "browsecomp_plus_v0" / "query_partitions.json").read_bytes()
+    )
+    partitions_payload = json.loads(partitions_path.read_text(encoding="utf-8"))
+    development_ids = [
+        row["query_id"]
+        for row in partitions_payload["rows"]
+        if row["partition"] == "development"
+    ][:2]
+    query_rows = [
+        {"query_id": query_id, "question": f"fixture question {index}?"}
+        for index, query_id in enumerate(development_ids, start=1)
+    ]
+    source_queries = {
+        "schema_version": "browsecomp-plus-development-queries-v0",
+        "target_manifest_sha256": normalized_text_file_sha256(manifest_path),
+        "query_partitions_sha256": normalized_text_file_sha256(partitions_path),
+        "partition": "development",
+        "query_count": len(query_rows),
+        "queries": query_rows,
+    }
+    source_queries["queries_sha256"] = sha256(
+        "\n".join(
+            f"{query['query_id']}\t{query['question']}"
+            for query in source_queries["queries"]
+        ).encode()
+    ).hexdigest()
+    queries_path = repository / "runs" / "queries.json"
+    queries_path.parent.mkdir()
+    queries_path.write_text(json.dumps(source_queries), encoding="utf-8")
+
+    node_path = repository / "fake-node.exe"
+    node_path.write_text("fixture", encoding="utf-8")
+    adapter_dir = repository / "adapter"
+    (adapter_dir / "src").mkdir(parents=True)
+    (adapter_dir / "src" / "runner.mjs").write_text("fixture", encoding="utf-8")
+    output_dir = repository / "runs" / "resume-fixture"
+    statuses = iter(("succeeded", "failed", "succeeded"))
+    invoked_query_ids: list[str] = []
+
+    def fake_node_run(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+        request = json.loads(Path(command[2]).read_text(encoding="utf-8"))
+        invoked_query_ids.append(request["query_id"])
+        status = next(statuses)
+        succeeded = status == "succeeded"
+        output_tokens = 80 if succeeded else 50
+        payload = {
+            "schema_version": "pi-browsecomp-run-v0",
+            "adapter_version": "pi-browsecomp-v0",
+            "pi_version": "0.84.1",
+            "run_id": request["run_id"],
+            "query_id": request["query_id"],
+            "model": request["model"],
+            "thinking_level": "high",
+            "control_policy": "standard",
+            "system_prompt": "",
+            "prompt_sha256": "a" * 64,
+            "started_at": "2026-08-14T00:00:00Z",
+            "latency_ms": 100,
+            "status": status,
+            "stop_reason": "completed" if succeeded else "provider error",
+            "answer_text": (
+                "Exact Answer: fixture\nConfidence: 90%" if succeeded else "partial"
+            ),
+            "usage": {
+                "input_tokens": 100,
+                "output_tokens": output_tokens,
+                "cache_read_tokens": 0,
+                "cache_write_tokens": 0,
+                "reasoning_tokens": 20,
+                "total_tokens": 100 + output_tokens,
+                "cost_usd": 0.002 if succeeded else 0.001,
+            },
+            "output_budget_overshoot_tokens": 0,
+            "search_calls": [],
+            "messages": [],
+        }
+        return subprocess.CompletedProcess(command, 0, json.dumps(payload), "")
+
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-only-key")
+    monkeypatch.setattr(
+        "deepresearch_harness.pi_browsecomp.subprocess.run", fake_node_run
+    )
+    common = {
+        "manifest_path": manifest_path,
+        "partitions_path": partitions_path,
+        "queries_path": queries_path,
+        "output_dir": output_dir,
+        "node_executable": node_path,
+        "adapter_dir": adapter_dir,
+        "search_url": "http://127.0.0.1:8765/search",
+        "model": "deepseek-v4-flash",
+        "control_policy": "standard",
+        "timeout_seconds": 1,
+    }
+    first = run_pi_unscored_smoke(**common)
+    assert first.succeeded == 1
+    assert first.failed == 1
+
+    resumed = run_pi_unscored_smoke(**common, resume_failed=True)
+    reused_item, retried_item = resumed.items
+    assert resumed.schema_version == "pi-browsecomp-unscored-smoke-v1"
+    assert resumed.resume_count == 1
+    assert resumed.succeeded == 2
+    assert resumed.failed == 0
+    assert reused_item.attempt_count == 1
+    assert retried_item.attempt_count == 2
+    assert retried_item.output_tokens == 130
+    assert retried_item.total_tokens == 330
+    assert retried_item.cost_usd == pytest.approx(0.003)
+    assert retried_item.prior_attempts[0].status == "failed"
+    assert invoked_query_ids == [development_ids[0], development_ids[1], development_ids[1]]
+    assert (
+        output_dir
+        / development_ids[1]
+        / "attempts"
+        / "attempt-01"
+        / "run.json"
+    ).is_file()
+    assert (output_dir / "resume_history" / "resume-01" / "summary.json").is_file()
 
 
 def test_official_export_is_hash_bound_and_keeps_terminal_answer(tmp_path: Path) -> None:

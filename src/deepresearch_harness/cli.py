@@ -18,6 +18,11 @@ from .browsecomp_evaluation import (
     freeze_development_gold_slice,
     score_gold_diagnostic,
 )
+from .browsecomp_judge import (
+    aggregate_official_judge_results,
+    prepare_official_judge_batch,
+    validate_official_judge_batch,
+)
 from .browsecomp_repeats import aggregate_repeat_experiment
 from .contracts import HarnessConfig
 from .experiment import validate_experiment_manifest
@@ -173,6 +178,11 @@ def main() -> int:
     run_pi_browsecomp.add_argument("--timeout-seconds", type=int, default=900)
     run_pi_browsecomp.add_argument("--retriever-id", default="bm25")
     run_pi_browsecomp.add_argument("--retriever-manifest", type=Path)
+    run_pi_browsecomp.add_argument(
+        "--resume-failed",
+        action="store_true",
+        help="Retry only failed queries after validating and archiving prior attempts.",
+    )
     export_pi_browsecomp = subparsers.add_parser(
         "export-pi-browsecomp-runs",
         help="Convert frozen Pi traces into the official evaluator input shape.",
@@ -235,6 +245,43 @@ def main() -> int:
         action="store_true",
         help="Revalidate an existing comparison against every frozen source artifact.",
     )
+    prepare_official_judge = subparsers.add_parser(
+        "prepare-browsecomp-plus-official-judge-batch",
+        help="Stage a self-contained, hash-bound official-judge batch from paired repeats.",
+    )
+    prepare_official_judge.add_argument(
+        "--repeat-experiment", type=Path, required=True
+    )
+    prepare_official_judge.add_argument(
+        "--repeat-comparison", type=Path, required=True
+    )
+    prepare_official_judge.add_argument(
+        "--target-manifest", type=Path, required=True
+    )
+    prepare_official_judge.add_argument(
+        "--official-evaluator", type=Path, required=True
+    )
+    prepare_official_judge.add_argument("--output-dir", type=Path, required=True)
+    validate_official_judge = subparsers.add_parser(
+        "validate-browsecomp-plus-official-judge-batch",
+        help="Revalidate a staged official-judge batch without loading the judge model.",
+    )
+    validate_official_judge.add_argument("--batch-manifest", type=Path, required=True)
+    aggregate_official_judge = subparsers.add_parser(
+        "aggregate-browsecomp-plus-official-judge",
+        help="Validate official Qwen judge artifacts and aggregate paired accuracy.",
+    )
+    aggregate_official_judge.add_argument(
+        "--batch-manifest", type=Path, required=True
+    )
+    aggregate_official_judge.add_argument(
+        "--execution-registration", type=Path, required=True
+    )
+    aggregate_official_judge.add_argument(
+        "--execution-result", type=Path, required=True
+    )
+    aggregate_official_judge.add_argument("--output", type=Path, required=True)
+    aggregate_official_judge.add_argument("--validate-existing", action="store_true")
     prepare_review = subparsers.add_parser("prepare-review", help="Create blinded two-variant review artifacts.")
     prepare_review.add_argument("--summary", type=Path, required=True)
     prepare_review.add_argument("--suite", type=Path, required=True)
@@ -431,6 +478,7 @@ def main() -> int:
             timeout_seconds=args.timeout_seconds,
             retriever_id=args.retriever_id,
             retriever_manifest_path=args.retriever_manifest,
+            resume_failed=args.resume_failed,
         )
         print(
             f"output={args.output_dir}\nstatus={summary.status}\n"
@@ -439,6 +487,8 @@ def main() -> int:
             f"queries={summary.query_count}\nsucceeded={summary.succeeded}\n"
             f"budget_exhausted={summary.budget_exhausted}\nfailed={summary.failed}\n"
             f"schema_complete={summary.schema_complete}\n"
+            f"resume_count={summary.resume_count}\n"
+            f"attempts={sum(item.attempt_count for item in summary.items)}\n"
             "answer_compiler_invocations="
             f"{summary.answer_compiler_invocations}\n"
             f"search_calls={summary.total_search_calls}\n"
@@ -565,6 +615,47 @@ def main() -> int:
             f"candidate_evidence_recall_mean="
             f"{comparison.candidate.evidence_recall_percent.mean:.2f}\n"
             "official_accuracy_status=planned_not_run"
+        )
+        return 0
+    if args.command == "prepare-browsecomp-plus-official-judge-batch":
+        batch = prepare_official_judge_batch(
+            repeat_experiment_path=args.repeat_experiment,
+            repeat_comparison_path=args.repeat_comparison,
+            target_manifest_path=args.target_manifest,
+            official_evaluator_path=args.official_evaluator,
+            output_dir=args.output_dir,
+        )
+        print(
+            f"batch_manifest={args.output_dir / 'batch_manifest.json'}\n"
+            f"status={batch.status}\ntrials={batch.trial_count}\n"
+            f"queries_per_trial={batch.queries_per_trial}\n"
+            f"inputs={batch.input_count}\ninput_set_sha256={batch.input_set_sha256}\n"
+            "official_accuracy_status=planned_not_run"
+        )
+        return 0
+    if args.command == "validate-browsecomp-plus-official-judge-batch":
+        batch = validate_official_judge_batch(args.batch_manifest)
+        print(
+            f"batch_manifest={args.batch_manifest}\nstatus={batch.status}\n"
+            f"inputs={batch.input_count}\ninput_set_sha256={batch.input_set_sha256}"
+        )
+        return 0
+    if args.command == "aggregate-browsecomp-plus-official-judge":
+        comparison = aggregate_official_judge_results(
+            batch_manifest_path=args.batch_manifest,
+            execution_registration_path=args.execution_registration,
+            execution_result_path=args.execution_result,
+            output_path=args.output,
+            validate_existing=args.validate_existing,
+        )
+        print(
+            f"output={args.output}\nstatus={comparison.status}\n"
+            f"evaluations={comparison.evaluations}\n"
+            f"baseline_accuracy_mean={comparison.baseline.trial_accuracy_percent.mean:.2f}\n"
+            f"candidate_accuracy_mean={comparison.candidate.trial_accuracy_percent.mean:.2f}\n"
+            f"candidate_wins={comparison.paired.candidate_wins}\n"
+            f"baseline_wins={comparison.paired.baseline_wins}\n"
+            f"ties={comparison.paired.ties}\nleaderboard_status=not_submitted"
         )
         return 0
     if args.command == "run-experiment":
