@@ -13,6 +13,13 @@
       "output_per_million_usd": 0.0
     }
   },
+  "search": {
+    "kind": "duckduckgo",
+    "timeout_seconds": 20,
+    "max_results_per_query": 5,
+    "max_download_bytes": 1000000,
+    "max_excerpt_characters": 1200
+  },
   "run": {
     "max_evidence": 6,
     "budget": {

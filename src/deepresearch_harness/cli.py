@@ -8,11 +8,18 @@ from .benchmark import FailureFocus, validate_suite_assets
 from .batch import run_experiment_batch
 from .contracts import HarnessConfig
 from .experiment import validate_experiment_manifest
-from .pipeline import BaselineResearchPipeline, LocalCorpusCollector, ObligationEvidenceDebtPipeline, SearchWritePipeline
+from .pipeline import (
+    BaselineResearchPipeline,
+    LocalCorpusCollector,
+    ObligationEvidenceDebtPipeline,
+    PrimarySourceResearchPipeline,
+    SearchWritePipeline,
+)
 from .providers import FakeProvider, provider_from_config
 from .review import prepare_blind_review, score_blind_review
 from .review_translation import translate_review_packet
 from .review_workspace import render_review_workspace, validate_review_submission_file
+from .web_research import live_collector_from_config
 
 
 def project_root() -> Path:
@@ -55,6 +62,12 @@ def main() -> int:
     run.add_argument("--config", type=Path)
     run.add_argument("--output-dir", type=Path, default=Path("runs"))
     run.add_argument("--variant", choices=("b0", "b1", "b2"), default="b1")
+    research = subparsers.add_parser("research", help="Run a live web research task and write a Chinese cited report.")
+    research.add_argument("--question", required=True)
+    research.add_argument("--config", type=Path, required=True)
+    research.add_argument("--context-file", type=Path)
+    research.add_argument("--max-evidence", type=int)
+    research.add_argument("--output-dir", type=Path, default=Path("runs") / "live")
     validate = subparsers.add_parser("validate-pilot", help="Validate a pilot suite and its corpus references.")
     validate.add_argument("--suite", type=Path, required=True)
     validate_experiment = subparsers.add_parser("validate-experiment", help="Validate a frozen experiment manifest.")
@@ -101,6 +114,31 @@ def main() -> int:
             counts[task.failure_focus.value] += 1
         print(f"suite={suite.suite_id}\nstatus={suite.status}\ntasks={len(suite.tasks)}\ncorpus_records={len(corpus)}")
         print("failure_focus=" + ",".join(f"{name}:{count}" for name, count in counts.items()))
+        return 0
+    if args.command == "research":
+        settings = HarnessConfig.model_validate_json(args.config.read_text(encoding="utf-8"))
+        if args.max_evidence is not None and args.max_evidence < 1:
+            parser.error("--max-evidence must be at least 1")
+        decision_context = args.context_file.read_text(encoding="utf-8") if args.context_file else None
+        collector = live_collector_from_config(settings.search)
+        pipeline = PrimarySourceResearchPipeline(
+            provider=provider_from_config(settings),
+            collector=collector,
+            output_dir=args.output_dir,
+            max_evidence=args.max_evidence or settings.run.max_evidence,
+            budget_limits=settings.run.budget,
+            report_language="Simplified Chinese",
+        )
+        state = pipeline.run(args.question, decision_context=decision_context)
+        search_calls = sum(event.stage == "search" for event in state.trace)
+        fetch_ok = sum(event.stage == "fetch" and event.outcome == "ok" for event in state.trace)
+        print(
+            f"run_id={state.run_id}\nstatus={state.status.value}\nreport={state.report_path}\n"
+            f"state={args.output_dir / state.run_id / 'state.json'}\nsearch_calls={search_calls}\n"
+            f"fetched_sources={fetch_ok}\n"
+            f"tokens={state.total_usage.input_tokens + state.total_usage.output_tokens}\n"
+            f"estimated_cost_usd={state.total_usage.estimated_cost_usd:.8f}"
+        )
         return 0
     if args.command == "validate-experiment":
         manifest = validate_experiment_manifest(args.manifest)

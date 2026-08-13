@@ -110,18 +110,20 @@ class BaselineResearchPipeline:
         output_dir: Path,
         max_evidence: int = 6,
         budget_limits: BudgetLimits | None = None,
+        report_language: str = "auto",
     ) -> None:
         self._provider = provider
         self._collector = collector
         self._output_dir = output_dir
         self._max_evidence = max_evidence
         self._budget_limits = budget_limits or BudgetLimits()
+        self._report_language = report_language
 
-    def run(self, question: str) -> RunState:
+    def run(self, question: str, *, decision_context: str | None = None) -> RunState:
         run_id = uuid.uuid4().hex
         state = RunState(
             run_id=run_id,
-            task=Task(id=f"task-{run_id[:8]}", question=question),
+            task=Task(id=f"task-{run_id[:8]}", question=question, decision_context=decision_context),
             variant=self.variant,
             budget_limits=self._budget_limits.model_copy(deep=True),
         )
@@ -155,6 +157,7 @@ class BaselineResearchPipeline:
             {
                 "instruction": "Create a concise research plan. Return json only.",
                 "question": question,
+                "decision_context": state.task.decision_context,
                 "json_example": {
                     "steps": [{"id": "scope", "objective": "Identify required evidence."}],
                     "search_queries": ["one focused evidence query"],
@@ -169,9 +172,11 @@ class BaselineResearchPipeline:
             {
                 "instruction": (
                     "Select only evidence that directly helps answer the question, then convert it into atomic claims. "
-                    "Omit topical distractors. Return json only and do not add facts."
+                    "Omit topical distractors. Honor definitions and existing capabilities in the decision context. "
+                    "Do not recommend a capability that the context says is already implemented. Return json only and do not add facts."
                 ),
                 "question": question,
+                "decision_context": state.task.decision_context,
                 "json_example": {
                     "claims": [
                         {
@@ -197,14 +202,24 @@ class BaselineResearchPipeline:
         markers = {citation.claim_id: citation.marker for citation in run.citations}
         prompt = json.dumps(
             {
-                "instruction": "Write a concise markdown decision report using only the supplied claims. Preserve each citation marker after its claim.",
+                "instruction": (
+                    "Write a concise markdown decision report using only the supplied claims. "
+                    "Preserve each citation marker after its claim. Do not write a references section because "
+                    "the harness appends it deterministically. If the question asks for an axis that the supplied claims "
+                    "do not support, state that this run did not find evidence; never relabel a nearby concept as that axis. "
+                    "Separate source-backed findings from recommendations inferred from the decision context. Label any "
+                    "unmeasured expected effect as planned rather than claiming improvement. "
+                    f"{self._language_instruction()}"
+                ),
                 "question": question,
+                "decision_context": state.task.decision_context,
                 "claims": [claim.model_dump() for claim in run.claims],
                 "citations": markers,
                 "evidence": [item.model_dump(mode="json") for item in run.evidence],
             }
         )
-        return self._complete("write", prompt, state)
+        report = self._complete("write", prompt, state)
+        return self._finalize_report(report, run)
 
     def _complete(self, stage: str, prompt: str, state: RunState, *, json_output: bool = False) -> str:
         try:
@@ -271,7 +286,40 @@ class BaselineResearchPipeline:
             )
 
     def _add_collector_trace(self, state: RunState, count: int) -> None:
-        state.add_trace(TraceEvent(stage="collect", provider="local_corpus", model="lexical-v1", latency_ms=0, outcome="ok", detail=f"collected={count}"))
+        for event in getattr(self._collector, "trace_events", []):
+            state.add_trace(event.model_copy(deep=True))
+        state.add_trace(
+            TraceEvent(
+                stage="collect",
+                provider=type(self._collector).__name__,
+                model="collector-v1",
+                latency_ms=0,
+                outcome="ok",
+                detail=f"collected={count}",
+            )
+        )
+
+    def _language_instruction(self) -> str:
+        if self._report_language == "auto":
+            return "Write in the same language as the user question."
+        return f"Write the report in {self._report_language}."
+
+    def _finalize_report(self, report: str, run: RunState) -> str:
+        for citation in run.citations:
+            if citation.marker not in report:
+                raise ValueError(f"report omitted citation marker {citation.marker}")
+        evidence_by_id = {item.id: item for item in run.evidence}
+        heading = "## 来源" if self._report_language == "Simplified Chinese" else "## Sources"
+        lines = [report.rstrip(), "", heading, ""]
+        citations_by_evidence: dict[str, list[Citation]] = {}
+        for citation in run.citations:
+            citations_by_evidence.setdefault(citation.evidence_id, []).append(citation)
+        for evidence_id, citations in citations_by_evidence.items():
+            evidence = evidence_by_id[evidence_id]
+            title = evidence.title.replace("[", "(").replace("]", ")")
+            markers = " ".join(citation.marker for citation in citations)
+            lines.append(f"- {markers} [{title}]({evidence.url})")
+        return "\n".join(lines) + "\n"
 
     @staticmethod
     def _citations_for(claims: list[Claim]) -> list[Citation]:
@@ -281,14 +329,45 @@ class BaselineResearchPipeline:
         return citations
 
 
+class PrimarySourceResearchPipeline(BaselineResearchPipeline):
+    """B1 live-search policy that favors one primary-source query per named entity."""
+
+    variant = "b1_live_primary_sources"
+
+    def _plan(self, question: str, state: RunState) -> Plan:
+        prompt = json.dumps(
+            {
+                "instruction": (
+                    "Create a concise public-web research plan. Return json only with 2-5 distinct search queries. "
+                    "When the question names projects, products, or organizations, create one focused query for each "
+                    "named entity and prefer its official repository or documentation. Keep the exact English entity "
+                    "name in the query and include all evidence axes explicitly requested by the question, such as workflow, "
+                    "benchmark, metrics, or evaluation. Do not search for conclusions or design implications; derive those "
+                    "later from the collected primary sources."
+                ),
+                "question": question,
+                "decision_context": state.task.decision_context,
+                "json_example": {
+                    "steps": [{"id": "primary-sources", "objective": "Collect official sources for each named entity."}],
+                    "search_queries": ["Exact Project Name official repository workflow"],
+                },
+            }
+        )
+        completion = self._complete("plan", prompt, state, json_output=True)
+        plan = Plan.model_validate_json(completion)
+        if not 2 <= len(plan.search_queries) <= 5:
+            raise ValueError("live primary-source plan requires 2-5 search queries")
+        return plan
+
+
 class SearchWritePipeline(BaselineResearchPipeline):
     """B0: direct question search followed by one structured report call."""
 
-    def run(self, question: str) -> RunState:
+    def run(self, question: str, *, decision_context: str | None = None) -> RunState:
         run_id = uuid.uuid4().hex
         state = RunState(
             run_id=run_id,
-            task=Task(id=f"task-{run_id[:8]}", question=question),
+            task=Task(id=f"task-{run_id[:8]}", question=question, decision_context=decision_context),
             variant="b0_search_write",
             budget_limits=self._budget_limits.model_copy(deep=True),
         )
@@ -308,6 +387,7 @@ class SearchWritePipeline(BaselineResearchPipeline):
             state.claims = draft.claims
             state.citations = self._citations_for(draft.claims)
             report = self._compile_direct_report(draft, state.citations)
+            report = self._finalize_report(report, state)
             state.report_path = str(store.write_report(report))
             state.transition(RunStatus.SUCCEEDED, "B0 Search-Write completed")
             store.save(state)
@@ -324,7 +404,8 @@ class SearchWritePipeline(BaselineResearchPipeline):
                 "instruction": (
                     "Answer the question from the supplied evidence in one pass. Return json only with claims and a markdown report. "
                     "Every material claim must use evidence_ids from the input. Cite each claim in the report with the exact placeholder [[claim-id]]. "
-                    "Do not create numeric citation markers; the harness compiles them deterministically."
+                    "Honor definitions and existing capabilities in the decision context. Do not recommend an already implemented "
+                    "capability. Do not create numeric citation markers; the harness compiles them deterministically."
                 ),
                 "json_example": {
                     "claims": [
@@ -338,6 +419,7 @@ class SearchWritePipeline(BaselineResearchPipeline):
                     "report": "# Research report\\n\\nEvidence-backed claim. [[claim-1]]",
                 },
                 "question": question,
+                "decision_context": state.task.decision_context,
                 "evidence": [item.model_dump(mode="json") for item in state.evidence],
             }
         )
@@ -365,15 +447,27 @@ class ObligationEvidenceDebtPipeline(BaselineResearchPipeline):
             {
                 "instruction": (
                     "Create an exhaustive but concise answer contract for the question. Return json only. "
-                    "Define 2-5 non-overlapping, domain-specific evidence questions. Cover every distinct workflow stage, "
+                    "Hard limit: return 3-5 obligations total and never exceed five. Define non-overlapping, "
+                    "domain-specific evidence questions. Cover every distinct workflow stage, "
                     "comparison axis, failure mode, and hard constraint stated or directly implied by the question and decision "
                     "context. Use the input's concrete concepts in obligation descriptions and queries. Do not use generic "
                     "benefit, risk, constraint, or trade-off slots unless the input explicitly asks for those categories. "
+                    "When the question names multiple projects, products, or organizations, create one source obligation "
+                    "for each named entity before adding cross-cutting obligations. Derive comparisons from those primary "
+                    "sources instead of searching for a third-party comparison page. Keep each public-web query focused "
+                    "on one entity and one information need, preferably its official repository or documentation, and use "
+                    "4-10 searchable terms. Do not create a separate comparison obligation; the writer derives comparisons "
+                    "from the named entities' primary sources. If the requested comparison includes design implications, "
+                    "do not create a separate search obligation for them; the writer must synthesize them from the named "
+                    "entities' primary sources. Combine secondary evaluation needs into remaining slots only when necessary. "
                     "Each obligation must ask for evidence that can substantively inform one answer component; do not require "
                     "a source to state the final recommendation. Do not invent legal, regulatory, policy, product, user-preference, "
                     "or metric requirements unless the input names them."
+                    " Search queries should work on the public web; retain concrete English product and project names "
+                    "when they are more searchable than translations."
                 ),
                 "question": question,
+                "decision_context": state.task.decision_context,
                 "json_example": {
                     "steps": [{"id": "contract", "objective": "Identify every answer obligation."}],
                     "obligations": [
@@ -403,9 +497,10 @@ class ObligationEvidenceDebtPipeline(BaselineResearchPipeline):
                     "Build an obligation-linked claim ledger from the supplied evidence. Return json only. "
                     "For every obligation, emit exactly one evidence_debt entry. Mark it resolved only when selected evidence "
                     "directly supports one or more atomic claims; otherwise mark it open and explain the missing evidence. "
-                    "Omit topical distractors and do not add facts."
+                    "Omit topical distractors, honor definitions and existing capabilities in the decision context, and do not add facts."
                 ),
                 "question": question,
+                "decision_context": state.task.decision_context,
                 "obligations": [item.model_dump() for item in state.plan.obligations],
                 "json_example": {
                     "claims": [
@@ -444,9 +539,12 @@ class ObligationEvidenceDebtPipeline(BaselineResearchPipeline):
                 "instruction": (
                     "Write a concise markdown decision report using only resolved supplied claims. "
                     "Preserve each citation marker after its claim. Do not silently invent support for open evidence debt. "
-                    "Do not render an evidence-debt section; the harness appends open obligations deterministically."
+                    "Never relabel a nearby concept as a missing requested axis. Label unmeasured expected effects as planned. "
+                    "Do not render an evidence-debt or references section; the harness appends both deterministically. "
+                    f"{self._language_instruction()}"
                 ),
                 "question": question,
+                "decision_context": state.task.decision_context,
                 "claims": [claim.model_dump() for claim in run.claims],
                 "citations": markers,
                 "evidence_debts": [debt.model_dump() for debt in run.evidence_debts],
@@ -455,13 +553,15 @@ class ObligationEvidenceDebtPipeline(BaselineResearchPipeline):
         report = self._complete("write", prompt, state)
         open_debts = [debt for debt in run.evidence_debts if debt.status == "open"]
         if not open_debts:
-            return report
+            return self._finalize_report(report, run)
         obligation_by_id = {item.id: item for item in run.plan.obligations} if run.plan else {}
-        lines = [report.rstrip(), "", "## Open evidence debt", ""]
+        chinese = self._report_language == "Simplified Chinese"
+        lines = [report.rstrip(), "", "## 待补证据" if chinese else "## Open evidence debt", ""]
         for debt in open_debts:
             description = obligation_by_id[debt.obligation_id].description
-            lines.append(f"- **{debt.obligation_id}:** {description} No directly supporting evidence was identified in this run.")
-        return "\n".join(lines) + "\n"
+            suffix = "本次运行未找到直接支持证据。" if chinese else "No directly supporting evidence was identified in this run."
+            lines.append(f"- **{debt.obligation_id}:** {description} {suffix}")
+        return self._finalize_report("\n".join(lines), run)
 
     @staticmethod
     def _validate_debt_ledger(

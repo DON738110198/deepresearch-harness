@@ -25,6 +25,21 @@ python -m pytest
 
 The demo writes `runs/smoke/<run-id>/state.json` and `report.md`. `state.json` is the audit artifact; it includes prompts only as stage metadata, not credentials.
 
+## Live Chinese research
+
+The live command uses the same frozen-model pipeline with public-web Search/Fetch, a persisted decision context, and deterministic clickable citations:
+
+```powershell
+python -m deepresearch_harness.cli research `
+  --question "请对比 GPT Researcher、LangChain Open Deep Research 和 DeerFlow，并给出一个最小改进建议。" `
+  --context-file docs\current_project_context.zh-CN.md `
+  --max-evidence 3 `
+  --config config.local.json `
+  --output-dir runs\live
+```
+
+Repository-shaped queries first use GitHub's public repository search and fetch the repository README. Other queries fall back to DuckDuckGo Lite and Bing RSS without another API key. These no-key search paths are best-effort and rate-limited, not a production search SLA. The saved trace records every query, backend, fetched URL, fetch error, token count, estimated fee, and latency.
+
 ## Real API run
 
 Copy `config.example.json` to a local config file, set only the named environment variable, then run:
@@ -118,16 +133,18 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 
 - This is a single-agent Plan-Search-Write baseline, not a multi-agent research system.
 - B0, B1, and B2 are harness variants, not changes to model capability.
-- The MVP collector searches a supplied JSON evidence corpus. It does not claim live-web coverage or source freshness.
+- Offline tests use a supplied JSON evidence corpus; the live collector adds bounded web search and readable-page extraction but does not claim comprehensive coverage or freshness.
 - The fake provider is for deterministic pipeline tests, not quality evaluation.
-- Report citations point to collected evidence IDs; source quality and claim entailment still require evaluation.
+- Report citations point to collected evidence IDs and deterministic source links; source quality and claim entailment still require evaluation.
 - The recorded B0/B1 semantic pass is explicitly AI-assisted calibration; registered human semantic metrics remain **planned**.
+- GitHub repository search is public and unauthenticated; DuckDuckGo Lite/Bing RSS are unofficial best-effort fallbacks. Dynamic pages, PDFs, and anti-bot pages are not handled reliably.
 
 ## Repository map
 
 - `src/deepresearch_harness/contracts.py`: Pydantic run-state contracts.
 - `src/deepresearch_harness/providers.py`: fake and OpenAI-compatible providers.
 - `src/deepresearch_harness/pipeline.py`: baseline orchestration and persistence.
+- `src/deepresearch_harness/web_research.py`: no-key repository/web search, bounded fetch, text extraction, and request trace.
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.
 - `src/deepresearch_harness/batch.py`: frozen two-variant batch execution and automatic aggregation.
 - `src/deepresearch_harness/review.py`: deterministic variant-blind review, validation, and aggregation.
@@ -142,11 +159,12 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `docs/b1_b2_token_v1.md`: retained negative B2 v1 result and causal follow-up.
 - `docs/b1_b2_token_v2.md`: retained B2 v2 tie and search-layer diagnosis.
 - `docs/b1_b2_v3_results.md`: token/cost automatic results and current claim boundary.
+- `docs/live_web_smoke_2026-08-13.md`: real DeepSeek live-search failures, final smoke evidence, and next gate.
 
 ## Next implementation order
 
-1. Add one real Search/Fetch adapter and produce a Chinese report with clickable source citations; acceptance: the trace records queries, URLs, provider usage, cost, and latency without credentials.
-2. Add a simple plan-confirmation and report view that exposes research progress without evaluation-internal IDs.
-3. Add deterministic citation/link checks plus a versioned rubric Judge that returns `pass/fail`, reason, and report evidence; full manual annotation is not required.
-4. Save the first real search, grounding, or budget bad case, then test the smallest Evidence Debt change under fixed model/tool and token- or cost-matched controls.
-5. Run a 5-10 task public benchmark slice before deciding whether the evidence justifies broader evaluation or a more complex mechanism.
+1. **Completed:** real Search/Fetch -> Chinese cited report with query/URL/provider/token/cost/latency trace and environment-only credentials.
+2. Implement one bounded single-Agent evidence-gap requery round, driven by the saved missing-workflow/evaluation bad case; do not add a DAG or subagents.
+3. Add a simple plan-confirmation and report view that exposes research progress without evaluation-internal IDs.
+4. Add deterministic citation/link checks plus a versioned rubric Judge that returns `pass/fail`, reason, and report evidence; full manual annotation is not required.
+5. Run a 5-10 task public benchmark slice under fixed model/tool and separately token- or cost-matched budgets before claiming an effect.

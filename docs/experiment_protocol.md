@@ -33,6 +33,8 @@ The B0/B1 token-matched provider run and an AI-assisted blind calibration are re
 
 As of 2026-08-13, full manual blind annotation is paused and is no longer an implementation gate. The prepared workspaces remain optional audit artifacts. Near-term comparisons use deterministic checks plus a fixed, versioned LLM Judge; only Judge disagreements, source-fetch failures, and selected bad cases are manually inspected. This changes the workflow, not the status of any earlier metric: unrun human results remain `planned`.
 
+The live web run in `live_web_smoke_2026-08-13.md` is an exploratory end-to-end smoke, not a baseline comparison or benchmark result. Its observed Token/cost/latency values describe that run only. Report-quality, coverage, and factuality improvements remain **planned** until a fixed task slice and evaluation contract are run.
+
 The following metrics remain required for registered comparisons:
 
 - citation support rate: claims whose cited evidence supports the claim;

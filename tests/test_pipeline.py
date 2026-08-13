@@ -26,7 +26,10 @@ def make_pipeline(tmp_path: Path) -> BaselineResearchPipeline:
 
 
 def test_offline_baseline_persists_auditable_cited_run(tmp_path: Path) -> None:
-    state = make_pipeline(tmp_path).run("What evidence supports a phased rollout?")
+    state = make_pipeline(tmp_path).run(
+        "What evidence supports a phased rollout?",
+        decision_context="Observability is already implemented.",
+    )
 
     assert state.status is RunStatus.SUCCEEDED
     assert state.plan is not None
@@ -37,7 +40,10 @@ def test_offline_baseline_persists_auditable_cited_run(tmp_path: Path) -> None:
     persisted = RunState.model_validate_json((tmp_path / state.run_id / "state.json").read_text(encoding="utf-8"))
     report = Path(persisted.report_path).read_text(encoding="utf-8")
     assert persisted.status is RunStatus.SUCCEEDED
+    assert persisted.task.decision_context == "Observability is already implemented."
     assert all(citation.marker in report for citation in persisted.citations)
+    assert "## Sources" in report
+    assert all(str(evidence.url) in report for evidence in persisted.evidence)
 
 
 def test_fake_provider_is_deterministic(tmp_path: Path) -> None:

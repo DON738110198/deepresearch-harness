@@ -21,6 +21,7 @@ class RunStatus(str, Enum):
 class Task(BaseModel):
     id: str
     question: str = Field(min_length=1)
+    decision_context: str | None = None
     created_at: datetime = Field(default_factory=utc_now)
 
 
@@ -112,6 +113,18 @@ class ProviderConfig(BaseModel):
     pricing: Pricing = Field(default_factory=Pricing)
 
 
+class SearchConfig(BaseModel):
+    kind: Literal["local", "duckduckgo"] = "local"
+    timeout_seconds: int = Field(ge=1, le=120, default=20)
+    max_results_per_query: int = Field(ge=1, le=10, default=5)
+    max_download_bytes: int = Field(ge=16_384, le=5_000_000, default=1_000_000)
+    max_excerpt_characters: int = Field(ge=200, le=5_000, default=1_200)
+    user_agent: str = Field(
+        min_length=1,
+        default="training-free-deepresearch-harness/0.1 (+https://github.com/DON738110198/deepresearch-harness)",
+    )
+
+
 class BudgetLimits(BaseModel):
     max_total_tokens: int | None = Field(default=None, gt=0)
     max_estimated_cost_usd: float | None = Field(default=None, gt=0)
@@ -126,6 +139,7 @@ class RunConfig(BaseModel):
 
 class HarnessConfig(BaseModel):
     provider: ProviderConfig = Field(default_factory=ProviderConfig)
+    search: SearchConfig = Field(default_factory=SearchConfig)
     run: RunConfig = Field(default_factory=RunConfig)
 
     @model_validator(mode="after")
@@ -168,6 +182,7 @@ class RunState(BaseModel):
     variant: Literal[
         "b0_search_write",
         "b1_plan_search_ledger_write",
+        "b1_live_primary_sources",
         "b2_obligation_evidence_debt",
     ] = "b1_plan_search_ledger_write"
     status: RunStatus = RunStatus.PENDING

@@ -171,10 +171,10 @@ Question
 
 ## 9. 下一阶段顺序与验收标准
 
-1. **Live search/fetch 闭环**：DeepSeek + 一个真实搜索 provider 能从中文问题生成带可点击网页引用的报告；trace 包含查询、URL、Token、费用和延迟。
-2. **最小可用界面**：用户能确认计划、观察进度、阅读中文报告和打开证据，不接触评测内部 ID。
-3. **自动 Judge**：固定 rubric 批量评分并输出可审计理由；不需要人工填写表单。
-4. **真实 bad case**：保存至少一个“搜索遗漏/引用不支持/预算浪费”案例，再选择 Evidence Debt 的下一项改动。
-5. **受控 A/B**：同模型、同工具、同 Token 或费用预算运行 baseline 与最小改动；结论只描述 harness 行为。
+1. **已完成 Live search/fetch 闭环**：DeepSeek 从中文问题生成带可点击官方来源的中文报告；trace 包含查询、URL、Token、费用和延迟。结果与失败链见 `live_web_smoke_2026-08-13.md`。
+2. **单轮补搜**：针对已保存的“首次证据缺少工作流/评测轴”bad case，实现最多一轮 Evidence Gap -> requery -> merged ledger，不引入多 Agent。
+3. **最小可用界面**：用户能确认计划、观察进度、阅读中文报告和打开证据，不接触评测内部 ID。
+4. **自动 Judge**：固定 rubric 批量评分并输出可审计理由；不需要人工填写表单。
+5. **受控 A/B**：同模型、同工具、同 Token 或费用预算运行 one-pass B1 与单轮补搜；结论只描述 harness 行为。
 
 只有在重复坏例证明单 Agent 边界不足后，才考虑并行 subagent、Critic-Repair 或 Research DAG。
