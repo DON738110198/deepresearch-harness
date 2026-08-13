@@ -31,6 +31,7 @@ B2 keeps B1's three provider calls and the same collector boundary, but turns th
 - `HarnessConfig` validates the provider, pricing, and run-budget settings. Keys are not configuration values: `api_key_env` names the only permitted credential source.
 - `Citation` explicitly connects a report marker to evidence and claim IDs.
 - The collector has a small `EvidenceCollector` interface. The MVP implementation is a deterministic local corpus collector that ranks each query independently and fills top-k round-robin, so one obligation cannot consume every evidence slot. It avoids untracked network behavior in smoke tests.
+- Human review uses a static workspace generated from the blind packet only. Draft state stays in browser local storage or reviewer-exported JSON; Python validates a complete submission and records its hash before a separate command can read the answer key.
 
 ## Extension boundaries, not implemented behavior
 

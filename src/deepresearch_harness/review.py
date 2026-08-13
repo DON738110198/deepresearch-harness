@@ -249,8 +249,8 @@ def score_blind_review(
         experiment_id=packet.experiment_id,
         reviewer_type=submission.reviewer_type,
         result_status="reviewed" if submission.reviewer_type == ReviewerType.HUMAN else "calibration_only",
-        packet_sha256=_file_sha256(packet_path),
-        annotations_sha256=_file_sha256(annotations_path),
+        packet_sha256=file_sha256(packet_path),
+        annotations_sha256=file_sha256(annotations_path),
         answer_key_sha256=sha256(answer_key_text.encode("utf-8")).hexdigest(),
         candidates=candidate_scores,
         aggregates={variant: _aggregate_review_scores(scores) for variant, scores in scores_by_variant.items()},
@@ -370,7 +370,7 @@ def _mean(scores: list[BenchmarkScore], field: str) -> float | None:
     return fmean(values) if values else None
 
 
-def _file_sha256(path: Path) -> str:
+def file_sha256(path: Path) -> str:
     return sha256(path.read_bytes()).hexdigest()
 
 

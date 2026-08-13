@@ -50,3 +50,5 @@ Pilot v0 separates deterministic metrics from semantic judgments. Evidence-ID re
 When comparing B0 and B1 reports, use the generated blind-review packet rather than run directories. Candidate order is deterministic from the registered seed but the mapping remains in a separate answer key until annotation is locked.
 
 The scorer enforces a mechanical review lock before reading the answer key: all candidates must be present, every claim and cited claim must be classified exactly once, and all referenced obligation/claim IDs must exist in the packet. `ai_assisted` review is calibration-only and must not be reported as a human result.
+
+The static reviewer workspace is generated from `review_packet.json` only and should be placed outside the directory containing `answer_key.json`. The exported submission must pass `validate-review`; record its SHA-256 before running `score-review`. Browser local storage and draft exports are convenience state, not accepted experiment artifacts until the Python validator succeeds.

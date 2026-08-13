@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 from .benchmark import FailureFocus, validate_suite_assets
@@ -10,6 +11,7 @@ from .experiment import validate_experiment_manifest
 from .pipeline import BaselineResearchPipeline, LocalCorpusCollector, ObligationEvidenceDebtPipeline, SearchWritePipeline
 from .providers import FakeProvider, provider_from_config
 from .review import prepare_blind_review, score_blind_review
+from .review_workspace import render_review_workspace, validate_review_submission_file
 
 
 def project_root() -> Path:
@@ -70,6 +72,12 @@ def main() -> int:
     score_review.add_argument("--annotations", type=Path, required=True)
     score_review.add_argument("--answer-key", type=Path, required=True)
     score_review.add_argument("--output", type=Path, required=True)
+    render_review = subparsers.add_parser("render-review", help="Build a static human-review workspace from a blind packet.")
+    render_review.add_argument("--packet", type=Path, required=True)
+    render_review.add_argument("--output", type=Path, required=True)
+    validate_review = subparsers.add_parser("validate-review", help="Lock a complete review submission without reading the answer key.")
+    validate_review.add_argument("--packet", type=Path, required=True)
+    validate_review.add_argument("--annotations", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "demo":
         corpus = project_root() / "examples" / "offline_corpus.json"
@@ -137,6 +145,24 @@ def main() -> int:
                 f"irrelevant_claims={aggregate.mean_irrelevant_claim_rate},"
                 f"conflict_handling={aggregate.mean_conflict_handling_rate}"
             )
+        return 0
+    if args.command == "render-review":
+        output = render_review_workspace(packet_path=args.packet, output_path=args.output)
+        print(f"review_workspace={output}")
+        return 0
+    if args.command == "validate-review":
+        try:
+            count, annotations_hash, reviewer_type = validate_review_submission_file(
+                packet_path=args.packet,
+                annotations_path=args.annotations,
+            )
+        except ValueError as error:
+            print(f"validation_error={error}", file=sys.stderr)
+            return 2
+        print(
+            f"validated_candidates={count}\nreviewer_type={reviewer_type}\n"
+            f"annotations_sha256={annotations_hash}"
+        )
         return 0
     return execute(
         question=args.question,

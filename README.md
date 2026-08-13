@@ -61,6 +61,26 @@ python -m deepresearch_harness.cli prepare-review `
 
 The reviewer packet contains candidates `A/B` without variant labels or model-generated retrieval queries. Keep the separately generated `answer_key.json` hidden until annotation is complete. The annotation file is rejected unless every candidate, claim, cited claim, obligation, and conflict label is internally complete and references known IDs.
 
+Build a standalone review workspace in a directory that does not contain the answer key:
+
+```powershell
+python -m deepresearch_harness.cli render-review `
+  --packet runs\reviews\<review-id>\review_packet.json `
+  --output runs\reviewer_workspaces\<review-id>\index.html
+```
+
+Open `index.html` directly. The workspace shows candidates `A/B`, saves progress in browser local storage, imports/exports JSON drafts, and enables final export only after every claim and citation is classified. It embeds the blinded packet but never reads the answer key.
+
+Before unblinding, lock the exported submission and record its hash:
+
+```powershell
+python -m deepresearch_harness.cli validate-review `
+  --packet runs\reviews\<review-id>\review_packet.json `
+  --annotations <exported-annotations.json>
+```
+
+This command validates all 20 candidates and prints `reviewer_type` plus the annotation SHA-256 without opening `answer_key.json`.
+
 After annotation is locked, validate it and aggregate semantic metrics with:
 
 ```powershell
@@ -92,6 +112,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.
 - `src/deepresearch_harness/batch.py`: frozen two-variant batch execution and automatic aggregation.
 - `src/deepresearch_harness/review.py`: deterministic variant-blind review, validation, and aggregation.
+- `src/deepresearch_harness/review_workspace.py`: standalone browser workspace for blind human annotation.
 - `experiments/pilot_v0/`: token-matched and cost-matched manifests with pinned corpus hashes and pricing.
 - `benchmarks/pilot_v0/`: ten controlled diagnostic tasks and a synthetic corpus.
 - `docs/problem_statement.md`: problem-first design position and falsifiable hypotheses.

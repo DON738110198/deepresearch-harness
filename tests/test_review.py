@@ -15,6 +15,7 @@ from deepresearch_harness.review import (
     score_blind_review,
     validate_blind_submission,
 )
+from deepresearch_harness.review_workspace import render_review_workspace, validate_review_submission_file
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -81,6 +82,25 @@ def test_review_packet_hides_variants_and_writes_separate_key(tmp_path: Path) ->
     assert result.result_status == "calibration_only"
     assert set(result.aggregates) == {"b0_search_write", "b1_plan_search_ledger_write"}
     assert all(item.score.annotation_status == "ai_assisted_calibration" for item in result.candidates)
+
+    workspace_path = render_review_workspace(
+        packet_path=packet_path,
+        output_path=tmp_path / "review" / "review_workspace.html",
+    )
+    workspace = workspace_path.read_text(encoding="utf-8")
+    assert "Blind Semantic Review" in workspace
+    assert "b0_search_write" not in workspace
+    assert "b1_plan_search_ledger_write" not in workspace
+    assert "answer_key" not in workspace
+    assert 'reviewer_type: "human"' in workspace
+    assert "Open source" in workspace
+    validated_count, annotation_hash, reviewer_type = validate_review_submission_file(
+        packet_path=packet_path,
+        annotations_path=annotations_path,
+    )
+    assert validated_count == 20
+    assert len(annotation_hash) == 64
+    assert reviewer_type == "ai_assisted"
 
     incomplete = submission.model_copy(deep=True)
     incomplete.annotations[0].supported_claim_ids.pop()
