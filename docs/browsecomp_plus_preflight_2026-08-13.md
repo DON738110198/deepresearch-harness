@@ -32,8 +32,29 @@ in `benchmarks/browsecomp_plus_v0/retriever_candidates.json`, including model
 and shard hashes.
 
 The local RTX 3050 Laptop GPU has 4 GiB and cannot host the official Qwen3-32B
-judge. Read-only checks of the configured remote machines found their GPUs in
-use. No process was stopped and no workload was preempted.
+judge.
+
+Remote preparation completed on 2026-08-14 without running inference:
+
+- the upstream repository is a clean detached checkout at
+  `046949032b0328319cc9a02663a759ec601d9402`;
+- the frozen `uv.lock` SHA-256 is
+  `45d3e6d00719dbf732160b25e3419ed4599121e5d832723357ff2fea01477c43`;
+- the upstream evaluator SHA-256 is
+  `1a21233937c377ab6323c98ff9af67742756a57fbacab4ebf9bc30852eae530a`;
+- the installed runtime imports `torch 2.7.0+cu126`, `transformers 4.53.2`,
+  and `vllm 0.9.0.1`, with CUDA visible;
+- Qwen3-32B was obtained through a mirror, then all 24 required assets were
+  checked against the pinned Hugging Face revision. The audit passed 24/24,
+  with artifact SHA-256
+  `f919e78fe5e8346aa84432616cbbec8bc32588387eebd18ce7d893c919215719`;
+- all 30 frozen official-input files and the five-row prediction-bound
+  development ground truth are staged. The ground-truth JSONL SHA-256 is
+  `9a975130c225bc66fa5a1fa206098bb2458ca782150e86339a72b63417c7d259`.
+
+The official judge still requires two idle 48 GiB GPUs for tensor parallelism.
+The latest read-only check found workloads on all eight GPUs. No process was
+stopped and no workload was preempted, so inference remains `planned_not_run`.
 
 ## Leakage Boundary
 
@@ -78,6 +99,35 @@ comparison because its short-snippet normalization did not exactly match the
 BM25 contract. The spread between runs requires repeat trials rather than
 best-run selection.
 
+## Adapter-v6 Paired Repeats
+
+Three alternating-order BM25/dense trials completed on the same five questions
+with 30 unique provider run IDs and zero output-budget overshoot. Trial-level
+BM25 versus dense mean +/- sample standard deviation was:
+
+- schema completion: 86.67% +/- 11.55 versus 100.00% +/- 0.00;
+- strict exact diagnostic: 6.67% +/- 11.55 versus 46.67% +/- 11.55;
+- evidence recall: 17.36% +/- 2.88 versus 60.00% +/- 14.84;
+- search calls per query: 11.27 +/- 2.52 versus 6.40 +/- 2.80;
+- total tokens per query: 208,353.07 +/- 63,467.92 versus
+  81,843.93 +/- 56,046.36;
+- estimated cost per query: USD 0.011472 +/- 0.002356 versus
+  USD 0.005662 +/- 0.002053;
+- latency per query: 88.88 s +/- 9.22 versus 59.77 s +/- 7.17.
+
+Dense won/lost/tied 8/2/5 query-trial evidence-recall pairs and 6/0/9 strict
+exact pairs. These are repeated observations of five fixed development
+questions, not 15 independent questions and not official accuracy. The first
+automation run was interrupted after trial 1 BM25, development gold was opened,
+and the manifest was reconstructed on resume. Generation controls were not
+changed, but the result is correctly labeled `reconstructed_after_interruption`
+rather than preregistered confirmatory evidence.
+
+Reported dollars are DeepSeek API estimates only; dense-index hosting is not
+priced. Both retrievers receive the same maximum output allowance, but realized
+input/total tokens and cost are not matched. This is a retriever ablation under
+one output-budget contract, not a full-system cost-matched claim.
+
 ## Counterfactual Retrieval Gate
 
 The replay used all 70 frozen BM25 agent queries without regeneration:
@@ -105,14 +155,13 @@ stopped to avoid development overfitting.
 
 ## Next Gate
 
-1. Run the pinned official Qwen3-32B judge on both frozen five-query exports.
-2. Use adapter v6 for at least three independent paired BM25/dense trials per
-   query; report means, standard deviations, and paired wins.
-3. Freeze a 25-query development slice and run paired BM25/dense Flash variants
+1. Run the pinned official Qwen3-32B judge on all six frozen repeat exports;
+   retain 30 per-query judgments and require zero parse failures.
+2. Freeze a 25-query development slice and run paired BM25/dense Flash variants
    without changing prompts.
-4. Require dense evidence recall to improve by at least 10 percentage points
+3. Require dense evidence recall to improve by at least 10 percentage points
    with no official-accuracy decline before promotion.
-5. Develop another query compiler only after at least ten larger-slice failures
+4. Develop another query compiler only after at least ten larger-slice failures
    share that diagnosis, and require query-only replay gains first.
-6. Keep the 655-query holdout sealed until the final policy, budgets, and gates
+5. Keep the 655-query holdout sealed until the final policy, budgets, and gates
    are preregistered.

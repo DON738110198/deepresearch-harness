@@ -96,6 +96,25 @@ least three independent runs per development query and report mean, standard
 deviation, and paired win/loss counts. The best replicate may not be selected
 as the headline result.
 
+Repeat manifests must normally be written before generation and must alternate
+execution order (`baseline_first`, `candidate_first`, ...). Each pair must bind
+the same query set, prompts, model, control policy, output allowance, adapter
+version, and retriever identities. Aggregation requires unique run IDs and
+hash-verifies every run, summary, diagnostic, prediction, and official-export
+artifact. Report standard deviation across trial-level aggregates and describe
+query-trial win/loss counts as repeated observations of the same fixed queries,
+not as additional independent benchmark questions.
+
+The first three-trial adapter-v6 automation is explicitly exploratory. Its
+initial process stopped after trial 1 BM25 because the selected Python lacked
+`duckdb`; development gold was then opened before the remaining frozen-policy
+runs completed, and the experiment manifest was reconstructed during resume.
+No generation prompt, adapter, model, budget, or retriever was changed after
+that interruption, but the artifact is still labeled
+`reconstructed_after_interruption`, not preregistered confirmatory evidence.
+Future larger-slice runs must pass dependency preflight and persist the complete
+manifest before the first provider call.
+
 Retriever experiments first replay exactly the frozen agent queries and saved
 BM25 rankings. Model, query strings, query count, top-k, corpus, and relevance
 labels are held fixed while only the retriever changes. A live dense run is
@@ -115,6 +134,14 @@ The official evaluator contract is separately pinned in
 `benchmarks/browsecomp_plus_v0/official_evaluator.json`. Its Qwen3-32B revision
 and decoding settings are evaluation controls, not a replacement research
 agent and not part of either candidate's generation budget.
+
+If the judge is downloaded through a mirror, inference may begin only after
+`official_judge_assets.json` verifies all required shard, config, index, and
+tokenizer hashes against the pinned upstream revision. Record the verifier
+output, upstream repository commit, evaluator script hash, `uv.lock` hash,
+vLLM version, selected GPU IDs, and raw per-query judgments. A quantized judge,
+different weights, altered evaluator script, or substituted API judge is an
+exploratory evaluator ablation, not the official result.
 
 Gold answers are fetched only inside the scorer after generation. Generation receives the public question and fetched web evidence, while saved public artifacts contain predictions, hashes, and aggregate counts rather than copied benchmark gold. Parser or post-generation failures must still load persisted `RunState` usage so paid calls are not reported as zero-cost failures.
 

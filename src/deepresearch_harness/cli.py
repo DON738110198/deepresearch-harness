@@ -14,9 +14,11 @@ from .browsecomp_plus import (
     load_official_evaluator_manifest,
 )
 from .browsecomp_evaluation import (
+    export_official_development_ground_truth,
     freeze_development_gold_slice,
     score_gold_diagnostic,
 )
+from .browsecomp_repeats import aggregate_repeat_experiment
 from .contracts import HarnessConfig
 from .experiment import validate_experiment_manifest
 from .pipeline import (
@@ -192,6 +194,16 @@ def main() -> int:
     score_browsecomp_diagnostic.add_argument("--source-dir", type=Path, required=True)
     score_browsecomp_diagnostic.add_argument("--gold-slice", type=Path, required=True)
     score_browsecomp_diagnostic.add_argument("--output", type=Path, required=True)
+    export_browsecomp_ground_truth = subparsers.add_parser(
+        "export-browsecomp-plus-official-ground-truth",
+        help="Project a prediction-bound development gold slice into official JSONL shape.",
+    )
+    export_browsecomp_ground_truth.add_argument(
+        "--gold-slice", type=Path, required=True
+    )
+    export_browsecomp_ground_truth.add_argument(
+        "--output-dir", type=Path, required=True
+    )
     replay_browsecomp_retrieval = subparsers.add_parser(
         "replay-browsecomp-plus-retrieval",
         help="Replay frozen agent queries through a pinned dense retriever and BM25+dense fusion.",
@@ -207,6 +219,22 @@ def main() -> int:
     replay_browsecomp_retrieval.add_argument("--index-root", type=Path, required=True)
     replay_browsecomp_retrieval.add_argument("--output", type=Path, required=True)
     replay_browsecomp_retrieval.add_argument("--batch-size", type=int, default=8)
+    aggregate_browsecomp_repeats = subparsers.add_parser(
+        "aggregate-browsecomp-plus-repeats",
+        help="Validate and aggregate paired v6 repeat trials without an official judge.",
+    )
+    aggregate_browsecomp_repeats.add_argument(
+        "--experiment-manifest", type=Path, required=True
+    )
+    aggregate_browsecomp_repeats.add_argument(
+        "--target-manifest", type=Path, required=True
+    )
+    aggregate_browsecomp_repeats.add_argument("--output", type=Path, required=True)
+    aggregate_browsecomp_repeats.add_argument(
+        "--validate-existing",
+        action="store_true",
+        help="Revalidate an existing comparison against every frozen source artifact.",
+    )
     prepare_review = subparsers.add_parser("prepare-review", help="Create blinded two-variant review artifacts.")
     prepare_review.add_argument("--summary", type=Path, required=True)
     prepare_review.add_argument("--suite", type=Path, required=True)
@@ -464,6 +492,18 @@ def main() -> int:
             f"official_accuracy_status={diagnostic.official_accuracy_status}"
         )
         return 0
+    if args.command == "export-browsecomp-plus-official-ground-truth":
+        export = export_official_development_ground_truth(
+            gold_slice_path=args.gold_slice,
+            output_dir=args.output_dir,
+        )
+        print(
+            f"output={args.output_dir}\nqueries={export.query_count}\n"
+            f"gold_slice_sha256={export.gold_slice_sha256}\n"
+            f"ground_truth_sha256={export.ground_truth_sha256}\n"
+            "partition=development"
+        )
+        return 0
     if args.command == "replay-browsecomp-plus-retrieval":
         retriever_manifest = load_retriever_candidates(
             args.retriever_manifest, target_manifest_path=args.manifest
@@ -501,6 +541,29 @@ def main() -> int:
             f"{replay.evidence_recall_delta_candidate_pp}\n"
             f"evidence_recall_delta_fused_pp="
             f"{replay.evidence_recall_delta_fused_pp}\n"
+            "official_accuracy_status=planned_not_run"
+        )
+        return 0
+    if args.command == "aggregate-browsecomp-plus-repeats":
+        comparison = aggregate_repeat_experiment(
+            manifest_path=args.experiment_manifest,
+            target_manifest_path=args.target_manifest,
+            output_path=args.output,
+            validate_existing=args.validate_existing,
+        )
+        print(
+            f"output={args.output}\nstatus={comparison.status}\n"
+            f"trials={comparison.trial_count}\n"
+            f"queries_per_trial={comparison.queries_per_trial}\n"
+            f"paired_query_observations={comparison.paired_query_observations}\n"
+            f"baseline_exact_mean="
+            f"{comparison.baseline.strict_exact_percent.mean:.2f}\n"
+            f"candidate_exact_mean="
+            f"{comparison.candidate.strict_exact_percent.mean:.2f}\n"
+            f"baseline_evidence_recall_mean="
+            f"{comparison.baseline.evidence_recall_percent.mean:.2f}\n"
+            f"candidate_evidence_recall_mean="
+            f"{comparison.candidate.evidence_recall_percent.mean:.2f}\n"
             "official_accuracy_status=planned_not_run"
         )
         return 0

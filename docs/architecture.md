@@ -38,10 +38,28 @@ queries through a pinned dense index, compares BM25/dense/RRF docids, and opens
 development docid labels only after prediction hashes exist. This separates a
 retriever effect from a query-policy or provider effect before another paid run.
 
+`browsecomp_repeats.py` is the reliability boundary around nondeterministic
+provider runs. A repeat experiment normally writes its manifest before the first
+generation, alternates baseline/candidate execution order, and uses a distinct
+provider run ID for every query-trial observation. Aggregation fails closed
+unless all trials use adapter v6, the same model, control policy, query file,
+prompt hashes, 10k no-overshoot contract, and expected retriever identities. It
+also verifies the source summary, diagnostic, run, prediction, and official
+export hashes, recomputes exact/recall rows from each prediction-bound gold
+slice, and requires identical canonical gold rows across all variants before
+reporting trial means, sample standard deviations, or paired outcomes.
+Interrupted automation can be resumed only from complete
+frozen summaries; a manifest reconstructed after generation is permanently
+labeled `reconstructed_after_interruption` rather than presented as a
+preregistration.
+
 Two machine-readable snapshots close the external-version boundary:
 `deepseek_provider_snapshot.json` binds API aliases to documented served
 versions and a dated price regime, while `official_evaluator.json` binds the
-Qwen3-32B judge revision and inference settings. They are validated against the
+Qwen3-32B judge revision and inference settings. The evaluator also hash-binds
+`official_judge_assets.json`; its standalone verifier checks mirror downloads
+against all 17 upstream LFS shards and the runtime config/tokenizer Git blobs
+before model loading. These snapshots are validated against the
 normalized target-manifest hash so platform drift cannot silently enter a
 matched comparison.
 
@@ -80,6 +98,7 @@ B2 keeps B1's three provider calls and the same collector boundary, but turns th
 | benchmark agent loop | pinned Pi adapter with empty system prompt | evidence-debt controller policies owned by this project |
 | BrowseComp retrieval | pinned local BM25 and Qwen3-Embedding-0.6B, top-5, 512 Qwen tokens | only replay-justified retrievers or rerankers |
 | BrowseComp control | strict global/phase limits and non-thinking answer compilation | evidence-debt marginal-value stopping after larger bad-case clustering |
+| BrowseComp reliability | alternating-order paired repeats with hash-bound aggregation | preregistered larger-slice confidence intervals and official judging |
 
 Do not add DAG fan-out, critic loops, or automatic re-planning until a saved bad case makes their decision boundary measurable.
 

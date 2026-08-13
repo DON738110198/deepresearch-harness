@@ -66,13 +66,42 @@ observed reasoning. Those earlier traces are retained but excluded.
 
 The strict five-query diagnostic found two promising harness effects. First,
 high-thinking exploration plus non-thinking answer compilation made 4/5
-outputs schema-complete under the same 10k output allowance. Second, replacing
-BM25 with pinned Qwen3-Embedding-0.6B produced 5/5 schema-complete outputs and
-raised diagnostic evidence recall from 40.00% to 54.92% end to end; strict exact
-match remained 1/5. Two more dense answers appear semantically equivalent to
-gold, but only the pinned Qwen3-32B judge can establish official accuracy. An
-earlier, stronger-looking dense run is retained but excluded because its short
-snippet normalization did not exactly match the BM25 contract.
+outputs schema-complete under the same 10k output allowance. Second, three
+adapter-v6 paired trials found that replacing BM25 with pinned
+Qwen3-Embedding-0.6B raised mean diagnostic evidence recall from
+17.36% +/- 2.88 to 60.00% +/- 14.84 and strict exact match from
+6.67% +/- 11.55 to 46.67% +/- 11.55. Dense won 8/15 query-trial evidence-recall
+pairs and lost 2, while using fewer mean search calls, tokens, dollars, and
+latency. Dollar values cover the traced DeepSeek API only; local dense-index
+hosting is not monetized, so this is neither a full-system cost comparison nor
+a total-token-matched experiment. These are five-query development diagnostics,
+not official accuracy.
+The first automation attempt was interrupted after its first BM25 run, so the
+repeat manifest is honestly marked `reconstructed_after_interruption`; future
+confirmatory runs must be registered before generation. Only the pinned
+Qwen3-32B judge can establish official accuracy.
+
+The official-judge preflight is now reproducible on the configured A6000 host:
+the exact upstream repository and lockfile environment are installed, and all
+24 required Qwen3-32B files (17 weight shards plus model/tokenizer metadata)
+matched the pinned revision byte for byte. The 30 frozen repeat inputs and
+prediction-bound development ground truth are staged. Judge inference is still
+`planned_not_run` because no two 48 GiB GPUs are currently idle; no other
+user's process was preempted.
+
+Run an alternating-order, resumable three-trial comparison with:
+
+```powershell
+& .\scripts\run_browsecomp_plus_repeats.ps1 `
+  -Trials 3 `
+  -RunLabel <new-run-label>
+```
+
+The script writes the experiment manifest before generation, refuses partial
+or mismatched artifacts on resume, exports every frozen answer to the official
+input shape, and aggregates trial means, sample standard deviations, and paired
+query outcomes. `-Resume` reuses only validated frozen summaries and never
+silently restarts an incomplete variant.
 
 After the ignored Java, Python, and retrieval artifacts are present,
 `scripts/run_browsecomp_plus_smoke.ps1` starts and stops the loopback search
@@ -107,6 +136,20 @@ The export manifest binds every evaluator file to its source run and prediction
 hash. `benchmarks/browsecomp_plus_v0/official_evaluator.json` pins the judge
 weights and inference settings. The exporter does not run or substitute for the
 official Qwen3-32B judge.
+
+When the judge weights arrive through a mirror, verify that every inference
+asset is byte-equivalent to the pinned Hugging Face revision before loading it:
+
+```powershell
+python scripts\verify_browsecomp_plus_judge_assets.py `
+  --manifest benchmarks\browsecomp_plus_v0\official_judge_assets.json `
+  --model-dir <Qwen3-32B-directory> `
+  --output runs\browsecomp_plus_v0\judge_asset_verification.json
+```
+
+The verifier checks all 17 weight shards plus config, index, and tokenizer
+files using the upstream LFS SHA-256 or Git blob SHA-1. A mirror label alone is
+not accepted as evidence that the official judge revision was reproduced.
 
 ## Live Chinese research
 
@@ -252,6 +295,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/dense_server.py`: loopback-only pinned dense/top-5 service backed by the same document store and snippet contract.
 - `src/deepresearch_harness/retrieval_replay.py`: hash-bound dense and RRF counterfactual replay over frozen agent queries.
 - `src/deepresearch_harness/browsecomp_evaluation.py`: post-prediction development-gold boundary and explicitly non-official diagnostics.
+- `src/deepresearch_harness/browsecomp_repeats.py`: strict paired-repeat validation, artifact binding, distributions, and query-level win/loss aggregation.
 - `src/deepresearch_harness/pi_browsecomp.py`: auditable smoke orchestration, aggregate usage trace, and hash-bound official-run export.
 - `integrations/pi-browsecomp/`: pinned Pi/DeepSeek tool-loop adapter with no coding-agent prompt or ambient context.
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.

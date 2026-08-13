@@ -31,6 +31,45 @@
 
 更早一次 dense 运行得到 2/5 strict exact、77.14% evidence recall，并可能有 4/5 语义正确，但当时短 snippet 会被 tokenizer 重新 decode，而 BM25 短 snippet 保留原文。这个差异很小，却破坏了“完全相同 snippet 合同”，所以该运行保留为诊断、从主表排除。修正后重跑的差异同时提醒我们：DeepSeek thinking mode 不支持 temperature/top-p 控制，接口也没有 seed，单次运行不能代表可靠性。
 
+## adapter v6 三轮配对结果
+
+为避免挑选最好的一次，我们在同一 5 题 development 切片上运行了 3 轮
+BM25/dense 配对实验，共 30 个独立 provider run。固定项包括 DeepSeek V4
+Flash、空 system prompt、Pi 0.84.1、adapter v6、8k high-thinking explore +
+2k non-thinking compile、top-5、512 Qwen-token snippet、10k 输出上限和题目
+顺序。执行顺序为 `BM25 -> dense`、`dense -> BM25`、`BM25 -> dense`。
+
+| trial-level 指标 | BM25 mean +/- sample std | Dense mean +/- sample std | 方向 |
+| --- | ---: | ---: | --- |
+| 格式完整率 | 86.67% +/- 11.55 | 100.00% +/- 0.00 | dense 更高 |
+| strict exact | 6.67% +/- 11.55 | 46.67% +/- 11.55 | dense 更高；仍非官方分数 |
+| evidence recall | 17.36% +/- 2.88 | 60.00% +/- 14.84 | +42.64 pp |
+| gold recall | 20.00% +/- 0.00 | 66.67% +/- 11.55 | +46.67 pp |
+| 每题搜索次数 | 11.27 +/- 2.52 | 6.40 +/- 2.80 | dense 更少 |
+| 每题输出 Token | 8,097.73 +/- 876.58 | 5,848.93 +/- 814.29 | dense 更少 |
+| 每题总 Token | 208,353.07 +/- 63,467.92 | 81,843.93 +/- 56,046.36 | dense 更少 |
+| 每题估算费用（USD） | 0.011472 +/- 0.002356 | 0.005662 +/- 0.002053 | dense 更低 |
+| 每题延迟（ms） | 88,876.60 +/- 9,222.08 | 59,770.87 +/- 7,169.28 | dense 更低 |
+
+15 个 query-trial 配对观察中，dense 的 strict exact 为 6 胜 / 0 负 / 9
+平，evidence recall 为 8 胜 / 2 负 / 5 平，费用为 13 胜 / 2 负 / 0 平。
+这些计数重复使用同一组 5 题，不能当成 15 道独立 benchmark 样本。
+三轮合计估算 API 费用为 0.25701789 USD；所有运行均为 5/5 succeeded，
+且输出预算 overshoot 为 0。
+
+费用只包含 DeepSeek provider trace；本地 dense index 的 GPU/机器成本没有
+折算成美元。两组固定的是相同 10k 最大输出 allowance，而不是事后强行让
+实际总 Token 或实际费用相等。因此这轮用于检验“替换检索器后系统行为如何
+变化”，不能称为完整的 cost-matched 或 total-token-matched 胜利。
+
+这次自动化第一次启动时，在 trial 1 BM25 完成后因评测 Python 缺少
+`duckdb` 中断。随后我们打开了该轮 development gold，修复的只有依赖
+preflight、恢复与聚合代码，没有改动生成 prompt、adapter、模型、预算或
+检索器。尽管如此，它的 manifest 必须诚实标为
+`reconstructed_after_interruption`，因此本结果仍是探索性诊断，不是预注册
+确认性实验。下一次 25 题运行必须在第一次 API 调用前写好完整 manifest。
+官方 Qwen3-32B Judge 仍未运行，46.67% 不能写成官方 accuracy。
+
 ## Counterfactual Replay
 
 为避免先付费重跑 Agent，再猜测提升来自哪里，我们固定了 BM25 运行已经生成的 70 条搜索 query，只替换检索器：
@@ -100,6 +139,13 @@
 - corrected dense end-to-end summary SHA-256：`c913eb7e7e61e44747bac52db806368b900099ad451c28f3dfec3cbbc29c25ae`
 - corrected dense diagnostic SHA-256：`e54a04aefaea715139ce74dc21a580f84533725655632e2b31893c1986d9dbd9`
 - corrected official-input manifest SHA-256：`d23bbefa9bf20947096d2d36131132c9a6af2b3fd9525571a0dd3e4a7fc2c2bf`
+- v6 repeat experiment raw SHA-256：`0b610af6a5640e82c47bbe969ff3e917b54ba28b4967c58b20b3c9ea04071c9e`
+- v6 repeat comparison raw SHA-256：`6b649973f3e952e098cc0dcf6f46e958e054f9861fc0c2e4c8d92eed960ab0b4`
+- official development ground-truth JSONL SHA-256：`9a975130c225bc66fa5a1fa206098bb2458ca782150e86339a72b63417c7d259`
+- official Judge 资产 manifest SHA-256：`0308e17cc6d113fb1871ea6c4c35590575d4ebc924abb80df0a6a443b79bb9a3`
+- official Judge 资产校验结果：24/24 通过；审计文件 SHA-256 为 `f919e78fe5e8346aa84432616cbbec8bc32588387eebd18ce7d893c919215719`
+- upstream evaluator SHA-256：`1a21233937c377ab6323c98ff9af67742756a57fbacab4ebf9bc30852eae530a`
+- official Judge `uv.lock` SHA-256：`45d3e6d00719dbf732160b25e3419ed4599121e5d832723357ff2fea01477c43`
 - dense model revision：`97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3`
 - index dataset revision：`b3f37f70c33829eb09d04784a54277a31871fd63`
 
@@ -107,13 +153,17 @@
 
 ## 下一阶段与验收标准
 
-1. **先跑官方 Judge**：使用 pinned Qwen3-32B revision 和固定 decoding，给 BM25 与 dense 两组 5 题预测打分。验收：零 parse failure，并报告逐题 Judge 原始结果；5 题只作管线门槛。
-2. **先做重复运行**：adapter v6 固定可控 sampling 边界；thinking mode 仍无法设 seed。BM25 与 dense 每题至少独立运行 3 次，报告均值、标准差和 paired win/loss，禁止挑最好的一次。
-3. **冻结 25 题开发切片**：不再针对 `1005` 调 prompt。运行相同 DeepSeek V4 Flash、phase policy 和 10k 预算的 BM25/dense paired ablation。验收：官方 accuracy、recall、search calls、Token、费用和延迟全部齐全。
-4. **检索层晋升门槛**：dense 相对 BM25 的 evidence recall 至少 +10 pp，且官方 accuracy 不下降；否则回退，不堆 reranker。
-5. **再诊断 query 编译**：只有 25 题中至少 10 个失败属于“相关文档未召回”，才开发 Constraint Portfolio v1。先 query-only replay，证据召回提升后再付费端到端。
-6. **175 题 development**：冻结候选后运行完整开发集和官方 Judge，形成可信区间与 bad-case 分簇。
-7. **655 题 sealed holdout**：只在机制、阈值和预算全部预注册后打开一次。DeepSeek V4 Pro 作为独立模型轨道，不与 Flash 混报。
-8. **排行榜目标**：先越过冻结快照的 top-20 门槛 63.86%，再挑战 top-10 门槛 78.41%。达到阈值仍需同时公开同模型基线、费用、延迟和失败样本。
+1. **先跑官方 Judge**：使用 pinned Qwen3-32B revision 和固定 decoding，给三轮共 6 组冻结预测打分。验收：30/30 有逐题原始结果、零 parse failure，并聚合 official accuracy 的均值、标准差和 paired win/loss；5 题仍只作管线门槛。
+2. **冻结 25 题开发切片**：不再针对 `1005` 调 prompt。第一次生成前写入 `pre_generation` manifest，运行相同 DeepSeek V4 Flash、phase policy 和 10k 预算的 BM25/dense paired ablation。验收：官方 accuracy、recall、search calls、Token、费用和延迟全部齐全。
+3. **检索层晋升门槛**：dense 相对 BM25 的 evidence recall 至少 +10 pp，且官方 accuracy 不下降；否则回退，不堆 reranker。
+4. **再诊断 query 编译**：只有 25 题中至少 10 个失败属于“相关文档未召回”，才开发 Constraint Portfolio v1。先 query-only replay，证据召回提升后再付费端到端。
+5. **175 题 development**：冻结候选后运行完整开发集和官方 Judge，形成可信区间与 bad-case 分簇。
+6. **655 题 sealed holdout**：只在机制、阈值和预算全部预注册后打开一次。DeepSeek V4 Pro 作为独立模型轨道，不与 Flash 混报。
+7. **排行榜目标**：先越过冻结快照的 top-20 门槛 63.86%，再挑战 top-10 门槛 78.41%。达到阈值仍需同时公开同模型基线、费用、延迟和失败样本。
 
-当前最近的阻塞不是实现，而是官方 Qwen3-32B Judge 所需 GPU；本机 4 GiB GPU 无法承载，已检查的远端 GPU 均在被其他任务占用，因此没有抢占或停止任何他人进程。
+截至 2026-08-14，官方仓库、锁定依赖、Qwen3-32B 权重、30 份冻结输入和
+development ground truth 已在远端准备完成；通过镜像取得的 17 个权重分片及
+7 个配置/索引/tokenizer 文件已经逐字节匹配 pinned Hugging Face revision。
+当前最近的阻塞只剩官方 Judge 所需 GPU：它需要两张空闲 48 GiB GPU，而最新
+检查时远端 8 张卡都有其他任务，因此没有抢占或停止任何他人进程。官方
+accuracy 仍为 `planned_not_run`。

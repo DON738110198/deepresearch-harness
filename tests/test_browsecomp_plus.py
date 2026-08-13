@@ -25,6 +25,7 @@ from deepresearch_harness.browsecomp_evaluation import (
     DevelopmentGoldRow,
     DevelopmentGoldSlice,
     _prediction_set_sha256,
+    export_official_development_ground_truth,
     extract_exact_answer,
     normalize_exact_answer,
     score_gold_diagnostic,
@@ -73,6 +74,7 @@ def test_official_evaluator_is_revision_pinned_and_target_bound(tmp_path: Path) 
 
     assert evaluator.judge.revision == "9216db5781bf21249d130ec9da846c4624c16137"
     assert evaluator.inference.enable_thinking is False
+    assert evaluator.judge_assets_manifest == "official_judge_assets.json"
 
     crlf_manifest = tmp_path / "target-crlf.json"
     normalized = MANIFEST.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
@@ -736,3 +738,21 @@ def test_gold_diagnostic_is_prediction_hash_bound(tmp_path: Path) -> None:
     assert diagnostic.evidence_recall_percent == 50.0
     assert diagnostic.gold_recall_percent == 100.0
     assert diagnostic.official_accuracy_status == "planned_not_run"
+
+    ground_truth_dir = tmp_path / "runs" / "official-ground-truth"
+    ground_truth = export_official_development_ground_truth(
+        gold_slice_path=gold_path,
+        output_dir=ground_truth_dir,
+    )
+    exported_row = json.loads(
+        (ground_truth_dir / "development_ground_truth.jsonl").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert exported_row == {
+        "answer": "Q7-BENCH",
+        "query": "fixture?",
+        "query_id": "q-1",
+    }
+    assert ground_truth.query_ids == ["q-1"]
+    assert "gold_docids" not in exported_row

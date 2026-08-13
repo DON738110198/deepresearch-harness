@@ -34,8 +34,10 @@ not the primary optimization target.
 
 The official end-to-end evaluator uses Qwen3-32B as its judge. Its revision and
 decoding contract are pinned, and hash-bound evaluator inputs have been
-exported. Inference remains `planned_not_run`: the local 4 GiB GPU cannot host
-the judge, and the checked remote GPUs were occupied, so no other workload was
+exported. The exact upstream environment is installed remotely; all 24 required
+model assets passed revision-bound byte verification, and all 30 repeat inputs
+are staged. Inference remains `planned_not_run`: it needs two idle 48 GiB GPUs,
+and the latest check found workloads on all eight, so no other workload was
 preempted.
 
 ## Frozen Leaderboard Snapshot
@@ -66,7 +68,9 @@ Target ladder:
 
 The gold-free runtime portion of item 1 has passed on five development queries.
 A strict-budget Flash candidate with phase-adaptive reasoning and pinned dense
-retrieval is exported for the evaluator, but Qwen3-32B is still
+retrieval is exported for the evaluator. Three alternating-order adapter-v6
+paired trials are also complete, but their manifest is labeled
+`reconstructed_after_interruption` and Qwen3-32B is still
 `planned_not_run`, so item 1 is not complete. Items 2-5 remain `planned`. The
 current five-query exact and retrieval values are diagnostic evidence, not an
 accuracy, effectiveness, or rank claim.
@@ -179,13 +183,20 @@ forced bootstrap search, or a three-query rare-anchor portfolio. Those negative
 controls localize the issue to query compilation, but further tuning on one
 question would overfit the development slice.
 
-1. Run the pinned Qwen3-32B judge on both frozen BM25 and dense five-query predictions; require zero parse failures and retain every per-query judgment.
-2. Under adapter v6, run at least three independent paired trials per query for BM25 and dense; report means, standard deviations, and paired wins without best-run selection.
-3. Freeze a 25-query development slice and stop changing prompts before running the same-model, same-phase-policy BM25/dense paired ablation.
-4. Promote dense retrieval only if evidence recall improves by at least 10 percentage points and official accuracy does not decline; report search calls, Token, cost, and latency together.
-5. Cluster at least ten retrieval failures before designing Constraint Portfolio v1. First require query-only replay gains; do not pay for end-to-end runs until recall moves.
-6. Run all 175 development queries only after the candidate policy and acceptance thresholds are frozen.
-7. Keep the 655-query holdout sealed until the mechanism and thresholds are preregistered; use DeepSeek V4 Pro only as a separate final track.
+The three paired trials used 30 unique provider runs. Dense versus BM25 raised
+mean diagnostic evidence recall from 17.36% to 60.00%, won/lost/tied 8/2/5
+query-trial recall pairs, and reduced mean search calls, tokens, estimated cost,
+and latency. Strict exact rose from 6.67% to 46.67%, but this is not official
+accuracy. Because the first process was interrupted after trial 1 BM25 and gold
+was opened before resume, the unchanged-policy result is exploratory rather
+than preregistered confirmatory evidence.
+
+1. Run the pinned Qwen3-32B judge on all six frozen repeat exports; require 30/30 retained per-query judgments and zero parse failures.
+2. Freeze a 25-query development slice and write the complete `pre_generation` manifest before running the same-model, same-phase-policy BM25/dense paired ablation.
+3. Promote dense retrieval only if evidence recall improves by at least 10 percentage points and official accuracy does not decline; report search calls, Token, cost, and latency together.
+4. Cluster at least ten retrieval failures before designing Constraint Portfolio v1. First require query-only replay gains; do not pay for end-to-end runs until recall moves.
+5. Run all 175 development queries only after the candidate policy and acceptance thresholds are frozen.
+6. Keep the 655-query holdout sealed until the mechanism and thresholds are preregistered; use DeepSeek V4 Pro only as a separate final track.
 
 Exact run hashes, costs, rejected controls, and the inference boundary are in
 `browsecomp_plus_layered_results_2026-08-13.zh-CN.md`.

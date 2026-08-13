@@ -102,6 +102,28 @@ class DiagnosticSummary(StrictContract):
     rows: list[DiagnosticRow] = Field(min_length=1)
 
 
+class OfficialGroundTruthExport(StrictContract):
+    schema_version: Literal["browsecomp-plus-official-ground-truth-export-v0"] = (
+        "browsecomp-plus-official-ground-truth-export-v0"
+    )
+    created_at: str
+    partition: Literal["development"] = "development"
+    gold_slice_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    target_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    query_count: int = Field(gt=0)
+    query_ids: list[str] = Field(min_length=1)
+    ground_truth_path: str = Field(min_length=1)
+    ground_truth_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def query_ids_match_count(self) -> "OfficialGroundTruthExport":
+        if self.query_count != len(self.query_ids):
+            raise ValueError("official ground truth query count does not match IDs")
+        if self.query_ids != sorted(set(self.query_ids)):
+            raise ValueError("official ground truth query IDs must be sorted and unique")
+        return self
+
+
 def freeze_development_gold_slice(
     *,
     manifest_path: Path,
@@ -275,6 +297,44 @@ def score_gold_diagnostic(
         rows=rows,
     )
     _atomic_write(output_path, artifact.model_dump_json(indent=2))
+    return artifact
+
+
+def export_official_development_ground_truth(
+    *, gold_slice_path: Path, output_dir: Path
+) -> OfficialGroundTruthExport:
+    repository_root = _find_repository_root(gold_slice_path.resolve())
+    _require_under_runs(gold_slice_path, repository_root)
+    _require_under_runs(output_dir, repository_root)
+    if output_dir.exists() and any(output_dir.iterdir()):
+        raise ValueError("official ground truth output directory must be empty")
+
+    gold_bytes = gold_slice_path.read_bytes()
+    gold = DevelopmentGoldSlice.model_validate_json(gold_bytes)
+    rows = sorted(gold.rows, key=lambda row: row.query_id)
+    ground_truth_path = output_dir / "development_ground_truth.jsonl"
+    ground_truth = "".join(
+        json.dumps(
+            {"query_id": row.query_id, "query": row.question, "answer": row.answer},
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        + "\n"
+        for row in rows
+    )
+    _atomic_write(ground_truth_path, ground_truth)
+    artifact = OfficialGroundTruthExport(
+        created_at=datetime.now(timezone.utc).isoformat(),
+        gold_slice_sha256=sha256(gold_bytes).hexdigest(),
+        target_manifest_sha256=gold.target_manifest_sha256,
+        query_count=len(rows),
+        query_ids=[row.query_id for row in rows],
+        ground_truth_path=ground_truth_path.resolve().relative_to(
+            repository_root.resolve()
+        ).as_posix(),
+        ground_truth_sha256=sha256(ground_truth_path.read_bytes()).hexdigest(),
+    )
+    _atomic_write(output_dir / "export_manifest.json", artifact.model_dump_json(indent=2))
     return artifact
 
 
