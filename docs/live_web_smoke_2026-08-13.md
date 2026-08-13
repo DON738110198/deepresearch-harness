@@ -56,7 +56,9 @@ A focused inspection found that the final report distinguishes observability fro
 
 ## Next bad-case-driven gate
 
-Implement exactly one bounded evidence-gap requery round inside the single-Agent pipeline.
+**Superseded after the first public benchmark:** the LiveDRBench preview baseline showed that the no-key general search fallback returned irrelevant results on all five tasks. A second search round over the same backend is not selected. The next gate is a stable general search provider comparison; bounded requery moves after first-pass retrieval is credible.
+
+The former planned gate was one bounded evidence-gap requery round inside the single-Agent pipeline. It is retained below as historical intent, not the selected next experiment.
 
 Acceptance criteria:
 

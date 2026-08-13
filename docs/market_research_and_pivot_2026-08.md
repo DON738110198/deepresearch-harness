@@ -172,9 +172,9 @@ Question
 ## 9. 下一阶段顺序与验收标准
 
 1. **已完成 Live search/fetch 闭环**：DeepSeek 从中文问题生成带可点击官方来源的中文报告；trace 包含查询、URL、Token、费用和延迟。结果与失败链见 `live_web_smoke_2026-08-13.md`。
-2. **单轮补搜**：针对已保存的“首次证据缺少工作流/评测轴”bad case，实现最多一轮 Evidence Gap -> requery -> merged ledger，不引入多 Agent。
-3. **最小可用界面**：用户能确认计划、观察进度、阅读中文报告和打开证据，不接触评测内部 ID。
-4. **自动 Judge**：固定 rubric 批量评分并输出可审计理由；不需要人工填写表单。
-5. **受控 A/B**：同模型、同工具、同 Token 或费用预算运行 one-pass B1 与单轮补搜；结论只描述 harness 行为。
+2. **已完成外部 benchmark baseline**：固定 5 个 LiveDRBench preview 任务，当前 no-key 搜索下兼容性 exact main-claim F1 为 0；官方 Judge 未运行。结果见 `livedrbench_preview_v0_results.md`。
+3. **稳定搜索 provider**：在相同 query policy 和预算下替换通用 Bing RSS 回退，先修 first-pass retrieval；密钥仍只从环境变量读取。
+4. **受控 Search A/B**：提前冻结独立 holdout，同模型、同查询、同 evidence cap、同 Token 或费用预算比较搜索 provider。
+5. **延后单轮补搜**：只有稳定搜索仍留下可复现 evidence gap 时，才实现最多一轮 requery；不引入多 Agent。
 
 只有在重复坏例证明单 Agent 边界不足后，才考虑并行 subagent、Critic-Repair 或 Research DAG。

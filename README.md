@@ -40,6 +40,22 @@ python -m deepresearch_harness.cli research `
 
 Repository-shaped queries first use GitHub's public repository search and fetch the repository README. Other queries fall back to DuckDuckGo Lite and Bing RSS without another API key. These no-key search paths are best-effort and rate-limited, not a production search SLA. The saved trace records every query, backend, fetched URL, fetch error, token count, estimated fee, and latency.
 
+## Public benchmark pilot
+
+The first external slice pins five tasks from Microsoft's LiveDRBench preview. It runs the same one-pass B1 search policy with a task-shaped JSON answer adapter:
+
+```powershell
+python -m deepresearch_harness.cli validate-public-benchmark `
+  --manifest benchmarks\livedrbench_preview_v0\manifest.json
+
+python -m deepresearch_harness.cli run-public-benchmark `
+  --manifest benchmarks\livedrbench_preview_v0\manifest.json `
+  --config config.local.json `
+  --output-dir runs\public_benchmarks
+```
+
+The deterministic compatibility scorer checks prediction coverage, official outer shape/type compatibility, and normalized exact match on designated main claims without another model call. It is not the official LiveDRBench evaluator and must not be reported as a leaderboard score. The recorded baseline completed 5/5 tasks but obtained `0.0` macro exact main-claim F1 because the no-key general search fallback returned mostly irrelevant sources. See `docs/livedrbench_preview_v0_results.md`.
+
 ## Real API run
 
 Copy `config.example.json` to a local config file, set only the named environment variable, then run:
@@ -138,6 +154,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - Report citations point to collected evidence IDs and deterministic source links; source quality and claim entailment still require evaluation.
 - The recorded B0/B1 semantic pass is explicitly AI-assisted calibration; registered human semantic metrics remain **planned**.
 - GitHub repository search is public and unauthenticated; DuckDuckGo Lite/Bing RSS are unofficial best-effort fallbacks. Dynamic pages, PDFs, and anti-bot pages are not handled reliably.
+- The LiveDRBench preview score is a five-task compatibility diagnostic. The official judge was not run, and exact normalized matching is deliberately stricter and narrower than the official evaluator.
 
 ## Repository map
 
@@ -145,6 +162,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/providers.py`: fake and OpenAI-compatible providers.
 - `src/deepresearch_harness/pipeline.py`: baseline orchestration and persistence.
 - `src/deepresearch_harness/web_research.py`: no-key repository/web search, bounded fetch, text extraction, and request trace.
+- `src/deepresearch_harness/public_benchmark.py`: pinned LiveDRBench loading, structured predictions, exact compatibility scoring, and batch audit summary.
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.
 - `src/deepresearch_harness/batch.py`: frozen two-variant batch execution and automatic aggregation.
 - `src/deepresearch_harness/review.py`: deterministic variant-blind review, validation, and aggregation.
@@ -152,6 +170,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/review_workspace.py`: standalone browser workspace for blind human annotation.
 - `experiments/pilot_v0/`: token-matched and cost-matched manifests with pinned corpus hashes and pricing.
 - `benchmarks/pilot_v0/`: ten controlled diagnostic tasks and a synthetic corpus.
+- `benchmarks/livedrbench_preview_v0/`: frozen five-task external compatibility manifest.
 - `docs/problem_statement.md`: problem-first design position and falsifiable hypotheses.
 - `docs/pilot_design.md`: B0/B1/B2 comparison and stage gates.
 - `docs/architecture.md`: current boundaries and next-stage extension points.
@@ -160,11 +179,12 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `docs/b1_b2_token_v2.md`: retained B2 v2 tie and search-layer diagnosis.
 - `docs/b1_b2_v3_results.md`: token/cost automatic results and current claim boundary.
 - `docs/live_web_smoke_2026-08-13.md`: real DeepSeek live-search failures, final smoke evidence, and next gate.
+- `docs/livedrbench_preview_v0_results.md`: first external benchmark result and search-layer diagnosis.
 
 ## Next implementation order
 
 1. **Completed:** real Search/Fetch -> Chinese cited report with query/URL/provider/token/cost/latency trace and environment-only credentials.
-2. Implement one bounded single-Agent evidence-gap requery round, driven by the saved missing-workflow/evaluation bad case; do not add a DAG or subagents.
-3. Add a simple plan-confirmation and report view that exposes research progress without evaluation-internal IDs.
-4. Add deterministic citation/link checks plus a versioned rubric Judge that returns `pass/fail`, reason, and report evidence; full manual annotation is not required.
-5. Run a 5-10 task public benchmark slice under fixed model/tool and separately token- or cost-matched budgets before claiming an effect.
+2. **Completed:** pinned five-task LiveDRBench preview baseline with structured predictions, exact compatibility metrics, and retained parser/cost-audit failures.
+3. Add one stable general Search API adapter behind the existing collector interface and keep its key environment-only. Do not add re-planning while first-pass retrieval is still broken.
+4. Freeze a separate public holdout slice, then compare the current no-key fallback with the stable search adapter under the same model, query policy, evidence cap, and fee ceiling.
+5. Only after first-pass retrieval is credible, test one bounded evidence-gap requery round; add a DAG or subagents only if repeated independent-branch failures justify them.

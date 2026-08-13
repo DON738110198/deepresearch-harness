@@ -1,0 +1,14 @@
+{
+  "benchmark_id": "livedrbench-preview-v0",
+  "status": "frozen",
+  "dataset_id": "microsoft/LiveDRBench",
+  "dataset_revision": "cad63dd0403b11e8a80001e2339f64ac93acec5a",
+  "dataset_config": "preview",
+  "dataset_split": "test",
+  "task_keys": [4, 31, 40, 55, 76],
+  "source_repository": "https://github.com/microsoft/LiveDRBench",
+  "source_repository_commit": "6ff85b67b35fa303907f6f275417622338acd1f6",
+  "selection_rationale": "Five fixed preview tasks spanning entities, dataset discovery, flight incidents, geospatial paper discovery, and materials paper discovery. Selected before generation to exercise structured answers and diverse web-search failures at bounded cost.",
+  "evaluator": "compatibility_exact_main_claim_v1",
+  "official_evaluator_status": "planned_not_run"
+}

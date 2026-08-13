@@ -16,6 +16,11 @@ from .pipeline import (
     SearchWritePipeline,
 )
 from .providers import FakeProvider, provider_from_config
+from .public_benchmark import (
+    load_livedrbench_manifest,
+    run_livedrbench_pilot,
+    score_livedrbench_predictions,
+)
 from .review import prepare_blind_review, score_blind_review
 from .review_translation import translate_review_packet
 from .review_workspace import render_review_workspace, validate_review_submission_file
@@ -76,6 +81,25 @@ def main() -> int:
     run_experiment.add_argument("--manifest", type=Path, required=True)
     run_experiment.add_argument("--config", type=Path, required=True)
     run_experiment.add_argument("--output-dir", type=Path, default=Path("runs") / "experiments")
+    validate_public = subparsers.add_parser(
+        "validate-public-benchmark",
+        help="Validate a pinned LiveDRBench compatibility manifest.",
+    )
+    validate_public.add_argument("--manifest", type=Path, required=True)
+    run_public = subparsers.add_parser(
+        "run-public-benchmark",
+        help="Run the pinned LiveDRBench compatibility pilot.",
+    )
+    run_public.add_argument("--manifest", type=Path, required=True)
+    run_public.add_argument("--config", type=Path, required=True)
+    run_public.add_argument("--output-dir", type=Path, default=Path("runs") / "public_benchmarks")
+    score_public = subparsers.add_parser(
+        "score-public-benchmark",
+        help="Score saved LiveDRBench predictions without another model call.",
+    )
+    score_public.add_argument("--manifest", type=Path, required=True)
+    score_public.add_argument("--predictions", type=Path, required=True)
+    score_public.add_argument("--output", type=Path, required=True)
     prepare_review = subparsers.add_parser("prepare-review", help="Create blinded two-variant review artifacts.")
     prepare_review.add_argument("--summary", type=Path, required=True)
     prepare_review.add_argument("--suite", type=Path, required=True)
@@ -145,6 +169,49 @@ def main() -> int:
         print(
             f"experiment={manifest.experiment_id}\nstatus={manifest.status}\n"
             f"budget_mode={manifest.budget_mode.value}\nmodel={manifest.provider.model}\nvariants={len(manifest.variants)}"
+        )
+        return 0
+    if args.command == "validate-public-benchmark":
+        manifest = load_livedrbench_manifest(args.manifest)
+        print(
+            f"benchmark={manifest.benchmark_id}\nstatus={manifest.status}\n"
+            f"dataset={manifest.dataset_id}@{manifest.dataset_revision}\ntasks={len(manifest.task_keys)}\n"
+            f"evaluator={manifest.evaluator}\nofficial_evaluator={manifest.official_evaluator_status}"
+        )
+        return 0
+    if args.command == "run-public-benchmark":
+        settings = HarnessConfig.model_validate_json(args.config.read_text(encoding="utf-8"))
+        summary = run_livedrbench_pilot(
+            manifest_path=args.manifest,
+            config=settings,
+            output_root=args.output_dir,
+        )
+        print(
+            f"benchmark={summary.benchmark_id}\nstatus={summary.status}\noutput_dir={summary.output_dir}\n"
+            f"completed={summary.completed}\nfailed={summary.failed}\n"
+            f"structured_output_rate={summary.structured_output_rate:.4f}\n"
+            f"official_shape_compatible_rate={summary.official_shape_compatible_rate:.4f}\n"
+            f"macro_exact_precision={summary.macro_exact_precision:.4f}\n"
+            f"macro_exact_recall={summary.macro_exact_recall:.4f}\n"
+            f"macro_exact_f1={summary.macro_exact_f1:.4f}\n"
+            f"tokens={summary.total_tokens}\ncost_usd={summary.total_estimated_cost_usd:.8f}\n"
+            f"official_evaluator={summary.official_evaluator_status}"
+        )
+        return 0
+    if args.command == "score-public-benchmark":
+        scores = score_livedrbench_predictions(
+            manifest_path=args.manifest,
+            predictions_path=args.predictions,
+            output_path=args.output,
+        )
+        print(
+            f"benchmark={scores.benchmark_id}\noutput={args.output}\n"
+            f"prediction_coverage_rate={scores.prediction_coverage_rate:.4f}\n"
+            f"official_shape_compatible_rate={scores.official_shape_compatible_rate:.4f}\n"
+            f"macro_exact_precision={scores.macro_exact_precision:.4f}\n"
+            f"macro_exact_recall={scores.macro_exact_recall:.4f}\n"
+            f"macro_exact_f1={scores.macro_exact_f1:.4f}\n"
+            f"official_evaluator={scores.official_evaluator_status}"
         )
         return 0
     if args.command == "run-experiment":

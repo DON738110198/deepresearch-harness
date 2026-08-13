@@ -111,6 +111,8 @@ class FakeProvider(LLMProvider):
                     )
                 ledger["evidence_debts"] = debts
             text = json.dumps(ledger)
+        elif stage == "benchmark_write":
+            text = json.dumps({"answer": []})
         elif stage == "write":
             payload = json.loads(prompt)
             lines = [f"# Research report\n\n## Question\n{payload['question']}\n\n## Evidence-backed findings"]

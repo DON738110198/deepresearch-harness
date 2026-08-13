@@ -6,7 +6,7 @@ import uuid
 from pathlib import Path
 from typing import Protocol
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, JsonValue, model_validator
 
 from .contracts import (
     BudgetLimits,
@@ -97,6 +97,20 @@ class ObligationPlanDraft(BaseModel):
         if len(queries) != len(set(queries)):
             raise ValueError("each obligation requires a distinct search query")
         return self
+
+
+class BenchmarkAnswerDraft(BaseModel):
+    answer: JsonValue
+
+
+class BenchmarkPlanDraft(BaseModel):
+    steps: list[PlanStep] = Field(
+        default_factory=lambda: [
+            PlanStep(id="identify", objective="Find sources satisfying every stated benchmark constraint.")
+        ],
+        min_length=1,
+    )
+    search_queries: list[str] = Field(min_length=1, max_length=5)
 
 
 class BaselineResearchPipeline:
@@ -191,7 +205,11 @@ class BaselineResearchPipeline:
             }
         )
         completion = self._complete("ledger", prompt, state, json_output=True)
-        claims = [Claim.model_validate(item) for item in json.loads(completion)["claims"]]
+        payload = json.loads(completion)
+        claim_rows = payload.get("claims", [])
+        if not isinstance(claim_rows, list):
+            raise ValueError("claim ledger must contain a claims array")
+        claims = [Claim.model_validate(item) for item in claim_rows]
         evidence_ids = {item.id for item in evidence}
         for claim in claims:
             if not set(claim.evidence_ids).issubset(evidence_ids):
@@ -358,6 +376,58 @@ class PrimarySourceResearchPipeline(BaselineResearchPipeline):
         if not 2 <= len(plan.search_queries) <= 5:
             raise ValueError("live primary-source plan requires 2-5 search queries")
         return plan
+
+
+class BenchmarkResearchPipeline(BaselineResearchPipeline):
+    """One-pass B1 with task-defined structured output for public benchmark adapters."""
+
+    variant = "b1_benchmark_structured"
+
+    def _plan(self, question: str, state: RunState) -> Plan:
+        prompt = json.dumps(
+            {
+                "instruction": (
+                    "Create a concise public-web research plan for this benchmark question. Return JSON only with 1-5 "
+                    "distinct, focused search queries. Cover the question's identifying constraints and requested fields. "
+                    "Do not search for the benchmark answer or benchmark ground truth."
+                ),
+                "question": question,
+                "decision_context": state.task.decision_context,
+                "json_example": {
+                    "steps": [{"id": "identify", "objective": "Find sources satisfying every stated constraint."}],
+                    "search_queries": ["focused public evidence query"],
+                },
+            }
+        )
+        completion = self._complete("plan", prompt, state, json_output=True)
+        draft = BenchmarkPlanDraft.model_validate_json(completion)
+        return Plan(steps=draft.steps, search_queries=draft.search_queries)
+
+    def _write_report(self, question: str, run: RunState, state: RunState) -> str:
+        prompt = json.dumps(
+            {
+                "instruction": (
+                    "Return JSON only with one top-level field named answer. The answer value must follow the exact JSON "
+                    "shape and field names requested by the benchmark question. Use only the supplied evidence-backed claims. "
+                    "When evidence is incomplete, return the supported subset rather than inventing entries. Do not include "
+                    "markdown, citation markers, commentary, or a references section inside answer."
+                ),
+                "question": question,
+                "decision_context": state.task.decision_context,
+                "claims": [claim.model_dump() for claim in run.claims],
+                "evidence": [item.model_dump(mode="json") for item in run.evidence],
+                "json_example": {"answer": []},
+            }
+        )
+        completion = self._complete("benchmark_write", prompt, state, json_output=True)
+        draft = BenchmarkAnswerDraft.model_validate_json(completion)
+        run.structured_answer = draft.answer
+        answer_json = json.dumps(draft.answer, ensure_ascii=False, indent=2)
+        markers = {citation.claim_id: citation.marker for citation in run.citations}
+        lines = ["# Benchmark answer", "", "```json", answer_json, "```", "", "## Evidence ledger", ""]
+        for claim in run.claims:
+            lines.append(f"- {claim.text} {markers[claim.id]}")
+        return self._finalize_report("\n".join(lines), run)
 
 
 class SearchWritePipeline(BaselineResearchPipeline):

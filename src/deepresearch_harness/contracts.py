@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
+from pydantic import BaseModel, Field, HttpUrl, JsonValue, field_validator, model_validator
 
 
 def utc_now() -> datetime:
@@ -182,6 +182,7 @@ class RunState(BaseModel):
     variant: Literal[
         "b0_search_write",
         "b1_plan_search_ledger_write",
+        "b1_benchmark_structured",
         "b1_live_primary_sources",
         "b2_obligation_evidence_debt",
     ] = "b1_plan_search_ledger_write"
@@ -196,6 +197,7 @@ class RunState(BaseModel):
     total_usage: Usage = Field(default_factory=Usage)
     budget_limits: BudgetLimits = Field(default_factory=BudgetLimits)
     stop_reason: Literal["budget_exhausted"] | None = None
+    structured_answer: JsonValue | None = None
     report_path: str | None = None
     error: str | None = None
 
