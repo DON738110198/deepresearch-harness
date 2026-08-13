@@ -37,6 +37,15 @@ The live web run in `live_web_smoke_2026-08-13.md` is an exploratory end-to-end 
 
 The five-task LiveDRBench preview run in `livedrbench_preview_v0_results.md` is a pinned compatibility pilot. `compatibility_exact_main_claim_v1` performs normalized exact matching on selected main-claim fields and checks the official outer shape/type contract. It does not perform the official LLM equivalence judgments, tolerances, or leaderboard aggregation. Therefore its scores must be labeled compatibility metrics, not official LiveDRBench results.
 
+BrowseComp-Plus is the active primary benchmark target described in
+`research_goal_and_benchmark_strategy.md`. Before its answers or relevance
+labels are accessed, pin the benchmark artifacts and create a deterministic
+development/holdout split from query IDs. Gold data belongs behind an
+evaluator-only boundary. Freeze and hash predictions before holdout scoring.
+Report the sealed-holdout result separately from the official full-set
+leaderboard submission. Until the official tool/index/evaluator contract is
+reproduced, every BrowseComp-Plus score and rank remains `planned`.
+
 Gold answers are fetched only inside the scorer after generation. Generation receives the public question and fetched web evidence, while saved public artifacts contain predictions, hashes, and aggregate counts rather than copied benchmark gold. Parser or post-generation failures must still load persisted `RunState` usage so paid calls are not reported as zero-cost failures.
 
 The following metrics remain required for registered comparisons:

@@ -1,0 +1,94 @@
+{
+  "schema_version": "browsecomp-plus-target-v0",
+  "status": "planned_preflight",
+  "benchmark": {
+    "name": "BrowseComp-Plus",
+    "repository": "https://github.com/texttron/BrowseComp-Plus",
+    "repository_commit": "046949032b0328319cc9a02663a759ec601d9402",
+    "query_dataset": {
+      "name": "Tevatron/browsecomp-plus",
+      "revision": "144cff8e35b5eaef7e526346aa60774a9deb941f"
+    },
+    "corpus_dataset": {
+      "name": "Tevatron/browsecomp-plus-corpus",
+      "revision": "b27b02bc3e45511b8b82a13e6f90ce761df726f6"
+    },
+    "index_dataset": {
+      "name": "Tevatron/browsecomp-plus-indexes",
+      "revision": "b3f37f70c33829eb09d04784a54277a31871fd63",
+      "baseline_index": "bm25"
+    },
+    "official_judge": {
+      "model": "Qwen/Qwen3-32B",
+      "status": "planned_not_run"
+    }
+  },
+  "split": {
+    "version": "bcp-v0-sha256-20pct-dev",
+    "input": "bcp-v0:<query_id>",
+    "algorithm": "sha256",
+    "rule": "int(first_8_hex_digits, 16) % 100 < 20 => development; otherwise => sealed_holdout",
+    "frozen_before_gold_access": true
+  },
+  "model_tracks": [
+    {
+      "model": "deepseek-v4-flash",
+      "purpose": "development_and_baseline",
+      "status": "planned"
+    },
+    {
+      "model": "deepseek-v4-pro",
+      "purpose": "frozen_final_candidate",
+      "status": "planned"
+    }
+  ],
+  "leaderboard_snapshot": {
+    "source": "https://tevatron-browsecomp-plus.hf.space/data/leaderboard.json",
+    "fetched_at": "2026-08-13",
+    "sha256": "149482ea50abda17baa7153a47f1209fd12217ce48fdba4c91324d12acbae205",
+    "entries": 84,
+    "accuracy_percent": {
+      "top_5_floor": 86.27,
+      "top_10_floor": 78.41,
+      "top_20_floor": 63.86,
+      "median": 37.35
+    }
+  },
+  "evaluation_contract": {
+    "primary_metric": "Accuracy (%)",
+    "secondary_metrics": [
+      "Recall (%)",
+      "Search Calls",
+      "Calibration Error (%)",
+      "input_tokens",
+      "output_tokens",
+      "estimated_cost_usd",
+      "latency_ms"
+    ],
+    "required_comparisons": [
+      "same_model_same_retriever_search_call_matched",
+      "same_model_same_retriever_token_matched",
+      "same_model_same_retriever_cost_matched"
+    ]
+  },
+  "target_ladder": [
+    {
+      "name": "official_contract_reproduction",
+      "status": "planned"
+    },
+    {
+      "name": "same_model_baseline_improvement",
+      "status": "planned"
+    },
+    {
+      "name": "frozen_top_20_threshold",
+      "accuracy_percent": 63.86,
+      "status": "planned"
+    },
+    {
+      "name": "frozen_top_10_stretch_threshold",
+      "accuracy_percent": 78.41,
+      "status": "planned"
+    }
+  ]
+}

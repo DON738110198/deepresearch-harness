@@ -4,6 +4,14 @@ A small, auditable baseline for improving end-to-end Deep Research task executio
 
 > **Current direction (2026-08-13):** full manual blind annotation is paused because it imposed more reviewer work than the current synthetic pilot could justify. The workspaces remain optional audit artifacts, not the next-stage gate. The project is moving first toward a usable live Search/Fetch -> Chinese cited report loop, followed by deterministic checks and a versioned LLM Judge. See [`docs/market_research_and_pivot_2026-08.md`](docs/market_research_and_pivot_2026-08.md).
 
+> **Active research target:** use frozen DeepSeek V4 Flash/Pro to test a coherent,
+> evidence-debt-driven stack across retrieval, verification, budgeted control,
+> and answer compilation. BrowseComp-Plus is the primary benchmark candidate,
+> with frozen leaderboard thresholds, leakage controls, and matched-budget gates.
+> All target scores and ranks are `planned`. See
+> [`docs/research_goal_and_benchmark_strategy.md`](docs/research_goal_and_benchmark_strategy.md)
+> and [`docs/browsecomp_plus_preflight_2026-08-13.md`](docs/browsecomp_plus_preflight_2026-08-13.md).
+
 The first MVP is deliberately narrow:
 
 ```text
