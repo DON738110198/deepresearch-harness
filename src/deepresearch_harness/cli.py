@@ -56,6 +56,7 @@ from .retrieval_replay import (
     select_candidate,
 )
 from .web_research import live_collector_from_config
+from .screening_judge import calibrate_screening_judge
 
 
 def project_root() -> Path:
@@ -321,6 +322,22 @@ def main() -> int:
     )
     aggregate_official_judge.add_argument("--output", type=Path, required=True)
     aggregate_official_judge.add_argument("--validate-existing", action="store_true")
+    calibrate_screening_judge_parser = subparsers.add_parser(
+        "calibrate-browsecomp-plus-screening-judge",
+        help="Compare the non-official single-GPU AWQ judge with pinned BF16 labels.",
+    )
+    calibrate_screening_judge_parser.add_argument(
+        "--screening-manifest", type=Path, required=True
+    )
+    calibrate_screening_judge_parser.add_argument(
+        "--screening-result", type=Path, required=True
+    )
+    calibrate_screening_judge_parser.add_argument(
+        "--official-comparison", type=Path, required=True
+    )
+    calibrate_screening_judge_parser.add_argument(
+        "--output", type=Path, required=True
+    )
     decide_browsecomp_layer = subparsers.add_parser(
         "decide-browsecomp-plus-layer",
         help="Apply frozen development gates and classify official-judge bad cases.",
@@ -755,6 +772,27 @@ def main() -> int:
             f"ties={comparison.paired.ties}\nleaderboard_status=not_submitted"
         )
         return 0
+    if args.command == "calibrate-browsecomp-plus-screening-judge":
+        calibration = calibrate_screening_judge(
+            screening_manifest_path=args.screening_manifest,
+            screening_result_path=args.screening_result,
+            official_comparison_path=args.official_comparison,
+            output_path=args.output,
+        )
+        print(
+            f"output={args.output}\nstatus={calibration['status']}\n"
+            f"evaluations={calibration['evaluations']}\n"
+            "label_agreement_percent="
+            f"{calibration['label_agreement_percent']:.2f}\n"
+            f"cohens_kappa={calibration['cohens_kappa']:.4f}\n"
+            "absolute_pooled_accuracy_delta_pp="
+            f"{calibration['absolute_pooled_accuracy_delta_pp']:.2f}\n"
+            "paired_variant_delta_sign_match="
+            f"{str(calibration['paired_variant_delta_sign_match']).lower()}\n"
+            "official_status=reference_bf16_development_slice\n"
+            "screening_status=non_official_awq_development_screening"
+        )
+        return 0 if calibration["status"] == "accepted_for_development_screening" else 1
     if args.command == "decide-browsecomp-plus-layer":
         decision = decide_browsecomp_layer_promotion(
             repeat_experiment_path=args.repeat_experiment,

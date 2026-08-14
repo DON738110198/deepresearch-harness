@@ -195,6 +195,22 @@ vLLM version, selected GPU IDs, and raw per-query judgments. A quantized judge,
 different weights, altered evaluator script, or substituted API judge is an
 exploratory evaluator ablation, not the official result.
 
+The optional single-GPU screening path is frozen separately in
+`benchmarks/browsecomp_plus_v0/screening_judge_v0.json`. It binds GPU 5,
+vLLM 0.9.0.1, a loopback-only OpenAI-compatible endpoint, the official grader
+template hash, Qwen3-32B-AWQ revision, and the same temperature/top-p/top-k,
+output limit, and non-thinking setting. The launcher must see one idle GPU in
+three consecutive checks, expose only the registered served-model name, and
+write its command and runtime before inference. No remote API key is used.
+
+AWQ screening is enabled only if all calibration gates pass on the 150 labels
+already produced by the pinned BF16 evaluator: at least 90% label agreement,
+Cohen's kappa at least 0.75, zero parse failures, at most three percentage
+points absolute pooled-accuracy drift, and the same sign for the paired
+candidate-minus-baseline delta. A pass permits cheaper development-variant
+triage only. Final development claims, sealed-holdout claims, and leaderboard
+claims still require the pinned BF16 official evaluator.
+
 The official evaluator handoff uses two immutable records. The batch manifest
 is created before judge inference and binds each unique
 `trial -> variant -> query` input to its prediction hash, ground truth export,

@@ -238,6 +238,31 @@ python -m deepresearch_harness.cli aggregate-browsecomp-plus-official-judge `
 An official evaluator score on a development slice remains distinct from a
 full 830-query leaderboard submission.
 
+When only one 48 GB A6000 is available, the project has a deliberately
+non-official screening path. It starts a persistent loopback vLLM server with
+the pinned Qwen3-32B-AWQ snapshot, evaluates the existing 150-item calibration
+batch concurrently, and then compares its labels with the retained BF16 labels:
+
+```bash
+python scripts/run_browsecomp_plus_screening_judge.py \
+  --screening-manifest benchmarks/browsecomp_plus_v0/screening_judge_v0.json \
+  --batch-manifest <batch_manifest.json> \
+  --python <official-venv-python> \
+  --model-dir <huggingface-cache>/snapshots/0499c3ac83fdef8810b907a23894ba91e95eddd8 \
+  --output-dir <new-screening-output> \
+  --gpu-id 5
+
+python -m deepresearch_harness.cli calibrate-browsecomp-plus-screening-judge \
+  --screening-manifest benchmarks/browsecomp_plus_v0/screening_judge_v0.json \
+  --screening-result <new-screening-output>/evaluation/screening_result.json \
+  --official-comparison <official-comparison.json> \
+  --output <screening-calibration.json>
+```
+
+The AWQ path is useful only if every registered calibration gate passes. Its
+scores remain screening diagnostics; the two-GPU BF16 evaluator remains the
+official contract.
+
 Layer selection is also a tracked, machine-readable decision rather than a
 post-hoc reading of the best metric. `promotion_gates.json` requires at least
 three trials and 25 development questions, evidence-recall delta >= 10 points,

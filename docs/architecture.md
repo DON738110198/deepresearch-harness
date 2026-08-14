@@ -101,6 +101,17 @@ grid, rejects parse failures or response substitution, and reports trial-level
 accuracy distributions plus paired query outcomes. Development-slice output is
 explicitly labeled `not_submitted`, never as a leaderboard score.
 
+`screening_judge.py` is a separate evaluator-ablation boundary for machines
+with only one 48 GB GPU. A launcher starts a loopback-only vLLM
+OpenAI-compatible service on the registered physical GPU and serves the pinned
+Qwen3-32B-AWQ revision. The client reuses the exact upstream grader template
+and decoding values, sends concurrent Chat Completions requests, and persists
+every raw response, parsed label, usage record, latency, and hash. AWQ labels
+are accepted only for development-candidate screening if they pass the tracked
+150-label calibration against the existing two-GPU BF16 run. Quantization and
+the service adapter change the evaluator contract, so this path can never emit
+an official score.
+
 `browsecomp_decision.py` is the mechanism-selection boundary after official
 evaluation. It revalidates the repeat comparison, judge batch, execution, and
 comparison before applying the tracked `promotion_gates.json`. It does not pick
@@ -149,7 +160,7 @@ B2 keeps B1's three provider calls and the same collector boundary, but turns th
 | BrowseComp retrieval | pinned local BM25 and Qwen3-Embedding-0.6B, top-5, 512 Qwen tokens | only replay-justified retrievers or rerankers |
 | BrowseComp control | strict global/phase limits and non-thinking answer compilation | evidence-debt marginal-value stopping after larger bad-case clustering |
 | BrowseComp reliability | alternating-order paired repeats with hash-bound aggregation | preregistered larger-slice confidence intervals and official judging |
-| BrowseComp evaluation | self-contained judge batch plus fail-closed GPU/runtime registration | official slice score, then full development and sealed submission |
+| BrowseComp evaluation | two-GPU BF16 official path plus calibrated one-GPU AWQ screening path | official slice score, then full development and sealed submission |
 
 Do not add DAG fan-out, critic loops, or automatic re-planning until a saved bad case makes their decision boundary measurable.
 

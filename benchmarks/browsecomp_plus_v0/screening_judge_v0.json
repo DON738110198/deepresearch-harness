@@ -7,16 +7,26 @@
     "name": "vllm_openai_compatible_server",
     "version": "0.9.0.1",
     "host": "127.0.0.1",
+    "served_model_name": "qwen3-32b-awq-screening",
     "tensor_parallel_size": 1,
     "gpu_id": 5,
     "gpu_model": "NVIDIA RTX A6000",
-    "gpu_memory_mib": 49140
+    "gpu_memory_mib": 49140,
+    "gpu_memory_utilization": 0.9,
+    "max_model_len": 16384,
+    "max_num_seqs": 32,
+    "enable_prefix_caching": true
   },
   "judge": {
     "model": "Qwen/Qwen3-32B-AWQ",
     "revision": "0499c3ac83fdef8810b907a23894ba91e95eddd8",
     "quantization": "awq_int4",
     "base_model": "Qwen/Qwen3-32B"
+  },
+  "prompt": {
+    "source_repository_commit": "046949032b0328319cc9a02663a759ec601d9402",
+    "evaluator_script_sha256": "1a21233937c377ab6323c98ff9af67742756a57fbacab4ebf9bc30852eae530a",
+    "grader_template_sha256": "71fb29f51a56cea9fe647331d525648474195fa4816f7d05632459d572419d90"
   },
   "inference": {
     "temperature": 0.7,
@@ -28,6 +38,10 @@
   "calibration": {
     "reference_track": "official_qwen3_32b_bf16_two_gpu",
     "reference_evaluations": 150,
+    "reference_batch_manifest_path": "runs/browsecomp_plus_v0/official_judge/flash-v6-dense25-paired3-preregistered-v2-20260814-batch/batch_manifest.json",
+    "reference_batch_manifest_sha256": "1edab6472cff522a7e87fbabf1f263f8933c3b9f0d2305d0aecbcaa7bdcb5591",
+    "reference_comparison_path": "runs/browsecomp_plus_v0/official_judge/flash-v6-dense25-paired3-preregistered-v2-20260814-comparison.json",
+    "reference_comparison_sha256": "0f3157e47b477018a5d8962fbd827ad166a41c7a7ffae50e6df06cf7f7c65ff9",
     "reference_execution_result_sha256": "5cdd002d05cfad25535b598689aa78327c3a2166f4faa65e335e8f2b30e384c8",
     "minimum_label_agreement_percent": 90.0,
     "minimum_cohens_kappa": 0.75,
