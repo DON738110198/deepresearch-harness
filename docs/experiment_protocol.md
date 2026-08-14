@@ -254,14 +254,53 @@ different numbers of searches; the final ratios are computed over all saved
 provider traces.
 
 The v0 result is retained as a negative result: retrieval recall passed, while
-Judge accuracy and the search/Token/cost ratios failed. Any progressive-
-disclosure follow-up must therefore be a new registered mechanism. The saved
-selectivity probe requires it to preserve BM25 full-snippet anchors while
-deduplicated dense-only candidates are exposed as short leads with bounded
-explicit document opens. It must record every evidence-ingress token and cannot
-reuse the v0 result as if it had passed. A five-query run is engineering smoke only. A later effectiveness test
-must use a fresh slice and add a gate that relevant-evidence-but-wrong failures
-do not exceed baseline. Those metrics remain `planned` until that run exists.
+Judge accuracy and the search/Token/cost ratios failed. Progressive Disclosure
+was therefore registered as a new mechanism that preserves BM25 full-snippet
+anchors, exposes deduplicated dense-only candidates as bounded leads, and
+requires explicit document opens. Every search/open payload and cumulative
+evidence-ingress token is persisted.
+
+The first fresh-five Progressive Disclosure run was also rejected: Judge
+accuracy stayed at 2/5, while 65 searches replayed context until the candidate
+used 3.131361 times the selected baseline Tokens. The next experiment changed
+only the loop policy: adapter v10 synchronously reserves at most eight searches
+per query before any asynchronous tool call and records exhaustion without
+turning a scoreable answer into `budget_exhausted`. Its fresh-five run cut the
+Token and cost ratios to 0.195385 and 0.445916 and raised evidence recall by
+23.33 points, but both variants remained 0/5 under the calibrated Judge. That
+run was rejected rather than promoted on resource metrics alone.
+
+Saved traces then exposed a narrower interface bug: all four relevant dense
+leads in that slice were truncated before any title value or passage. A
+zero-provider-call calibration compared the existing head preview with a
+query-aware paragraph window and moved selectable relevant leads from 0/4 to
+4/4 under the same payload ceiling. The subsequent fresh-five run held Judge
+accuracy at 3/5, raised evidence recall from 55.833333% to 80%, and used
+0.324788 times the baseline Tokens and 0.536012 times its provider cost. This
+promoted only to the separately preregistered paired-25 confirmation.
+
+`query_aware_preview_confirmation_v0.json` freezes 25 previously unevaluated
+development questions, DeepSeek V4 Flash, the empty system prompt, BM25 top-5
+baseline, Query-Aware Progressive Disclosure candidate, eight-search governor,
+and the accepted persistent BF16 Judge. Promotion requires 25/25 success for
+both variants, at least 96% schema completeness, zero output overshoot and Judge
+errors, Judge non-regression, at least +5 evidence-recall points, search/Token/
+cost ratios at most 1.0/0.75/1.0, and combined generation cost at most $1.50.
+Passing one trial only permits a three-trial stability confirmation. It does not
+open the sealed holdout or authorize an official/leaderboard claim.
+
+The completed trial is retained as `reject`. Candidate Judge accuracy improved
+by 4 points, evidence recall by 8.76 points, and all resource ratios passed, but
+baseline schema completeness was 92% against the registered 96% per-variant
+minimum. The other 23 gates do not override that failure. Saved-trace diagnosis
+is allowed; treating the same run as a pass, deleting the baseline gate, or
+repeating until baseline happens to clear it is forbidden.
+
+Any Evidence-Debt Search Reserve follow-up is a new mechanism and needs a new
+registration. Its outcome-selected regression/improvement set is calibration
+only. A later effectiveness comparison must use unseen development questions,
+hold total search calls at eight and total output at 10k, score both variants
+with the same calibrated Judge, and preserve every result before gold access.
 
 The official evaluator handoff uses two immutable records. The batch manifest
 is created before judge inference and binds each unique

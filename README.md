@@ -2,7 +2,7 @@
 
 A small, auditable baseline for improving end-to-end Deep Research task execution **without changing model weights**. It calls an OpenAI-compatible chat-completions API and evaluates harness behavior, not intrinsic model capability.
 
-> **Current direction (2026-08-14):** full manual blind annotation is paused
+> **Current direction (2026-08-15):** full manual blind annotation is paused
 > because it imposed more reviewer work than the synthetic pilot could justify.
 > The workspaces remain optional audit artifacts. BrowseComp-Plus plus its
 > version-pinned official judge is now the primary experimental path; the live
@@ -13,11 +13,13 @@ A small, auditable baseline for improving end-to-end Deep Research task executio
 > failure-driven stack across retrieval, evidence control, phase-adaptive
 > reasoning, and answer compilation. BrowseComp-Plus is the primary benchmark,
 > with frozen leaderboard thresholds, leakage controls, and matched-budget gates.
-> A pinned Qwen3-32B official-evaluator run now exists for the five-query
-> development gate, but a 25/175-query result and every rank claim remain
-> `planned`. See
+> A fresh paired-25 development run now exists for Query-Aware Progressive
+> Disclosure. Its calibrated Judge and evidence-recall gates improved, but the
+> registered overall decision is `reject` because the baseline missed the
+> per-variant schema gate. The 175-query run, sealed holdout, and every rank
+> claim remain `planned`. See
 > [`docs/research_goal_and_benchmark_strategy.md`](docs/research_goal_and_benchmark_strategy.md)
-> and [`docs/browsecomp_plus_layered_results_2026-08-13.zh-CN.md`](docs/browsecomp_plus_layered_results_2026-08-13.zh-CN.md).
+> and [`docs/query_aware_progressive_disclosure_results_2026-08-15.zh-CN.md`](docs/query_aware_progressive_disclosure_results_2026-08-15.zh-CN.md).
 
 The first MVP is deliberately narrow:
 
@@ -299,9 +301,14 @@ matched-budget gates. The candidate is `reject`, not a promoted result. See
 The registered zero-provider-call selectivity probe then showed a two-sided
 failure: dense found relevant evidence for 100% of candidate improvements but
 only 50% of candidate regressions, where BM25 found it for 100%. Repeated query
-strings were absent, while repeated document slots remained high. The next
-planned mechanism therefore preserves BM25 anchors and exposes deduplicated
-dense leads through bounded progressive disclosure rather than adding agents.
+strings were absent, while repeated document slots remained high. This led to
+BM25 anchors plus deduplicated Dense leads, explicit evidence opens, an
+eight-search governor, and query-aware lead passages. On a fresh paired-25,
+calibrated Judge accuracy moved from 16% to 20% and evidence recall from 36.03%
+to 44.79%, while search/Token/provider-cost ratios were 0.488764/0.251863/
+0.483486. The machine decision is still `reject` because baseline schema
+completeness was 92% against the frozen 96% gate. See
+`docs/query_aware_progressive_disclosure_results_2026-08-15.zh-CN.md`.
 
 The hash-bound decision can be reproduced locally after the ignored run
 artifacts are present:
@@ -501,6 +508,11 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/evidence_bandwidth_server.py`: loopback-only dense top-20 service with aggregate snippet-token accounting.
 - `src/deepresearch_harness/evidence_bandwidth_decision.py`: hash-bound Evidence Bandwidth gates and synthesis-loss routing.
 - `src/deepresearch_harness/evidence_selectivity_probe.py`: zero-provider-call paired trace analysis for evidence discovery, duplication, and synthesis routing.
+- `src/deepresearch_harness/progressive_disclosure.py`: deterministic anchor/lead/open evidence contracts and ingress budgets.
+- `src/deepresearch_harness/progressive_disclosure_server.py`: run-scoped dual-channel retrieval and evidence-open service.
+- `src/deepresearch_harness/evidence_preview.py`: query-aware, bounded Dense-lead passage selection.
+- `src/deepresearch_harness/tool_loop_governor_decision.py`: fresh-five governor/preview gates and routing.
+- `src/deepresearch_harness/query_aware_confirmation_decision.py`: hash-bound paired-25 confirmation and per-query trace decision.
 - `src/deepresearch_harness/retrieval_replay.py`: hash-bound dense and RRF counterfactual replay over frozen agent queries.
 - `src/deepresearch_harness/browsecomp_evaluation.py`: post-prediction development-gold boundary and explicitly non-official diagnostics.
 - `src/deepresearch_harness/browsecomp_repeats.py`: strict paired-repeat validation, artifact binding, distributions, and query-level win/loss aggregation.
@@ -521,6 +533,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `docs/architecture.md`: current boundaries and next-stage extension points.
 - `docs/experiment_protocol.md`: fair-comparison and bad-case evaluation protocol.
 - `docs/browsecomp_plus_layered_results_2026-08-13.zh-CN.md`: Chinese experiment results, failed controls, hashes, and next gates.
+- `docs/query_aware_progressive_disclosure_results_2026-08-15.zh-CN.md`: Progressive Disclosure, governor, preview, paired-25 decision, and bad-case route.
 - `docs/b1_b2_token_v1.md`: retained negative B2 v1 result and causal follow-up.
 - `docs/b1_b2_token_v2.md`: retained B2 v2 tie and search-layer diagnosis.
 - `docs/b1_b2_v3_results.md`: token/cost automatic results and current claim boundary.
@@ -531,6 +544,8 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 
 1. **Completed:** real Search/Fetch -> Chinese cited report with query/URL/provider/token/cost/latency trace and environment-only credentials.
 2. **Completed:** pinned five-task LiveDRBench preview baseline with structured predictions, exact compatibility metrics, and retained parser/cost-audit failures.
-3. Add one stable general Search API adapter behind the existing collector interface and keep its key environment-only. Do not add re-planning while first-pass retrieval is still broken.
-4. Freeze a separate public holdout slice, then compare the current no-key fallback with the stable search adapter under the same model, query policy, evidence cap, and fee ceiling.
-5. Only after first-pass retrieval is credible, test one bounded evidence-gap requery round; add a DAG or subagents only if repeated independent-branch failures justify them.
+3. **Completed:** bounded BM25-anchor/Dense-lead Progressive Disclosure, eight-search governor, query-aware preview calibration, and one fresh paired-25 development confirmation.
+4. Build a zero-provider-call structured Evidence Debt audit over saved traces; it must identify unsupported answer-critical obligations before any new live run.
+5. If that contract passes, implement one single-Agent Evidence-Debt Search Reserve with six exploration plus at most two repair searches under the same eight-search and 10k-output limits.
+6. Calibrate on the saved paired regressions, then evaluate only on a new development slice with frozen model/retriever/Judge and explicit Token/cost gates.
+7. Run three stability trials only after the fresh-slice gate passes. Keep B3/B4 multi-Agent, sealed holdout, official execution, and leaderboard submission `planned` until their own entry conditions are met.

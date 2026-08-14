@@ -1,0 +1,36 @@
+{
+  "schema_version": "browsecomp-plus-evidence-preview-calibration-registration-v0",
+  "status": "registered_before_offline_calibration",
+  "registered_at": "2026-08-15T00:38:38.8765597+08:00",
+  "purpose": "Choose the smallest selectable Dense-lead preview from saved governor bad cases without making a provider call.",
+  "diagnosed_problem": "All four relevant Dense leads in the fresh governor slice were returned as a 24-token metadata stub ending at '--- title:'; none exposed the title value or was opened. Two queries had full gold recall but remained Judge-incorrect.",
+  "candidate": {
+    "policy": "query_window_v0",
+    "metadata": ["title", "date"],
+    "passage_selection": "highest distinct search-query term overlap over bounded paragraph windows",
+    "lead_token_cap": 64,
+    "reason_for_cap": "At eight searches, 5*512 anchor tokens plus 15*64 lead tokens equals 28160, below the frozen 29184 search-ingress budget."
+  },
+  "sources": {
+    "summary_path": "runs/browsecomp_plus_v0/tool-loop-governor-v0-20260815/fresh5-candidate/summary.json",
+    "summary_sha256": "9c5dab797811c42ee5318ce07d577202012e763b7acf110f7798c4e3a84d5da2",
+    "gold_slice_path": "runs/browsecomp_plus_v0/tool-loop-governor-v0-20260815/fresh5-candidate.gold.json",
+    "gold_slice_sha256": "0dad559f8dc06e32305b3c5e2eb859218237e070159068c41d50e11362bffe2f",
+    "sealed_holdout_access": "forbidden"
+  },
+  "implementation": {
+    "preview_module_path": "src/deepresearch_harness/evidence_preview.py",
+    "preview_module_sha256": "6b0052f90d766e1195091affe102369d0abddbcbea4d8e73ca9dc1fc9441b0cd",
+    "calibration_module_path": "src/deepresearch_harness/evidence_preview_calibration.py",
+    "calibration_module_sha256": "3a087871d4e710909dfbfcd1f01313681acae350b58131143b129f550ee80f71",
+    "runner_path": "scripts/run_browsecomp_plus_evidence_preview_calibration.py",
+    "runner_sha256": "bfa6ac5b4ca0fe2e0bcaaffb4e767f9627e805fcbdc768b2e93383e6cbfdecde"
+  },
+  "acceptance": {
+    "candidate_selectable_relevant_hits_must_equal_relevant_dense_hits": true,
+    "maximum_search_ingress_tokens_must_not_exceed": 29184,
+    "provider_calls_must_equal": 0
+  },
+  "routing_rule": "Pass permits one fresh, non-overlapping five-query answer-quality gate using the existing eight-search governor. Failure returns to preview extraction; do not add a Critic or multiple agents.",
+  "claim_boundary": "This is a gold-informed bad-case calibration of evidence visibility, not an answer-quality experiment or official benchmark result."
+}

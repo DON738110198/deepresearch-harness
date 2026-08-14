@@ -254,3 +254,29 @@ the same documents across distinct searches. The next active hypothesis is
 therefore dual-channel evidence progressive disclosure, not more agents or a
 full 175-question run. Detailed numbers and acceptance criteria are in
 `evidence_bandwidth_confirmation_v0_results_2026-08-14.zh-CN.md`.
+
+### 2026-08-15 superseding status
+
+The active retrieval-interface sequence is now complete through one fresh-25
+trial. Unbounded Progressive Disclosure was rejected for 65 searches and a
+3.131361 Token ratio. An eight-search Tool-Loop Governor fixed resource use but
+did not improve its fresh-five Judge score. Trace inspection then found that
+relevant dense leads were truncated before a title value or useful passage. A
+query-aware paragraph preview passed a zero-provider-call calibration and a new
+fresh-five gate.
+
+On 25 previously unevaluated development questions, Query-Aware Progressive
+Disclosure raised calibrated Judge accuracy from 16% to 20% and evidence recall
+from 36.03% to 44.79%, while search, Token, and provider-cost ratios were
+0.488764, 0.251863, and 0.483486. The registered overall decision is still
+`reject`: baseline schema completeness was 92%, below the per-variant 96% gate.
+All other 23 gates passed, but the failed gate remains binding.
+
+The saved-trace route now shows 7 zero-recall and 13 evidence-present incorrect
+candidate answers, versus 11 and 10 for baseline. The next smallest causal test
+is a single-Agent Evidence-Debt Search Reserve that allocates at most six
+exploration searches plus two obligation-driven repair searches under the same
+eight-search and 10k-output limits. Its outcome-selected bad-case calibration
+must be kept separate from a fresh-slice confirmation. Multi-Agent B3/B4,
+sealed-holdout evaluation, official execution, and leaderboard submission all
+remain `planned`.

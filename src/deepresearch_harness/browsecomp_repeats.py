@@ -89,7 +89,11 @@ class RepeatExperimentManifest(StrictContract):
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
     expected_adapter_version: Literal[
-        "pi-browsecomp-v6", "pi-browsecomp-v7", "pi-browsecomp-v8"
+        "pi-browsecomp-v6",
+        "pi-browsecomp-v7",
+        "pi-browsecomp-v8",
+        "pi-browsecomp-v9",
+        "pi-browsecomp-v10",
     ] = "pi-browsecomp-v6"
     model: Literal["deepseek-v4-flash", "deepseek-v4-pro"]
     control_policy: Literal["answer_reserve_nonthinking_v0"]
@@ -272,7 +276,11 @@ class RepeatComparisonSummary(StrictContract):
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
     adapter_version: Literal[
-        "pi-browsecomp-v6", "pi-browsecomp-v7", "pi-browsecomp-v8"
+        "pi-browsecomp-v6",
+        "pi-browsecomp-v7",
+        "pi-browsecomp-v8",
+        "pi-browsecomp-v9",
+        "pi-browsecomp-v10",
     ] = "pi-browsecomp-v6"
     baseline_max_search_results: int = Field(default=5, ge=1, le=20)
     candidate_max_search_results: int = Field(default=5, ge=1, le=20)

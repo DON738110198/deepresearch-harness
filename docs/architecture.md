@@ -174,10 +174,36 @@ hashes. For each query-trial pair it records unique versus repeated result
 slots, distinct query strings, first relevant call, minimum relevant rank,
 tokens, and latency. Grouping by candidate improvement/regression/both outcomes
 showed that dense rescues long-tail evidence while also losing BM25 anchors and
-reinjecting the same documents across different searches. This evidence supports
-a planned dual-channel progressive-disclosure boundary: BM25 full anchors,
-deduplicated dense leads, and explicit bounded evidence opens. That boundary is
-not yet an effectiveness result.
+reinjecting the same documents across different searches.
+
+`progressive_disclosure.py` and `progressive_disclosure_server.py` implement the
+smallest mechanism suggested by that diagnosis: each search returns full BM25
+anchors, deduplicated dense leads, and opaque document IDs that may be opened
+under a separate ingress budget. The server owns run-scoped disclosure state;
+the adapter records search payload composition, every open, cumulative ingress,
+and terminal state. The first fresh-five run was rejected because it preserved
+Judge accuracy but replayed context across 65 searches, using 3.13 times the
+stored baseline Tokens. Adapter v10 therefore adds a concurrency-safe hard
+eight-search governor and an auditable stop reason before adding any planner,
+critic, or Agent.
+
+`evidence_preview.py` fixes the next measured interface failure. Dense leads had
+contained only a frontmatter marker and no selectable title or passage. Its
+query-window policy parses frontmatter and selects one bounded paragraph by
+distinct query-term overlap. A zero-provider-call calibration moved selectable
+relevant leads from 0/4 to 4/4 without increasing the registered search payload
+cap. On a new five-query development slice, the combined preview and governor
+kept calibrated Judge accuracy at 3/5, increased evidence recall from 55.833333%
+to 80%, and used 0.324788 times the baseline Tokens and 0.536012 times its API
+cost. This promoted only to a fresh paired-25 confirmation; it is not an
+official benchmark or model-capability result.
+
+`query_aware_confirmation_decision.py` is the paired-25 decision boundary. It
+revalidates the preregistration, question-only slice, frozen adapter and server
+hashes, both generation summaries and run hashes, prediction-bound diagnostics,
+and both calibrated service-Judge executions. Its 24 gates are conjunctive and
+cover completion, schema, research-budget traces, Judge errors and accuracy,
+evidence recall, search/Token/cost ratios, and the combined generation-cost cap.
 
 `browsecomp_decision.py` is the mechanism-selection boundary after official
 evaluation. It revalidates the repeat comparison, judge batch, execution, and
@@ -224,8 +250,8 @@ B2 keeps B1's three provider calls and the same collector boundary, but turns th
 | public benchmark adapter | pinned five-task LiveDRBench preview compatibility pilot | stable search comparison and official evaluator integration |
 | reviewer presentation | English source plus validated `zh-CN` reading aid | additional packet-bound locales |
 | benchmark agent loop | pinned Pi adapter with empty system prompt | evidence-debt controller policies owned by this project |
-| BrowseComp retrieval | pinned local BM25 and Qwen3-Embedding-0.6B, top-5, 512 Qwen tokens | only replay-justified retrievers or rerankers |
-| BrowseComp control | strict global/phase limits and non-thinking answer compilation | evidence-debt marginal-value stopping after larger bad-case clustering |
+| BrowseComp retrieval | pinned BM25 anchors plus query-aware dense leads and bounded evidence opens | only replay-justified retrievers or rerankers |
+| BrowseComp control | strict global/phase limits, non-thinking answer compilation, and an eight-search governor | evidence-debt marginal-value stopping after larger bad-case clustering |
 | BrowseComp reliability | alternating-order paired repeats with hash-bound aggregation | preregistered larger-slice confidence intervals and official judging |
 | BrowseComp evaluation | two-GPU BF16 official path plus calibrated persistent-service diagnostics | official slice score, then full development and sealed submission |
 

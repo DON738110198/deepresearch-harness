@@ -36,6 +36,8 @@ class PiPriorAttempt(StrictContract):
     error_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     prediction_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     search_calls: int = Field(ge=0)
+    evidence_open_calls: int = Field(default=0, ge=0)
+    evidence_ingress_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(ge=0)
     output_budget_overshoot_tokens: int = Field(ge=0)
     total_tokens: int = Field(ge=0)
@@ -71,6 +73,8 @@ class PiSmokeItem(StrictContract):
     run_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     prediction_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     search_calls: int = Field(ge=0)
+    evidence_open_calls: int = Field(default=0, ge=0)
+    evidence_ingress_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(ge=0)
     output_budget_overshoot_tokens: int = Field(ge=0)
     total_tokens: int = Field(ge=0)
@@ -89,6 +93,8 @@ class PiSmokeItem(StrictContract):
             raise ValueError("prior attempts must be ordered and contiguous")
         cumulative_fields = (
             "search_calls",
+            "evidence_open_calls",
+            "evidence_ingress_tokens",
             "output_tokens",
             "output_budget_overshoot_tokens",
             "total_tokens",
@@ -157,6 +163,8 @@ class PiSmokeSummary(StrictContract):
     schema_complete: int | None = Field(default=None, ge=0)
     answer_compiler_invocations: int = Field(default=0, ge=0)
     total_search_calls: int = Field(ge=0)
+    total_evidence_open_calls: int = Field(default=0, ge=0)
+    total_evidence_ingress_tokens: int = Field(default=0, ge=0)
     total_output_tokens: int = Field(ge=0)
     total_output_budget_overshoot_tokens: int = Field(ge=0)
     total_tokens: int = Field(ge=0)
@@ -180,6 +188,12 @@ class PiSmokeSummary(StrictContract):
                 _answer_compiler_attempt_count(item) for item in self.items
             ),
             "total_search_calls": sum(item.search_calls for item in self.items),
+            "total_evidence_open_calls": sum(
+                item.evidence_open_calls for item in self.items
+            ),
+            "total_evidence_ingress_tokens": sum(
+                item.evidence_ingress_tokens for item in self.items
+            ),
             "total_output_tokens": sum(item.output_tokens for item in self.items),
             "total_output_budget_overshoot_tokens": sum(
                 item.output_budget_overshoot_tokens for item in self.items
@@ -721,6 +735,8 @@ def export_pi_runs_for_official_evaluator(
             )
             query_id = item.query_id
             search_calls = item.search_calls
+            evidence_open_calls = item.evidence_open_calls
+            evidence_ingress_tokens = item.evidence_ingress_tokens
             input_tokens = max(item.total_tokens - item.output_tokens, 0)
             cache_read_tokens = 0
             output_tokens = item.output_tokens
@@ -746,6 +762,12 @@ def export_pi_runs_for_official_evaluator(
             compilation_thinking_level = run.compilation_thinking_level
             query_id = run.query_id
             search_calls = len(run.search_calls)
+            evidence_open_calls = len(run.evidence_open_calls)
+            evidence_ingress_tokens = (
+                run.disclosure_state.cumulative_ingress_tokens
+                if run.disclosure_state is not None
+                else 0
+            )
             input_tokens = run.usage.input_tokens
             cache_read_tokens = run.usage.cache_read_tokens
             output_tokens = run.usage.output_tokens
@@ -771,9 +793,13 @@ def export_pi_runs_for_official_evaluator(
                 "retriever_manifest_sha256": summary.retriever_manifest_sha256,
                 "source_run_sha256": run_hash,
                 "target_manifest_sha256": summary.target_manifest_sha256,
+                "evidence_ingress_tokens": evidence_ingress_tokens,
             },
             "query_id": query_id,
-            "tool_call_counts": {"search": search_calls},
+            "tool_call_counts": {
+                "search": search_calls,
+                "open_evidence": evidence_open_calls,
+            },
             "usage": {
                 "input_tokens": input_tokens,
                 "input_tokens_cached": cache_read_tokens,
@@ -865,6 +891,10 @@ def _build_smoke_summary(
             _answer_compiler_attempt_count(item) for item in items
         ),
         total_search_calls=sum(item.search_calls for item in items),
+        total_evidence_open_calls=sum(item.evidence_open_calls for item in items),
+        total_evidence_ingress_tokens=sum(
+            item.evidence_ingress_tokens for item in items
+        ),
         total_output_tokens=sum(item.output_tokens for item in items),
         total_output_budget_overshoot_tokens=sum(
             item.output_budget_overshoot_tokens for item in items
@@ -1035,6 +1065,12 @@ def _validate_existing_attempt(
         raise ValueError(f"live prediction hash mismatch for query {item.query_id}")
     expected_latest = {
         "search_calls": len(run.search_calls),
+        "evidence_open_calls": len(run.evidence_open_calls),
+        "evidence_ingress_tokens": (
+            run.disclosure_state.cumulative_ingress_tokens
+            if run.disclosure_state is not None
+            else 0
+        ),
         "output_tokens": run.usage.output_tokens,
         "output_budget_overshoot_tokens": run.output_budget_overshoot_tokens,
         "total_tokens": run.usage.total_tokens,
@@ -1122,6 +1158,12 @@ def _record_prior_attempt(
         error_sha256=hashes["error.json"],
         prediction_sha256=item.prediction_sha256,
         search_calls=int(_latest_attempt_value(item, "search_calls")),
+        evidence_open_calls=int(
+            _latest_attempt_value(item, "evidence_open_calls")
+        ),
+        evidence_ingress_tokens=int(
+            _latest_attempt_value(item, "evidence_ingress_tokens")
+        ),
         output_tokens=int(_latest_attempt_value(item, "output_tokens")),
         output_budget_overshoot_tokens=int(
             _latest_attempt_value(item, "output_budget_overshoot_tokens")
@@ -1156,6 +1198,12 @@ def _merge_retry_item(
         run_sha256=current.run_sha256,
         prediction_sha256=current.prediction_sha256,
         search_calls=previous.search_calls + current.search_calls,
+        evidence_open_calls=(
+            previous.evidence_open_calls + current.evidence_open_calls
+        ),
+        evidence_ingress_tokens=(
+            previous.evidence_ingress_tokens + current.evidence_ingress_tokens
+        ),
         output_tokens=previous.output_tokens + current.output_tokens,
         output_budget_overshoot_tokens=(
             previous.output_budget_overshoot_tokens
@@ -1207,6 +1255,12 @@ def _summarize_run(run: PiBrowseCompRun, run_path: Path, run_bytes: bytes) -> Pi
         run_sha256=sha256(run_bytes).hexdigest(),
         prediction_sha256=sha256(run.answer_text.encode("utf-8")).hexdigest(),
         search_calls=len(run.search_calls),
+        evidence_open_calls=len(run.evidence_open_calls),
+        evidence_ingress_tokens=(
+            run.disclosure_state.cumulative_ingress_tokens
+            if run.disclosure_state is not None
+            else 0
+        ),
         output_tokens=run.usage.output_tokens,
         output_budget_overshoot_tokens=run.output_budget_overshoot_tokens,
         total_tokens=run.usage.total_tokens,

@@ -295,6 +295,162 @@ def test_pi_run_contract_requires_empty_system_prompt() -> None:
         PiBrowseCompRun.model_validate(payload)
 
 
+def test_pi_v9_run_binds_progressive_disclosure_and_open_trace() -> None:
+    search_state = {
+        "run_id": "run-v9",
+        "search_calls": 1,
+        "open_attempts": 0,
+        "successful_open_calls": 0,
+        "seen_docids": ["anchor", "lead"],
+        "eligible_open_docids": ["lead"],
+        "opened_docids": ["anchor"],
+        "cumulative_ingress_tokens": 20,
+        "search_ingress_tokens": 20,
+        "open_ingress_tokens": 0,
+        "remaining_ingress_tokens": 492,
+        "remaining_search_ingress_tokens": 476,
+        "remaining_open_ingress_tokens": 16,
+    }
+    open_state = {
+        **search_state,
+        "open_attempts": 1,
+        "successful_open_calls": 1,
+        "eligible_open_docids": [],
+        "opened_docids": ["anchor", "lead"],
+        "cumulative_ingress_tokens": 36,
+        "search_ingress_tokens": 20,
+        "open_ingress_tokens": 16,
+        "remaining_ingress_tokens": 476,
+        "remaining_search_ingress_tokens": 476,
+        "remaining_open_ingress_tokens": 0,
+    }
+    payload = {
+        "schema_version": "pi-browsecomp-run-v0",
+        "adapter_version": "pi-browsecomp-v9",
+        "pi_version": "0.84.1",
+        "run_id": "run-v9",
+        "query_id": "query-v9",
+        "model": "deepseek-v4-flash",
+        "thinking_level": "high",
+        "max_search_results": 20,
+        "system_prompt": "",
+        "prompt_sha256": "a" * 64,
+        "started_at": "2026-08-14T00:00:00Z",
+        "latency_ms": 10,
+        "status": "succeeded",
+        "stop_reason": "completed",
+        "answer_text": "Exact Answer: fixture",
+        "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 11,
+            "cost_usd": 0.001,
+        },
+        "search_calls": [
+            {
+                "query": "rare clue",
+                "outcome": "ok",
+                "latency_ms": 2,
+                "results": [
+                    {"docid": "anchor", "score": 1.0, "snippet": "anchor"},
+                    {"docid": "lead", "score": 0.9, "snippet": "preview"},
+                ],
+                "disclosure": {
+                    "search_index": 1,
+                    "anchors_returned": 1,
+                    "leads_returned": 1,
+                    "within_channel_duplicate_slots": 0,
+                    "prior_context_duplicate_slots": 0,
+                    "cross_channel_duplicate_slots": 0,
+                    "new_ingress_tokens": 20,
+                    "cumulative_ingress_tokens": 20,
+                    "remaining_ingress_tokens": 492,
+                    "remaining_search_ingress_tokens": 476,
+                    "remaining_open_ingress_tokens": 16,
+                    "ingress_budget_exhausted": False,
+                },
+                "state": search_state,
+            }
+        ],
+        "evidence_open_calls": [
+            {
+                "docid": "lead",
+                "outcome": "ok",
+                "latency_ms": 1,
+                "result": {
+                    "docid": "lead",
+                    "outcome": "opened",
+                    "content": "full evidence",
+                    "ingress_tokens": 16,
+                    "cumulative_ingress_tokens": 36,
+                    "remaining_ingress_tokens": 476,
+                    "remaining_search_ingress_tokens": 476,
+                    "remaining_open_ingress_tokens": 0,
+                },
+                "state": open_state,
+            }
+        ],
+        "disclosure_state": open_state,
+        "messages": [],
+    }
+
+    run = PiBrowseCompRun.model_validate(payload)
+    assert run.disclosure_state is not None
+    assert run.disclosure_state.cumulative_ingress_tokens == 36
+    payload["disclosure_state"] = search_state
+    with pytest.raises(ValidationError, match="latest tool state"):
+        PiBrowseCompRun.model_validate(payload)
+
+
+def test_pi_v10_run_requires_a_consistent_research_budget() -> None:
+    payload = {
+        "schema_version": "pi-browsecomp-run-v0",
+        "adapter_version": "pi-browsecomp-v10",
+        "pi_version": "0.84.1",
+        "run_id": "run-v10",
+        "query_id": "query-v10",
+        "model": "deepseek-v4-flash",
+        "thinking_level": "high",
+        "max_search_results": 20,
+        "system_prompt": "",
+        "prompt_sha256": "a" * 64,
+        "started_at": "2026-08-15T00:00:00Z",
+        "latency_ms": 10,
+        "status": "succeeded",
+        "stop_reason": "completed",
+        "answer_text": "Exact Answer: fixture",
+        "usage": {
+            "input_tokens": 10,
+            "output_tokens": 1,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 11,
+            "cost_usd": 0.001,
+        },
+        "search_calls": [],
+        "research_budget": {
+            "maximum_search_calls": 8,
+            "reserved_search_calls": 0,
+            "executed_search_calls": 0,
+            "blocked_search_calls": [],
+            "exhausted": False,
+            "stop_reason": None,
+        },
+        "messages": [],
+    }
+
+    run = PiBrowseCompRun.model_validate(payload)
+    assert run.research_budget is not None
+    assert run.research_budget.maximum_search_calls == 8
+    payload["research_budget"]["executed_search_calls"] = 1
+    with pytest.raises(ValidationError, match="reserved search"):
+        PiBrowseCompRun.model_validate(payload)
+
+
 def test_answer_reserve_run_contract_tracks_phase_budget_and_schema() -> None:
     answer = (
         "Explanation: The fixture supports this answer [doc-1].\n"

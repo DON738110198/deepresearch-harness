@@ -61,3 +61,22 @@ relevant-but-wrong，变为候选的 19 / 35。
 目前只是候选解释，还没有达到 B3/B4 的启动证据。先测试 progressive
 disclosure、Evidence Packet 和受限 `open_evidence`，仍然比增加 Agent 数量
 更简单、因果问题更清楚。
+
+## 2026-08-15 更新
+
+Progressive Disclosure 的第一版因 65 次搜索和 `3.131361x` Token 被拒绝；
+加入 8 次搜索上限后，资源问题消失，但 fresh-5 的 Judge 仍为 0/5。保存
+trace 随后发现 Dense lead 只有 frontmatter 开头，四个相关 lead 均没有可供
+Agent 选择的标题值或段落。query-aware preview 的零 provider-call 校准把
+可选择相关 lead 从 0/4 提高到 4/4，fresh-5 才获准进入 25 题确认。
+
+fresh-25 的机器总决策因 baseline schema completeness `92% < 96%` 保持
+`reject`，不能事后删除该 gate。但其余质量与资源 gate 均通过：校准 Judge
+`16% -> 20%`，evidence recall `36.03% -> 44.79%`，搜索/Token/费用比为
+`0.488764 / 0.251863 / 0.483486`。候选错误中 zero-recall 从 baseline 的
+11 个降至 7 个，而 evidence-present-but-wrong 从 10 个增至 13 个。
+
+因此当前最小问题是“未解决的答案义务没有在最终编译前触发候选核验”，而
+不是 Researcher 数量不足。下一候选是单 Agent 的 Evidence-Debt Search
+Reserve：在同一 8 次搜索和 10k 输出预算内，为最多两条 debt-guided repair
+query 预留资源。B3/B4 继续保持 `planned`，不得抢跑。
