@@ -112,6 +112,23 @@ are accepted only for development-candidate screening if they pass the tracked
 the service adapter change the evaluator contract, so this path can never emit
 an official score.
 
+The same module now exposes a generic service-judge calibration boundary for
+the persistent two-GPU BF16 deployment. The tracked manifest distinguishes
+model identity and precision from the execution adapter, while
+`run_browsecomp_plus_existing_service_judge.py` binds an already-running
+loopback service to its PID/GPU registration and the byte-verified official
+assets before replaying the frozen 150-item calibration batch. Model startup is
+therefore amortized without pretending that a Chat Completions adapter is the
+upstream evaluator.
+
+`development_judge.py` is the single-variant scoring boundary after that
+calibration passes. It revalidates the calibration against its official
+reference, then binds a frozen `PiSmokeSummary`, every `run.json` and prediction
+hash, and the matching post-generation development-gold slice. Concurrent
+requests persist raw prompts/responses, parsed labels, token usage, latency, and
+hashes. Its result type is explicitly diagnostic and fail-closed on request or
+parse failures.
+
 `browsecomp_decision.py` is the mechanism-selection boundary after official
 evaluation. It revalidates the repeat comparison, judge batch, execution, and
 comparison before applying the tracked `promotion_gates.json`. It does not pick

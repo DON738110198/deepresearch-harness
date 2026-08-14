@@ -211,6 +211,26 @@ candidate-minus-baseline delta. A pass permits cheaper development-variant
 triage only. Final development claims, sealed-holdout claims, and leaderboard
 claims still require the pinned BF16 official evaluator.
 
+The persistent two-GPU BF16 service is a separate registered adapter in
+`benchmarks/browsecomp_plus_v0/persistent_bf16_judge_v0.json`. It keeps the
+official Qwen3-32B revision, grader-template hash, vLLM version, decoding
+values, and non-thinking setting fixed, but it does not inherit official status:
+OpenAI-compatible request scheduling replaces the upstream evaluator's
+in-process batch call. Before any development score is accepted, the service
+must reproduce the existing 150-label BF16 reference with at least 95% label
+agreement, Cohen's kappa of 0.85, zero parse failures, no more than two
+percentage points pooled-accuracy drift, and the same paired-delta sign. These
+thresholds are conjunctive and were registered before the service calibration.
+
+Every persistent-service run binds the ready service registration to the
+byte-verified official model assets. A single-variant development score also
+revalidates the accepted calibration, frozen prediction summary, prediction
+hashes, and post-prediction development-gold slice before inference. It stores
+raw prompts, raw judge responses, parsed labels, usage, latency, and hashes.
+The resulting metric is named
+`calibrated_development_diagnostic_not_official`; it cannot replace the pinned
+upstream evaluator for final comparisons, sealed holdout, or submission.
+
 The official evaluator handoff uses two immutable records. The batch manifest
 is created before judge inference and binds each unique
 `trial -> variant -> query` input to its prediction hash, ground truth export,

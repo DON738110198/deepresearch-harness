@@ -324,7 +324,7 @@ def main() -> int:
     aggregate_official_judge.add_argument("--validate-existing", action="store_true")
     calibrate_screening_judge_parser = subparsers.add_parser(
         "calibrate-browsecomp-plus-screening-judge",
-        help="Compare the non-official single-GPU AWQ judge with pinned BF16 labels.",
+        help="Calibrate an OpenAI-compatible vLLM judge against pinned BF16 labels.",
     )
     calibrate_screening_judge_parser.add_argument(
         "--screening-manifest", type=Path, required=True
@@ -337,6 +337,9 @@ def main() -> int:
     )
     calibrate_screening_judge_parser.add_argument(
         "--output", type=Path, required=True
+    )
+    calibrate_screening_judge_parser.add_argument(
+        "--validate-existing", action="store_true"
     )
     decide_browsecomp_layer = subparsers.add_parser(
         "decide-browsecomp-plus-layer",
@@ -778,6 +781,7 @@ def main() -> int:
             screening_result_path=args.screening_result,
             official_comparison_path=args.official_comparison,
             output_path=args.output,
+            validate_existing=args.validate_existing,
         )
         print(
             f"output={args.output}\nstatus={calibration['status']}\n"
@@ -790,7 +794,7 @@ def main() -> int:
             "paired_variant_delta_sign_match="
             f"{str(calibration['paired_variant_delta_sign_match']).lower()}\n"
             "official_status=reference_bf16_development_slice\n"
-            "screening_status=non_official_awq_development_screening"
+            f"screening_status={calibration['screening_status']}"
         )
         return 0 if calibration["status"] == "accepted_for_development_screening" else 1
     if args.command == "decide-browsecomp-plus-layer":

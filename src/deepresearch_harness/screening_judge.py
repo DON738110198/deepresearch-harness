@@ -58,8 +58,9 @@ class ScreeningEngine(StrictContract):
     version: str = Field(min_length=1)
     host: Literal["127.0.0.1"]
     served_model_name: str = Field(min_length=1)
-    tensor_parallel_size: Literal[1]
-    gpu_id: int = Field(ge=0)
+    tensor_parallel_size: int = Field(gt=0)
+    gpu_id: int | None = Field(default=None, ge=0)
+    gpu_ids: list[int] | None = None
     gpu_model: str = Field(min_length=1)
     gpu_memory_mib: int = Field(gt=0)
     gpu_memory_utilization: float = Field(gt=0, le=1)
@@ -67,12 +68,36 @@ class ScreeningEngine(StrictContract):
     max_num_seqs: int = Field(gt=0)
     enable_prefix_caching: bool
 
+    @model_validator(mode="after")
+    def gpu_assignment_matches_tensor_parallelism(self) -> "ScreeningEngine":
+        if self.gpu_id is not None and self.gpu_ids is not None:
+            raise ValueError("judge engine must use gpu_id or gpu_ids, not both")
+        assigned = self.gpu_ids if self.gpu_ids is not None else [self.gpu_id]
+        if any(value is None for value in assigned):
+            raise ValueError("judge engine must register its GPU assignment")
+        concrete = [int(value) for value in assigned if value is not None]
+        if len(concrete) != len(set(concrete)):
+            raise ValueError("judge engine GPU IDs must be distinct")
+        if len(concrete) != self.tensor_parallel_size:
+            raise ValueError("judge engine GPU count differs from tensor parallelism")
+        return self
+
 
 class ScreeningModel(StrictContract):
-    model: Literal["Qwen/Qwen3-32B-AWQ"]
+    model: Literal["Qwen/Qwen3-32B-AWQ", "Qwen/Qwen3-32B"]
     revision: str = Field(pattern=r"^[0-9a-f]{40}$")
-    quantization: Literal["awq_int4"]
+    quantization: Literal["awq_int4", "bfloat16"]
     base_model: Literal["Qwen/Qwen3-32B"]
+
+    @model_validator(mode="after")
+    def model_matches_precision(self) -> "ScreeningModel":
+        expected = {
+            "Qwen/Qwen3-32B-AWQ": "awq_int4",
+            "Qwen/Qwen3-32B": "bfloat16",
+        }
+        if expected[self.model] != self.quantization:
+            raise ValueError("judge model and precision contract disagree")
+        return self
 
 
 class ScreeningInference(StrictContract):
@@ -105,7 +130,10 @@ class ScreeningCalibration(StrictContract):
 
 
 class ScreeningJudgeManifest(StrictContract):
-    schema_version: Literal["browsecomp-plus-screening-judge-v0"]
+    schema_version: Literal[
+        "browsecomp-plus-screening-judge-v0",
+        "browsecomp-plus-persistent-judge-v0",
+    ]
     status: Literal["planned_not_run"]
     purpose: str = Field(min_length=1)
     target_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -139,7 +167,7 @@ class ScreeningJudgeResult(StrictContract):
     status: Literal["succeeded", "failed"]
     batch_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     screening_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    judge_model: Literal["Qwen/Qwen3-32B-AWQ"]
+    judge_model: Literal["Qwen/Qwen3-32B-AWQ", "Qwen/Qwen3-32B"]
     judge_revision: str = Field(pattern=r"^[0-9a-f]{40}$")
     served_model_name: str
     inference: ScreeningInference
@@ -166,6 +194,49 @@ class ScreeningJudgeResult(StrictContract):
 
 def load_screening_manifest(path: Path) -> ScreeningJudgeManifest:
     return ScreeningJudgeManifest.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def validate_service_registration(
+    *,
+    manifest: ScreeningJudgeManifest,
+    registration_path: Path,
+    asset_verification_path: Path,
+) -> tuple[dict[str, object], dict[str, object]]:
+    registration = json.loads(registration_path.read_text(encoding="utf-8"))
+    verification = json.loads(asset_verification_path.read_text(encoding="utf-8"))
+    if not isinstance(registration, dict) or registration.get("status") != "ready":
+        raise ValueError("persistent judge service registration is not ready")
+    engine = manifest.engine
+    expected_gpu_ids = (
+        engine.gpu_ids if engine.gpu_ids is not None else [engine.gpu_id]
+    )
+    expected_registration = {
+        "served_model_name": engine.served_model_name,
+        "vllm_version": engine.version,
+        "tensor_parallel_size": engine.tensor_parallel_size,
+        "max_model_len": engine.max_model_len,
+        "max_num_seqs": engine.max_num_seqs,
+        "gpu_memory_utilization": engine.gpu_memory_utilization,
+        "gpu_indices": expected_gpu_ids,
+    }
+    for field_name, expected in expected_registration.items():
+        if registration.get(field_name) != expected:
+            raise ValueError(f"service registration changes {field_name}")
+    expected_dtype = (
+        "bfloat16" if manifest.judge.quantization == "bfloat16" else "half"
+    )
+    if registration.get("dtype") != expected_dtype:
+        raise ValueError("service registration changes judge precision")
+    if (
+        not isinstance(verification, dict)
+        or verification.get("passed") is not True
+        or verification.get("matched") != verification.get("file_count")
+        or verification.get("model") != manifest.judge.model
+        or verification.get("revision") != manifest.judge.revision
+        or verification.get("model_dir") != registration.get("model_path")
+    ):
+        raise ValueError("judge asset verification differs from the running service")
+    return registration, verification
 
 
 def create_judge_prompt(question: str, response: str, correct_answer: str) -> str:
@@ -425,9 +496,17 @@ def calibrate_screening_judge(
     screening_result_path: Path,
     official_comparison_path: Path,
     output_path: Path,
+    validate_existing: bool = False,
 ) -> dict[str, object]:
-    if output_path.exists():
+    if output_path.exists() and not validate_existing:
         raise ValueError("screening calibration output already exists")
+    existing = (
+        json.loads(output_path.read_text(encoding="utf-8"))
+        if output_path.exists()
+        else None
+    )
+    if existing is not None and not isinstance(existing, dict):
+        raise ValueError("existing screening calibration must be an object")
     manifest = load_screening_manifest(screening_manifest_path)
     result_bytes = screening_result_path.read_bytes()
     result = ScreeningJudgeResult.model_validate_json(result_bytes)
@@ -518,12 +597,21 @@ def calibrate_screening_judge(
         ),
     }
     passed = all(gates.values())
+    screening_status = (
+        "non_official_persistent_bf16_development_screening"
+        if manifest.judge.quantization == "bfloat16"
+        else "non_official_awq_development_screening"
+    )
     payload: dict[str, object] = {
         "schema_version": "browsecomp-plus-screening-judge-calibration-v0",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": (
+            existing["created_at"]
+            if existing is not None
+            else datetime.now(timezone.utc).isoformat()
+        ),
         "status": "accepted_for_development_screening" if passed else "rejected",
         "official_status": "reference_bf16_development_slice",
-        "screening_status": "non_official_awq_development_screening",
+        "screening_status": screening_status,
         "screening_manifest_sha256": normalized_text_file_sha256(
             screening_manifest_path
         ),
@@ -542,6 +630,10 @@ def calibrate_screening_judge(
         "gates": gates,
         "claim_boundary": manifest.claim_boundary,
     }
+    if existing is not None:
+        if payload != existing:
+            raise ValueError("existing screening calibration no longer matches sources")
+        return existing
     _atomic_json(output_path, payload)
     return payload
 

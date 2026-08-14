@@ -4,6 +4,12 @@ from hashlib import sha256
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import pytest
+
+from deepresearch_harness.development_judge import (
+    DevelopmentJudgeObservation,
+    DevelopmentJudgeResult,
+)
 from deepresearch_harness.screening_judge import (
     GRADER_TEMPLATE,
     ScreeningInference,
@@ -13,6 +19,7 @@ from deepresearch_harness.screening_judge import (
     calibrate_screening_judge,
     load_screening_manifest,
     parse_judge_response,
+    validate_service_registration,
 )
 from deepresearch_harness.browsecomp_plus import normalized_text_file_sha256
 
@@ -20,6 +27,12 @@ from deepresearch_harness.browsecomp_plus import normalized_text_file_sha256
 ROOT = Path(__file__).resolve().parents[1]
 SCREENING_MANIFEST = (
     ROOT / "benchmarks" / "browsecomp_plus_v0" / "screening_judge_v0.json"
+)
+PERSISTENT_MANIFEST = (
+    ROOT
+    / "benchmarks"
+    / "browsecomp_plus_v0"
+    / "persistent_bf16_judge_v0.json"
 )
 
 
@@ -35,6 +48,66 @@ def test_screening_manifest_pins_single_gpu_non_official_contract() -> None:
         manifest.prompt.grader_template_sha256
     )
     assert "not official" in manifest.claim_boundary.lower()
+
+
+def test_persistent_manifest_pins_two_gpu_bf16_adapter_and_calibration_gate() -> None:
+    manifest = load_screening_manifest(PERSISTENT_MANIFEST)
+
+    assert manifest.schema_version == "browsecomp-plus-persistent-judge-v0"
+    assert manifest.engine.gpu_id is None
+    assert manifest.engine.gpu_ids == [1, 2]
+    assert manifest.engine.tensor_parallel_size == 2
+    assert manifest.judge.model == "Qwen/Qwen3-32B"
+    assert manifest.judge.quantization == "bfloat16"
+    assert manifest.inference.enable_thinking is False
+    assert manifest.calibration.minimum_label_agreement_percent == 95.0
+    assert "not official" in manifest.claim_boundary.lower()
+
+
+def test_persistent_service_registration_is_bound_to_verified_assets(
+    tmp_path: Path,
+) -> None:
+    manifest = load_screening_manifest(PERSISTENT_MANIFEST)
+    registration = {
+        "status": "ready",
+        "served_model_name": manifest.engine.served_model_name,
+        "vllm_version": manifest.engine.version,
+        "tensor_parallel_size": 2,
+        "max_model_len": manifest.engine.max_model_len,
+        "max_num_seqs": manifest.engine.max_num_seqs,
+        "gpu_memory_utilization": manifest.engine.gpu_memory_utilization,
+        "gpu_indices": [1, 2],
+        "dtype": "bfloat16",
+        "model_path": "/models/qwen3-32b",
+    }
+    verification = {
+        "passed": True,
+        "matched": 24,
+        "file_count": 24,
+        "model": manifest.judge.model,
+        "revision": manifest.judge.revision,
+        "model_dir": registration["model_path"],
+    }
+    registration_path = tmp_path / "service.json"
+    verification_path = tmp_path / "assets.json"
+    registration_path.write_text(json.dumps(registration), encoding="utf-8")
+    verification_path.write_text(json.dumps(verification), encoding="utf-8")
+
+    loaded, _ = validate_service_registration(
+        manifest=manifest,
+        registration_path=registration_path,
+        asset_verification_path=verification_path,
+    )
+    assert loaded["gpu_indices"] == [1, 2]
+
+    registration["dtype"] = "half"
+    registration_path.write_text(json.dumps(registration), encoding="utf-8")
+    with pytest.raises(ValueError, match="precision"):
+        validate_service_registration(
+            manifest=manifest,
+            registration_path=registration_path,
+            asset_verification_path=verification_path,
+        )
 
 
 def test_official_judge_response_parser_accepts_bold_and_plain_fields() -> None:
@@ -128,6 +201,75 @@ def test_vllm_client_uses_loopback_chat_completions_and_registered_sampling() ->
             "chat_template_kwargs": {"enable_thinking": False},
         }
     ]
+
+
+def test_development_judge_result_recomputes_accuracy_and_usage() -> None:
+    inference = ScreeningInference(
+        temperature=0.7,
+        top_p=0.8,
+        top_k=20,
+        max_output_tokens=4096,
+        enable_thinking=False,
+    )
+    observations = [
+        DevelopmentJudgeObservation(
+            query_id="q1",
+            prediction_sha256="a" * 64,
+            correct=True,
+            confidence=90,
+            parse_error=False,
+            latency_ms=10,
+            prompt_tokens=100,
+            completion_tokens=20,
+            total_tokens=120,
+            result_path="results/q1.json",
+            result_sha256="b" * 64,
+        ),
+        DevelopmentJudgeObservation(
+            query_id="q2",
+            prediction_sha256="c" * 64,
+            correct=False,
+            confidence=80,
+            parse_error=False,
+            latency_ms=12,
+            prompt_tokens=110,
+            completion_tokens=15,
+            total_tokens=125,
+            result_path="results/q2.json",
+            result_sha256="d" * 64,
+        ),
+    ]
+    result = DevelopmentJudgeResult(
+        created_at="2026-08-14T00:00:00+00:00",
+        status="succeeded",
+        judge_manifest_sha256="e" * 64,
+        calibration_sha256="f" * 64,
+        source_summary_sha256="1" * 64,
+        gold_slice_sha256="2" * 64,
+        judge_model="Qwen/Qwen3-32B",
+        judge_revision="3" * 40,
+        served_model_name="qwen3-32b-bf16-judge",
+        inference=inference,
+        query_count=2,
+        evaluations=2,
+        correct=1,
+        accuracy_percent=50.0,
+        parse_failures=0,
+        request_failures=0,
+        request_errors=[],
+        elapsed_ms=15,
+        prompt_tokens=210,
+        completion_tokens=35,
+        total_tokens=245,
+        observations=observations,
+        claim_boundary="not official",
+    )
+
+    assert result.accuracy_percent == 50.0
+    with pytest.raises(ValueError, match="accuracy"):
+        DevelopmentJudgeResult.model_validate(
+            {**result.model_dump(), "accuracy_percent": 100.0}
+        )
 
 
 def test_calibration_accepts_identical_awq_and_bf16_labels(tmp_path: Path) -> None:
