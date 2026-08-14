@@ -263,6 +263,30 @@ The AWQ path is useful only if every registered calibration gate passes. Its
 scores remain screening diagnostics; the two-GPU BF16 evaluator remains the
 official contract.
 
+An accepted persistent BF16 calibration can score a complete frozen repeat
+grid without reloading the model between variants. The wrapper validates the
+running service and all source hashes, then writes one result per variant and a
+paired comparison explicitly labeled as a non-official development diagnostic:
+
+```powershell
+python scripts\run_browsecomp_plus_repeat_development_judge.py `
+  --repeat-experiment <repeat_experiment.json> `
+  --repeat-comparison <repeat_comparison.json> `
+  --target-manifest benchmarks\browsecomp_plus_v0\target_manifest.json `
+  --judge-manifest benchmarks\browsecomp_plus_v0\persistent_bf16_judge_v0.json `
+  --calibration-result <accepted_calibration.json> `
+  --reference-screening-result <reference_service_result.json> `
+  --official-comparison <official_reference_comparison.json> `
+  --service-registration <service_registration.json> `
+  --asset-verification <asset_verification.json> `
+  --output-dir <new_repeat_judge_output> `
+  --base-url http://127.0.0.1:18015/v1
+```
+
+`decide_browsecomp_plus_dense_confirmation.py` then revalidates that result and
+applies the original retrieval, Judge, structure, failure, and cost gates. It
+does not choose a favorable replicate and does not access the sealed holdout.
+
 Layer selection is also a tracked, machine-readable decision rather than a
 post-hoc reading of the best metric. `promotion_gates.json` requires at least
 three trials and 25 development questions, evidence-recall delta >= 10 points,

@@ -129,6 +129,22 @@ requests persist raw prompts/responses, parsed labels, token usage, latency, and
 hashes. Its result type is explicitly diagnostic and fail-closed on request or
 parse failures.
 
+`repeat_development_judge.py` applies that same validated boundary to every
+trial/variant in a frozen repeat manifest. It scores all six variants rather
+than selecting a favorable replicate, preserves the individual result files,
+and aggregates trial distributions plus paired query wins/losses. The
+comparison is bound to the repeat manifest, repeat comparison, Judge manifest,
+and accepted calibration. Its status remains
+`calibrated_development_diagnostic_not_official`.
+
+`dense_confirmation_decision.py` applies the gates registered in
+`dense_confirmation_v1.json` to the repeat and Judge comparisons. In addition
+to retrieval and Judge deltas, it checks structure, output overshoot, paired
+query wins, final provider failures, combined generation cost, and the
+candidate/baseline cost ratio. It reuses saved candidate diagnostics to route
+the next experiment by failure layer and emits a hash-bound decision under
+ignored `runs/`.
+
 `browsecomp_decision.py` is the mechanism-selection boundary after official
 evaluation. It revalidates the repeat comparison, judge batch, execution, and
 comparison before applying the tracked `promotion_gates.json`. It does not pick
@@ -177,7 +193,7 @@ B2 keeps B1's three provider calls and the same collector boundary, but turns th
 | BrowseComp retrieval | pinned local BM25 and Qwen3-Embedding-0.6B, top-5, 512 Qwen tokens | only replay-justified retrievers or rerankers |
 | BrowseComp control | strict global/phase limits and non-thinking answer compilation | evidence-debt marginal-value stopping after larger bad-case clustering |
 | BrowseComp reliability | alternating-order paired repeats with hash-bound aggregation | preregistered larger-slice confidence intervals and official judging |
-| BrowseComp evaluation | two-GPU BF16 official path plus calibrated one-GPU AWQ screening path | official slice score, then full development and sealed submission |
+| BrowseComp evaluation | two-GPU BF16 official path plus calibrated persistent-service diagnostics | official slice score, then full development and sealed submission |
 
 Do not add DAG fan-out, critic loops, or automatic re-planning until a saved bad case makes their decision boundary measurable.
 

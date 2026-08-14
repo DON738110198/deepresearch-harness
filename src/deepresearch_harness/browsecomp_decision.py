@@ -353,7 +353,7 @@ def decide_browsecomp_layer_promotion(
         else "reject"
     )
 
-    profiles, failure_aggregate = _failure_analysis(
+    profiles, failure_aggregate = analyze_candidate_failures(
         repeat=repeat,
         judge=judge,
         repository_root=repository_root,
@@ -508,7 +508,7 @@ def _gate_results(
     ]
 
 
-def _failure_analysis(
+def analyze_candidate_failures(
     *,
     repeat: RepeatComparisonSummary,
     judge: OfficialJudgeComparison,

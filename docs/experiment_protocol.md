@@ -231,6 +231,15 @@ The resulting metric is named
 `calibrated_development_diagnostic_not_official`; it cannot replace the pinned
 upstream evaluator for final comparisons, sealed holdout, or submission.
 
+For a repeat grid, score every registered trial and both variants. Do not pick
+the best trial or reuse one label across repetitions. The repeat-service Judge
+must validate each summary, prediction, gold slice, raw item result, and
+calibration hash, then report pooled and trial-level accuracy plus paired query
+outcomes. The final Dense Retrieval decision applies every conjunctive gate in
+`dense_confirmation_v1.json`, including the generation-cost cap and cost ratio.
+A missed gate is retained as a negative result; it is not repaired by changing
+the threshold, dropping a trial, or adding a multi-Agent layer post hoc.
+
 The official evaluator handoff uses two immutable records. The batch manifest
 is created before judge inference and binds each unique
 `trial -> variant -> query` input to its prediction hash, ground truth export,
