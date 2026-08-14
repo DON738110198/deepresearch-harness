@@ -1,0 +1,48 @@
+{
+  "schema_version": "browsecomp-plus-baseline-profile-v0",
+  "status": "preregistered_not_run",
+  "registered_at": "2026-08-14T12:25:59.3849085+08:00",
+  "target_manifest_sha256": "dad4e291d9bf1223cd2e4e56067948883736b6a8732d29b57cc06a03d1b140c0",
+  "source_probe_registration_sha256": "169b62cf8489a5e7da9db5fa7dfdd419bc2f6567b725d3f6b0f565ac2fc0c914",
+  "purpose": "Measure the frozen baseline's search and evidence failure distribution on a larger fresh development slice before designing another intervention.",
+  "problem": "The rejected constraint_portfolio_v1 probe lost 29.45 percentage points of evidence recall while issuing 38.36 percent fewer searches. Five questions are enough to stop that candidate but too few to choose a robust repair trigger.",
+  "simpler_method": "Profile the unchanged baseline once on fresh questions; do not introduce another prompt or agent layer yet.",
+  "fixed_contract": {
+    "model": "deepseek-v4-flash",
+    "thinking_level": "high",
+    "retriever_id": "bm25",
+    "search_top_k": 5,
+    "max_iterations": 100,
+    "max_output_tokens": 10000,
+    "system_prompt_policy": "empty",
+    "control_policy": "answer_reserve_nonthinking_v0",
+    "adapter_version": "pi-browsecomp-v7"
+  },
+  "query_selection": {
+    "partition": "development",
+    "ordering": "sorted_development_query_id",
+    "offset": 30,
+    "limit": 25,
+    "trials": 1,
+    "overlap_with_prior_development_runs": 0,
+    "gold_access": "after_all_predictions_are_frozen",
+    "sealed_holdout_access": "forbidden"
+  },
+  "run_gate": {
+    "maximum_total_provider_cost_usd": 0.6,
+    "maximum_provider_failures": 0,
+    "minimum_schema_complete_percent": 96.0,
+    "maximum_output_budget_overshoot_tokens": 0
+  },
+  "planned_cpu_diagnostics": [
+    "strict_exact",
+    "evidence_recall",
+    "gold_recall",
+    "search_call_distribution",
+    "token_cost_latency_distribution",
+    "retrieval_failure_categories"
+  ],
+  "judge_status": "planned_after_single_gpu_screening_judge_calibration",
+  "decision_use": "Select one measurable repair trigger and preregister it on another fresh development slice. Do not tune against these 25 answers and evaluate on the same slice.",
+  "claim_boundary": "This is development-set error profiling for a frozen-model harness. It is not official benchmark accuracy, leaderboard evidence, or a model-capability improvement."
+}

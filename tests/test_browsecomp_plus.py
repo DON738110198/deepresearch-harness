@@ -59,6 +59,9 @@ QUERY_COMPILER_GATES = (
 SCREENING_JUDGE = (
     ROOT / "benchmarks" / "browsecomp_plus_v0" / "screening_judge_v0.json"
 )
+BASELINE_PROFILE = (
+    ROOT / "benchmarks" / "browsecomp_plus_v0" / "baseline_profile_v0.json"
+)
 PROMOTION_GATES = ROOT / "benchmarks" / "browsecomp_plus_v0" / "promotion_gates.json"
 
 
@@ -235,6 +238,25 @@ def test_single_gpu_screening_judge_is_explicitly_non_official() -> None:
     assert manifest["engine"]["gpu_id"] == 5
     assert manifest["judge"]["model"] == "Qwen/Qwen3-32B-AWQ"
     assert len(manifest["judge"]["revision"]) == 40
+    assert "not official" in manifest["claim_boundary"].lower()
+
+
+def test_baseline_profile_is_fresh_target_bound_and_diagnostic_only() -> None:
+    manifest = json.loads(BASELINE_PROFILE.read_text(encoding="utf-8"))
+    selection = manifest["query_selection"]
+
+    assert manifest["status"] == "preregistered_not_run"
+    assert manifest["target_manifest_sha256"] == normalized_text_file_sha256(
+        MANIFEST
+    )
+    assert manifest["fixed_contract"]["control_policy"] == (
+        "answer_reserve_nonthinking_v0"
+    )
+    assert selection["partition"] == "development"
+    assert selection["offset"] == 30
+    assert selection["limit"] == 25
+    assert selection["overlap_with_prior_development_runs"] == 0
+    assert selection["sealed_holdout_access"] == "forbidden"
     assert "not official" in manifest["claim_boundary"].lower()
 
 
