@@ -240,6 +240,29 @@ outcomes. The final Dense Retrieval decision applies every conjunctive gate in
 A missed gate is retained as a negative result; it is not repaired by changing
 the threshold, dropping a trial, or adding a multi-Agent layer post hoc.
 
+The Evidence Bandwidth confirmation follows the same rule. Its pre-registration
+freezes a fresh 25-query development slice, three alternating paired trials,
+adapter v8, BM25 top-5, dense top-20, and a 1792-token aggregate snippet budget.
+Promotion requires all of the following at once: candidate schema completeness
+at least 96%, zero output overshoot and final provider failures, evidence-recall
+delta at least +10 points, positive query-level evidence wins minus losses,
+non-negative calibrated-Judge accuracy delta, zero Judge parse/request
+failures, search-call ratio in [0.9, 1.1], total-Token and provider-cost ratios
+at most 1.15, and total generation cost no more than the registered cap. Payload
+calibration alone is not a matched end-to-end budget because the Agent may issue
+different numbers of searches; the final ratios are computed over all saved
+provider traces.
+
+The v0 result is retained as a negative result: retrieval recall passed, while
+Judge accuracy and the search/Token/cost ratios failed. Any progressive-
+disclosure follow-up must therefore be a new registered mechanism. The saved
+selectivity probe requires it to preserve BM25 full-snippet anchors while
+deduplicated dense-only candidates are exposed as short leads with bounded
+explicit document opens. It must record every evidence-ingress token and cannot
+reuse the v0 result as if it had passed. A five-query run is engineering smoke only. A later effectiveness test
+must use a fresh slice and add a gate that relevant-evidence-but-wrong failures
+do not exceed baseline. Those metrics remain `planned` until that run exists.
+
 The official evaluator handoff uses two immutable records. The batch manifest
 is created before judge inference and binds each unique
 `trial -> variant -> query` input to its prediction hash, ground truth export,

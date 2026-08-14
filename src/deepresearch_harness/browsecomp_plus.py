@@ -327,7 +327,7 @@ class PiSearchCall(StrictContract):
     outcome: Literal["ok", "error"]
     latency_ms: int = Field(ge=0)
     detail: str | None = None
-    results: list[PiSearchResult] = Field(max_length=5)
+    results: list[PiSearchResult] = Field(max_length=20)
 
 
 class PiProviderRequestLimit(StrictContract):
@@ -355,12 +355,14 @@ class PiBrowseCompRun(StrictContract):
         "pi-browsecomp-v5",
         "pi-browsecomp-v6",
         "pi-browsecomp-v7",
+        "pi-browsecomp-v8",
     ]
     pi_version: Literal["0.84.1"]
     run_id: str = Field(min_length=1)
     query_id: str = Field(min_length=1)
     model: Literal["deepseek-v4-flash", "deepseek-v4-pro"]
     thinking_level: Literal["high"]
+    max_search_results: int = Field(default=5, ge=1, le=20)
     control_policy: Literal[
         "standard",
         "answer_reserve_v0",
@@ -410,6 +412,12 @@ class PiBrowseCompRun(StrictContract):
             raise ValueError("output budget overshoot does not match provider usage")
         if self.status == "succeeded" and not self.answer_text.strip():
             raise ValueError("a succeeded run must contain a terminal answer")
+        if any(
+            len(call.results) > self.max_search_results for call in self.search_calls
+        ):
+            raise ValueError("search call exceeds the recorded result limit")
+        if self.adapter_version != "pi-browsecomp-v8" and self.max_search_results != 5:
+            raise ValueError("only adapter v8 may widen search results")
         if self.answer_schema_complete is not None and self.answer_schema_complete != (
             has_required_answer_schema(self.answer_text)
         ):
@@ -513,6 +521,7 @@ class PiBrowseCompRun(StrictContract):
                 "pi-browsecomp-v5",
                 "pi-browsecomp-v6",
                 "pi-browsecomp-v7",
+                "pi-browsecomp-v8",
             } and any(
                 limit.output_limit_field != "max_tokens"
                 for limit in self.provider_request_limits
@@ -525,6 +534,7 @@ class PiBrowseCompRun(StrictContract):
                 "pi-browsecomp-v5",
                 "pi-browsecomp-v6",
                 "pi-browsecomp-v7",
+                "pi-browsecomp-v8",
             }:
                 for limit in self.provider_request_limits:
                     expected_thinking = (
@@ -553,7 +563,11 @@ class PiBrowseCompRun(StrictContract):
                     )
                     if limit.thinking_type != expected_thinking:
                         raise ValueError("v2 provider thinking mode does not match phase policy")
-                    if self.adapter_version in {"pi-browsecomp-v6", "pi-browsecomp-v7"}:
+                    if self.adapter_version in {
+                        "pi-browsecomp-v6",
+                        "pi-browsecomp-v7",
+                        "pi-browsecomp-v8",
+                    }:
                         expected_temperature = (
                             0.0 if expected_thinking == "disabled" else None
                         )

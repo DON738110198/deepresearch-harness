@@ -47,3 +47,17 @@ B4 只有在坏例证明必要后才允许立项。候选边界为：Lead 根据
 B2/B3/B4 比较必须锁定生成模型、thinking 配置、搜索 provider、语料快照、问题集合、总 query calls、总 Token 和总人民币费用；报告 evidence recall、校准 Judge accuracy、citation support、冲突发现率、重复搜索率、synthesis loss、墙钟时间和费用。Token-matched 与 cost-matched 必须分别报告，所有未跑指标标为 `planned`。
 
 任何未来差异只能表述为 harness/orchestration effect，不能表述为冻结模型能力提升。
+
+## 检索确认后的更新
+
+fresh-25 Dense top-5 确认没有通过 `+10 pp` evidence recall 门槛。随后
+Evidence Bandwidth top-20 在另一组 fresh-25 三轮实验中把 recall 提高
+`10.193333 pp`，但校准 Judge accuracy 下降 `8 pp`，搜索、Token 和费用
+比例也超过预注册上限。错误结构从 BM25 的 24 个 no-evidence / 22 个
+relevant-but-wrong，变为候选的 19 / 35。
+
+这使下一问题从“是否需要更多搜索角色”进一步收窄为“如何让更宽的候选池
+只把经过选择的证据送入上下文，并把召回增益转成正确答案”。单上下文干扰
+目前只是候选解释，还没有达到 B3/B4 的启动证据。先测试 progressive
+disclosure、Evidence Packet 和受限 `open_evidence`，仍然比增加 Agent 数量
+更简单、因果问题更清楚。

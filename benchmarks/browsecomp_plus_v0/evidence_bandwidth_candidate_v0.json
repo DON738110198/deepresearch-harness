@@ -1,0 +1,32 @@
+{
+  "schema_version": "browsecomp-plus-evidence-bandwidth-candidate-v0",
+  "status": "selected_before_live_generation",
+  "selected_at": "2026-08-14T18:10:00+08:00",
+  "candidate_id": "qwen3-embedding-0.6b-ebx20-1792",
+  "base_retriever_manifest": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+  "base_retriever_manifest_sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899",
+  "calibration_registration": "benchmarks/browsecomp_plus_v0/evidence_bandwidth_calibration_v0.json",
+  "calibration_registration_sha256": "5be166105a16e5a695d117a7f94ff190773f53839685edd9e64fee3ef2875d01",
+  "calibration_result": "runs/browsecomp_plus_v0/repeats/dense-confirmation-v1-fresh25-20260814/evidence_bandwidth_calibration.json",
+  "calibration_result_sha256": "83c0a7c61e7361037da58930de508760f2dc580fb6c4ea2cd3bfd162abaad87f",
+  "retrieval": {
+    "model": "Qwen/Qwen3-Embedding-0.6B",
+    "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "index_dataset_revision": "b3f37f70c33829eb09d04784a54277a31871fd63",
+    "corpus_dataset_revision": "b27b02bc3e45511b8b82a13e6f90ce761df726f6",
+    "result_count": 20
+  },
+  "payload": {
+    "allocation": "equal_waterfill_rank_tiebreak",
+    "total_snippet_token_budget": 1792,
+    "minimum_snippet_tokens_per_result": 48,
+    "snippet_tokenizer": "Qwen/Qwen3-0.6B",
+    "snippet_tokenizer_revision": "c1899de289a04d12100db370d81485cdf75e47ca"
+  },
+  "calibrated_payload_ratio": {
+    "aggregate": 0.933930551,
+    "maximum_trial": 0.935293605,
+    "baseline": "stored_bm25_top5_512_tokens_per_snippet"
+  },
+  "claim_boundary": "Evidence Bandwidth Exchange is a frozen harness retrieval-interface policy. It does not alter DeepSeek or Qwen model parameters and must not be described as model-capability improvement."
+}

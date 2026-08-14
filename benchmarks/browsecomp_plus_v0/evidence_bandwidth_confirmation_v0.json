@@ -1,0 +1,123 @@
+{
+  "schema_version": "browsecomp-plus-evidence-bandwidth-confirmation-v0",
+  "status": "preregistered_not_run",
+  "registered_at": "2026-08-14T18:18:57.5408597+08:00",
+  "question": "Does Evidence Bandwidth Exchange improve end-to-end research accuracy by exposing dense ranks 6-20 under a matched search-payload budget, rather than by changing the frozen LLM?",
+  "problem": {
+    "dense_top5_live_evidence_delta_pp": 3.636667,
+    "dense_top20_saved_query_evidence_delta_pp": 13.113333,
+    "best_fixed_top5_selector_delta_pp": 6.31,
+    "calibrated_candidate_payload_ratio": 0.933930551,
+    "diagnosis": "The corpus and dense retriever contain substantially more relevant evidence below rank 5, while fixed five-result reranking loses most of that gain. The measured bottleneck is evidence bandwidth at the tool interface."
+  },
+  "simpler_alternatives_already_tested": [
+    {
+      "method": "dense_top5",
+      "result": "rejected",
+      "reason": "fresh-25 three-trial evidence gain was only 3.636667 points"
+    },
+    {
+      "method": "bm25_dense_rrf_top5",
+      "result": "rejected",
+      "reason": "saved-query gain was below the registered 10 point gate"
+    },
+    {
+      "method": "three_fixed_top5_selectors_over_top20",
+      "result": "rejected",
+      "reason": "best selector gained 6.31 points, below the registered 10 point gate"
+    }
+  ],
+  "hypothesis": "On a fresh 25-question development slice, dense top-20 with Evidence Bandwidth Exchange will improve evidence recall by at least 10 points and calibrated Judge accuracy by at least 0 points versus BM25 top-5, while keeping mean provider input tokens and USD cost within 15 percent of baseline.",
+  "fixed_contract": {
+    "model": "deepseek-v4-flash",
+    "thinking_level": "high",
+    "control_policy": "answer_reserve_nonthinking_v0",
+    "system_prompt_policy": "empty",
+    "prompt_sha256": "4110be54126ad7b501f219585ea64b8b26ab9b1d589d873ca2d367b957e23075",
+    "max_iterations": 100,
+    "max_output_tokens": 10000,
+    "pi_version": "0.84.1",
+    "adapter_version": "pi-browsecomp-v8",
+    "adapter_contract_path": "integrations/pi-browsecomp/v8/contract.mjs",
+    "adapter_contract_sha256": "12a010fb32c7a219036304a57c303fb74872d5f4378b90b0c6b492cee86a7fa0",
+    "adapter_runner_path": "integrations/pi-browsecomp/v8/runner.mjs",
+    "adapter_runner_sha256": "29b688afaff0c02fc2b20c15a910a0a2e366edc974c08c586d49e61332b2723c",
+    "adapter_lock_sha256": "a1e879ccb82443b1d6bcdc2d683447da5b8329b3f861cdcf5dbb6fed24b98b74",
+    "target_manifest_sha256": "dad4e291d9bf1223cd2e4e56067948883736b6a8732d29b57cc06a03d1b140c0",
+    "baseline": {
+      "retriever_id": "bm25",
+      "index_revision": "b3f37f70c33829eb09d04784a54277a31871fd63",
+      "result_count": 5,
+      "snippet_max_tokens_per_result": 512
+    },
+    "candidate": {
+      "retriever_id": "qwen3-embedding-0.6b-ebx20-1792",
+      "manifest_path": "benchmarks/browsecomp_plus_v0/evidence_bandwidth_candidate_v0.json",
+      "manifest_sha256": "2f5820e920587f36c826dc2ced7e4d3a1f3591ea26388e62f6cb098437fe6777",
+      "result_count": 20,
+      "total_snippet_token_budget": 1792,
+      "minimum_snippet_tokens_per_result": 48,
+      "allocation": "equal_waterfill_rank_tiebreak"
+    },
+    "search_provider": "local_pinned_browsecomp_plus_indexes",
+    "query_calls_policy": "same_agent_and_max_iterations; measured ratio gate",
+    "corpus_revision": "b27b02bc3e45511b8b82a13e6f90ce761df726f6",
+    "judge_manifest": "benchmarks/browsecomp_plus_v0/persistent_bf16_judge_v0.json",
+    "judge_manifest_sha256": "7d27f8e9739dc60ced49ee72cfe3191f36ef485403a4fd24539c932ceaf7277f",
+    "judge_calibration_path": "runs/browsecomp_plus_v0/persistent_judge/qwen3-32b-bf16-service-calibration-20260814/calibration.json",
+    "judge_calibration_sha256": "ad68bf0cfcf2081e31135f75f3e7909117e59828c76553dc3cf8cf21b67c5be3"
+  },
+  "fresh_query_selection": {
+    "partition": "development",
+    "ordering": "sorted_development_query_id",
+    "offset": 80,
+    "limit": 25,
+    "query_payload_sha256": "2c582a9cec30f6f06fd8c4ad6070d1b0f4ba94d5a9c0a3e06dd15a7dd048c2e6",
+    "query_ids_sha256": "366eb43a93abb087fd3867be6916a859681333b8cb5e21add44f050905a1ba44",
+    "query_artifact_sha256": "c3e06527a0109f278a1fb50a4e5a400ae08fed93c961ac4ffbcaff0bd7fbfd4d",
+    "normalized_query_artifact_sha256": "42c985272172979fdde11a290116a7817f1f475d0747c11889b001deff4ea032",
+    "overlap_with_prior_registered_development_slices": 0,
+    "gold_access": "after_predictions_are_frozen",
+    "sealed_holdout_access": "forbidden"
+  },
+  "execution": {
+    "repeat_manifest_path": "runs/browsecomp_plus_v0/repeats/evidence-bandwidth-confirmation-v0-fresh25-20260814/repeat_experiment.json",
+    "repeat_manifest_sha256": "a119b469b28dff07205ad14cdea9382685c99dfa59676a3e83a9220583afc5d7",
+    "trials": 3,
+    "paired_execution_order": [
+      "baseline_first",
+      "candidate_first",
+      "baseline_first"
+    ],
+    "maximum_combined_provider_cost_usd": 2.5,
+    "retry_policy": "failed_only_max_3_preserve_attempts",
+    "judge_after_generation": true
+  },
+  "acceptance_gates": {
+    "minimum_candidate_schema_complete_percent": 96.0,
+    "maximum_output_budget_overshoot_tokens": 0,
+    "minimum_evidence_recall_delta_pp": 10.0,
+    "minimum_query_level_evidence_recall_wins_minus_losses": 1,
+    "minimum_calibrated_judge_accuracy_delta_pp": 0.0,
+    "maximum_judge_parse_failures": 0,
+    "maximum_judge_request_failures": 0,
+    "minimum_candidate_to_baseline_search_call_ratio": 0.9,
+    "maximum_candidate_to_baseline_search_call_ratio": 1.1,
+    "maximum_candidate_to_baseline_total_token_ratio": 1.15,
+    "maximum_candidate_to_baseline_provider_cost_ratio": 1.15,
+    "maximum_final_provider_failures": 0
+  },
+  "metrics": {
+    "strict_exact": "planned",
+    "evidence_recall": "planned",
+    "gold_recall": "planned",
+    "calibrated_judge_accuracy": "planned",
+    "citation_support": "planned_not_available_in_browsecomp_plus_official_contract",
+    "search_calls": "planned",
+    "input_output_total_tokens": "planned",
+    "usd_and_cny_cost": "planned_usd_recorded_cny_requires_frozen_exchange_rate",
+    "latency": "planned"
+  },
+  "decision_rule": "Promote only if every registered structural, evidence, Judge, search-call, token, cost, and provider-failure gate passes. Otherwise retain the complete negative result and diagnose the smallest failed layer before adding critics, replanning, or multiple agents.",
+  "claim_boundary": "All observed differences are frozen-model harness effects on a fresh development slice. They are not model-capability improvements, official leaderboard results, or evidence about the sealed holdout."
+}

@@ -145,6 +145,7 @@ class PiSmokeSummary(StrictContract):
         "constraint_portfolio_v1",
     ] = "standard"
     system_prompt_policy: Literal["empty"] = "empty"
+    max_search_results: int = Field(default=5, ge=1, le=20)
     retriever_id: str = Field(default="bm25", min_length=1)
     retriever_manifest_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
@@ -244,6 +245,7 @@ class PiResumeAudit(StrictContract):
     retriever_manifest_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
+    max_search_results: int = Field(default=5, ge=1, le=20)
     query_count: int = Field(gt=0)
     immutable_query_count: int = Field(ge=0)
     retry_eligible_count: int = Field(gt=0)
@@ -323,6 +325,7 @@ def audit_pi_failed_resume(
     ] = "standard",
     retriever_id: str = "bm25",
     retriever_manifest_path: Path | None = None,
+    max_search_results: int = 5,
 ) -> PiResumeAudit:
     """Validate a failed-only resume without writing files or calling a provider."""
     repository_root = manifest_path.resolve().parents[2]
@@ -368,6 +371,7 @@ def audit_pi_failed_resume(
         control_policy=control_policy,
         retriever_id=retriever_id,
         retriever_manifest_sha256=retriever_manifest_sha256,
+        max_search_results=max_search_results,
         query_ids=[query.query_id for query in queries.queries],
     )
 
@@ -383,6 +387,7 @@ def audit_pi_failed_resume(
             max_output_tokens=contract.max_output_tokens,
             max_iterations=contract.max_iterations,
             search_url=search_url,
+            max_search_results=max_search_results,
             attempt_number=item.attempt_count,
         )
         _validate_existing_attempt(
@@ -407,6 +412,7 @@ def audit_pi_failed_resume(
         control_policy=control_policy,
         retriever_id=retriever_id,
         retriever_manifest_sha256=retriever_manifest_sha256,
+        max_search_results=max_search_results,
         query_count=summary.query_count,
         immutable_query_count=summary.query_count - summary.failed,
         retry_eligible_count=summary.failed,
@@ -426,6 +432,7 @@ def run_pi_unscored_smoke(
     output_dir: Path,
     node_executable: Path,
     adapter_dir: Path,
+    adapter_runner_path: Path | None = None,
     search_url: str,
     model: Literal["deepseek-v4-flash", "deepseek-v4-pro"],
     control_policy: Literal[
@@ -441,6 +448,7 @@ def run_pi_unscored_smoke(
     timeout_seconds: int,
     retriever_id: str = "bm25",
     retriever_manifest_path: Path | None = None,
+    max_search_results: int = 5,
     resume_failed: bool = False,
 ) -> PiSmokeSummary:
     if timeout_seconds <= 0:
@@ -449,7 +457,13 @@ def run_pi_unscored_smoke(
         raise RuntimeError("DEEPSEEK_API_KEY is not set")
     if not node_executable.is_file():
         raise ValueError(f"Node executable does not exist: {node_executable}")
-    runner_path = (adapter_dir / "src" / "runner.mjs").resolve()
+    runner_path = (
+        adapter_runner_path
+        if adapter_runner_path is not None
+        else adapter_dir / "src" / "runner.mjs"
+    ).resolve()
+    if not runner_path.is_relative_to(adapter_dir.resolve()):
+        raise ValueError("Pi adapter runner must stay under the adapter directory")
     if not runner_path.is_file():
         raise ValueError(f"Pi adapter runner does not exist: {runner_path}")
     repository_root = manifest_path.resolve().parents[2]
@@ -505,6 +519,7 @@ def run_pi_unscored_smoke(
             control_policy=control_policy,
             retriever_id=retriever_id,
             retriever_manifest_sha256=retriever_manifest_sha256,
+            max_search_results=max_search_results,
             query_ids=[query.query_id for query in queries.queries],
         )
         existing_by_query_id = {
@@ -532,6 +547,7 @@ def run_pi_unscored_smoke(
                 max_output_tokens=contract.max_output_tokens,
                 max_iterations=contract.max_iterations,
                 search_url=search_url,
+                max_search_results=max_search_results,
                 attempt_number=existing_item.attempt_count,
             )
             _validate_existing_attempt(
@@ -571,6 +587,7 @@ def run_pi_unscored_smoke(
             max_output_tokens=contract.max_output_tokens,
             max_iterations=contract.max_iterations,
             search_url=search_url,
+            max_search_results=max_search_results,
             attempt_number=attempt_number,
         )
         _atomic_write(request_path, json.dumps(request, indent=2, ensure_ascii=False))
@@ -591,6 +608,8 @@ def run_pi_unscored_smoke(
                 raise ValueError("Pi run identity does not match its request")
             if run.run_id != request["run_id"] or run.control_policy != control_policy:
                 raise ValueError("Pi run controls do not match its request")
+            if run.max_search_results != max_search_results:
+                raise ValueError("Pi run search width does not match its request")
             _atomic_write(run_path, completed.stdout)
             run_bytes = run_path.read_bytes()
             current_item = _summarize_run(run, run_path, run_bytes)
@@ -636,6 +655,7 @@ def run_pi_unscored_smoke(
                 control_policy=control_policy,
                 retriever_id=retriever_id,
                 retriever_manifest_sha256=retriever_manifest_sha256,
+                max_search_results=max_search_results,
                 items=interim_items,
             )
             _atomic_write(summary_path, interim_summary.model_dump_json(indent=2))
@@ -652,6 +672,7 @@ def run_pi_unscored_smoke(
         control_policy=control_policy,
         retriever_id=retriever_id,
         retriever_manifest_sha256=retriever_manifest_sha256,
+        max_search_results=max_search_results,
         items=items,
     )
     _atomic_write(summary_path, summary.model_dump_json(indent=2))
@@ -821,6 +842,7 @@ def _build_smoke_summary(
     control_policy: str,
     retriever_id: str,
     retriever_manifest_sha256: str | None,
+    max_search_results: int = 5,
     items: list[PiSmokeItem],
 ) -> PiSmokeSummary:
     return PiSmokeSummary(
@@ -833,6 +855,7 @@ def _build_smoke_summary(
         control_policy=control_policy,
         retriever_id=retriever_id,
         retriever_manifest_sha256=retriever_manifest_sha256,
+        max_search_results=max_search_results,
         query_count=len(items),
         succeeded=sum(item.status == "succeeded" for item in items),
         budget_exhausted=sum(item.status == "budget_exhausted" for item in items),
@@ -864,6 +887,7 @@ def _build_request(
     max_output_tokens: int,
     max_iterations: int,
     search_url: str,
+    max_search_results: int = 5,
     attempt_number: int,
 ) -> dict[str, object]:
     if attempt_number < 1:
@@ -874,6 +898,13 @@ def _build_request(
         if attempt_number == 1
         else f"{base_run_id}-attempt-{attempt_number:02d}"
     )
+    search: dict[str, object] = {
+        "kind": "http",
+        "url": search_url,
+        "timeout_ms": 120_000,
+    }
+    if max_search_results != 5:
+        search["max_results"] = max_search_results
     return {
         "schema_version": "pi-browsecomp-request-v0",
         "run_id": run_id,
@@ -884,7 +915,7 @@ def _build_request(
         "control_policy": control_policy,
         "max_output_tokens": max_output_tokens,
         "max_iterations": max_iterations,
-        "search": {"kind": "http", "url": search_url, "timeout_ms": 120_000},
+        "search": search,
     }
 
 
@@ -897,6 +928,7 @@ def _validate_resume_summary(
     control_policy: str,
     retriever_id: str,
     retriever_manifest_sha256: str | None,
+    max_search_results: int,
     query_ids: list[str],
 ) -> None:
     expected = {
@@ -906,6 +938,7 @@ def _validate_resume_summary(
         "control_policy": control_policy,
         "retriever_id": retriever_id,
         "retriever_manifest_sha256": retriever_manifest_sha256,
+        "max_search_results": max_search_results,
     }
     for field_name, expected_value in expected.items():
         if getattr(summary, field_name) != expected_value:

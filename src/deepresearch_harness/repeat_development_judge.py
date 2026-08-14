@@ -114,6 +114,7 @@ def run_repeat_development_service_judge(
     timeout_seconds: float = 600,
     retries: int = 2,
 ) -> RepeatDevelopmentJudgeComparison:
+    output_dir = output_dir.resolve()
     repository_root = _find_repository_root(repeat_experiment_path.resolve())
     _require_under_runs(output_dir, repository_root)
     if output_dir.exists():
@@ -168,6 +169,13 @@ def aggregate_repeat_development_judge(
     output_path: Path,
     validate_existing: bool = False,
 ) -> RepeatDevelopmentJudgeComparison:
+    repeat_experiment_path = repeat_experiment_path.resolve()
+    repeat_comparison_path = repeat_comparison_path.resolve()
+    target_manifest_path = target_manifest_path.resolve()
+    judge_manifest_path = judge_manifest_path.resolve()
+    calibration_result_path = calibration_result_path.resolve()
+    results_root = results_root.resolve()
+    output_path = output_path.resolve()
     repository_root = _find_repository_root(repeat_experiment_path.resolve())
     for path in (
         repeat_experiment_path,

@@ -287,6 +287,40 @@ python scripts\run_browsecomp_plus_repeat_development_judge.py `
 applies the original retrieval, Judge, structure, failure, and cost gates. It
 does not choose a favorable replicate and does not access the sealed holdout.
 
+The subsequent Evidence Bandwidth experiment tested the failure layer exposed
+by that rejection. Zero-provider-call depth probing found useful dense evidence
+below rank 5, while three fixed top-5 selectors failed the +10 point gate. A
+fresh pre-registered 25-query, three-trial run therefore compared BM25 top-5
+with dense top-20 under a fixed 1792-token search-payload budget. Evidence recall
+improved from 39.68% to 49.87%, but calibrated Judge accuracy fell from 34.67%
+to 26.67%; search calls, total tokens, and provider cost also exceeded their
+matched-budget gates. The candidate is `reject`, not a promoted result. See
+`docs/evidence_bandwidth_confirmation_v0_results_2026-08-14.zh-CN.md`.
+The registered zero-provider-call selectivity probe then showed a two-sided
+failure: dense found relevant evidence for 100% of candidate improvements but
+only 50% of candidate regressions, where BM25 found it for 100%. Repeated query
+strings were absent, while repeated document slots remained high. The next
+planned mechanism therefore preserves BM25 anchors and exposes deduplicated
+dense leads through bounded progressive disclosure rather than adding agents.
+
+The hash-bound decision can be reproduced locally after the ignored run
+artifacts are present:
+
+```powershell
+python scripts\decide_browsecomp_plus_evidence_bandwidth.py `
+  --preregistration benchmarks\browsecomp_plus_v0\evidence_bandwidth_confirmation_v0.json `
+  --candidate-manifest benchmarks\browsecomp_plus_v0\evidence_bandwidth_candidate_v0.json `
+  --repeat-experiment <repeat_experiment.json> `
+  --repeat-comparison <repeat_comparison.json> `
+  --target-manifest benchmarks\browsecomp_plus_v0\target_manifest.json `
+  --judge-manifest benchmarks\browsecomp_plus_v0\persistent_bf16_judge_v0.json `
+  --judge-calibration <accepted_calibration.json> `
+  --judge-execution-registration <execution_registration.json> `
+  --judge-execution-result <execution_result.json> `
+  --judge-comparison <repeat_development_judge_comparison.json> `
+  --output <evidence_bandwidth_decision.json>
+```
+
 Layer selection is also a tracked, machine-readable decision rather than a
 post-hoc reading of the best metric. `promotion_gates.json` requires at least
 three trials and 25 development questions, evidence-recall delta >= 10 points,
@@ -449,7 +483,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - The recorded B0/B1 semantic pass is explicitly AI-assisted calibration; registered human semantic metrics remain **planned**.
 - GitHub repository search is public and unauthenticated; DuckDuckGo Lite/Bing RSS are unofficial best-effort fallbacks. Dynamic pages, PDFs, and anti-bot pages are not handled reliably.
 - The LiveDRBench preview score is a five-task compatibility diagnostic. The official judge was not run, and exact normalized matching is deliberately stricter and narrower than the official evaluator.
-- BrowseComp-Plus exact/recall values are development diagnostics. The Qwen3-32B result covers only five fixed development questions; 25/175-query effectiveness, sealed-holdout accuracy, submission, and every leaderboard claim remain `planned`.
+- BrowseComp-Plus exact/recall values are development diagnostics. Fresh 25-query three-trial retrieval experiments and a calibrated persistent Qwen3-32B Judge have run, but this service is not the upstream official evaluator. Sealed-holdout accuracy, submission, and every leaderboard claim remain `planned`.
 
 ## Repository map
 
@@ -461,6 +495,12 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/browsecomp_plus.py`: strict benchmark pins, leakage-safe query split/extraction, and Pi run contracts.
 - `src/deepresearch_harness/bm25_server.py`: loopback-only pinned BM25/top-5/Qwen-tokenizer search service.
 - `src/deepresearch_harness/dense_server.py`: loopback-only pinned dense/top-5 service backed by the same document store and snippet contract.
+- `src/deepresearch_harness/dense_depth_probe.py`: zero-provider-call rank-depth localization over saved agent queries.
+- `src/deepresearch_harness/wide_selector_probe.py`: fixed top-5 selector ablations over the saved dense top-20 pool.
+- `src/deepresearch_harness/evidence_bandwidth.py`: deterministic fixed-budget snippet allocation for widened retrieval.
+- `src/deepresearch_harness/evidence_bandwidth_server.py`: loopback-only dense top-20 service with aggregate snippet-token accounting.
+- `src/deepresearch_harness/evidence_bandwidth_decision.py`: hash-bound Evidence Bandwidth gates and synthesis-loss routing.
+- `src/deepresearch_harness/evidence_selectivity_probe.py`: zero-provider-call paired trace analysis for evidence discovery, duplication, and synthesis routing.
 - `src/deepresearch_harness/retrieval_replay.py`: hash-bound dense and RRF counterfactual replay over frozen agent queries.
 - `src/deepresearch_harness/browsecomp_evaluation.py`: post-prediction development-gold boundary and explicitly non-official diagnostics.
 - `src/deepresearch_harness/browsecomp_repeats.py`: strict paired-repeat validation, artifact binding, distributions, and query-level win/loss aggregation.

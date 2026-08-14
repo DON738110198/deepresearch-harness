@@ -233,3 +233,24 @@ grid and harness controls remain frozen.
 
 Exact run hashes, costs, rejected controls, and the inference boundary are in
 `browsecomp_plus_layered_results_2026-08-13.zh-CN.md`.
+
+### 2026-08-14 superseding status
+
+The balance-blocked grid above is retained as history and is no longer the
+active checkpoint. A clean fresh-25, three-trial Dense top-5 confirmation was
+completed and rejected: evidence recall improved only 3.636667 points, below
+the registered +10 point gate. A zero-provider-call depth probe then found a
+13.113333 point opportunity at dense top-20, while simpler fixed top-5 selectors
+still failed the gate.
+
+The separately pre-registered Evidence Bandwidth run completed all 150
+query-variant generations for $1.915936070 with no final failures or output
+overshoot. It raised evidence recall by 10.193333 points but reduced calibrated
+development Judge accuracy by 8 points and exceeded the search, Token, and cost
+ratio gates. The machine decision is `reject`. A subsequent zero-provider-call
+selectivity probe showed that dense rescued the long-tail evidence in candidate
+improvements but lost BM25 anchors in regressions and repeatedly reintroduced
+the same documents across distinct searches. The next active hypothesis is
+therefore dual-channel evidence progressive disclosure, not more agents or a
+full 175-question run. Detailed numbers and acceptance criteria are in
+`evidence_bandwidth_confirmation_v0_results_2026-08-14.zh-CN.md`.

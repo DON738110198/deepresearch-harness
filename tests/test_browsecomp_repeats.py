@@ -36,7 +36,7 @@ EVALUATOR = ROOT / "benchmarks" / "browsecomp_plus_v0" / "official_evaluator.jso
 PROMOTION_GATES = ROOT / "benchmarks" / "browsecomp_plus_v0" / "promotion_gates.json"
 
 
-def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
+def test_repeat_aggregation_validates_adapter_contract_and_reports_paired_outcomes(
     tmp_path: Path,
 ) -> None:
     (tmp_path / "pyproject.toml").write_text(
@@ -144,6 +144,25 @@ def test_repeat_aggregation_requires_v6_and_reports_paired_outcomes(
         .provider_failure_retry_policy.max_resume_invocations
         == 3
     )
+    v2_manifest = {
+        **v1_manifest,
+        "schema_version": "browsecomp-plus-repeat-experiment-v2",
+        "registration_status": "reconstructed_after_interruption",
+        "expected_adapter_version": "pi-browsecomp-v7",
+        "source_manifest_path": "runs/original.json",
+        "source_manifest_sha256": "f" * 64,
+        "amendment_reason": "The runner was already pinned to v7.",
+        "amended_at": "2026-08-14T00:00:00Z",
+    }
+    assert (
+        RepeatExperimentManifest.model_validate(v2_manifest)
+        .expected_adapter_version
+        == "pi-browsecomp-v7"
+    )
+    with pytest.raises(ValueError, match="complete v7 amendment"):
+        RepeatExperimentManifest.model_validate(
+            {**v2_manifest, "source_manifest_sha256": None}
+        )
     manifest_path = tmp_path / "runs" / "repeat_manifest.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     output_path = tmp_path / "runs" / "comparison.json"

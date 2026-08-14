@@ -1,0 +1,51 @@
+{
+  "schema_version": "browsecomp-plus-evidence-selectivity-probe-registration-v0",
+  "status": "registered_before_probe_execution",
+  "registered_at": "2026-08-14T22:35:27.1808293+08:00",
+  "question": "When raw dense top-20 retrieves more relevant evidence but loses Judge accuracy, do saved traces show that the failure moved from evidence discovery to noisy or repeated evidence ingestion and answer synthesis?",
+  "source_contract": {
+    "repeat_experiment_path": "runs/browsecomp_plus_v0/repeats/evidence-bandwidth-confirmation-v0-fresh25-20260814/repeat_experiment.json",
+    "repeat_experiment_sha256": "a119b469b28dff07205ad14cdea9382685c99dfa59676a3e83a9220583afc5d7",
+    "repeat_comparison_path": "runs/browsecomp_plus_v0/repeats/evidence-bandwidth-confirmation-v0-fresh25-20260814/repeat_comparison.json",
+    "repeat_comparison_sha256": "38d813a84dc1d94e02aa7325a2d171e2ce11acee9d275b4aafad0d14949700aa",
+    "judge_comparison_path": "runs/browsecomp_plus_v0/repeats/evidence-bandwidth-confirmation-v0-fresh25-20260814/persistent_judge_v0/evaluation/repeat_development_judge_comparison.json",
+    "judge_comparison_sha256": "83a95774aa838773a5d39f46905d84ddbe2bea8086b5c0a5d8999f62b7b2c53c",
+    "decision_path": "runs/browsecomp_plus_v0/repeats/evidence-bandwidth-confirmation-v0-fresh25-20260814/evidence_bandwidth_decision.json",
+    "decision_sha256": "981fcd2a6ee1f65bf6f48823a505fdcc7ab540f3aa9f7445bd8a09e6ae3647b8"
+  },
+  "fixed_analysis": {
+    "provider_calls": 0,
+    "paired_observations": 75,
+    "result_groups": [
+      "candidate_improvement",
+      "candidate_regression",
+      "both_correct",
+      "both_incorrect"
+    ],
+    "relevant_docids": "development evidence_docids from prediction-bound gold slices",
+    "gold_docids": "development gold_docids from prediction-bound gold slices",
+    "duplicate_definition": "result slots minus unique docids within one query run",
+    "repeated_query_definition": "search calls minus unique normalized query strings within one query run",
+    "first_relevant_call": "one-indexed first search call containing any evidence_docid; null when absent",
+    "minimum_relevant_rank": "minimum one-indexed within-call rank of any evidence_docid; null when absent"
+  },
+  "metrics": {
+    "search_calls": "planned",
+    "result_slots": "planned",
+    "unique_docids": "planned",
+    "duplicate_result_rate": "planned",
+    "repeated_query_rate": "planned",
+    "first_relevant_call": "planned",
+    "minimum_relevant_rank": "planned",
+    "input_and_total_tokens": "planned",
+    "latency": "planned"
+  },
+  "acceptance": {
+    "provider_calls_must_equal": 0,
+    "paired_observations_must_equal": 75,
+    "missing_or_changed_sources_must_equal": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "routing_rule": "Use the probe only to choose the next smallest layer. More relevant evidence plus high duplicate/repeated ingestion supports progressive disclosure; persistent no-evidence supports query/retriever work; relevant evidence already early with little duplication supports structured selection and synthesis controls. Do not infer causality from association alone.",
+  "claim_boundary": "Post-generation development diagnostic over saved traces. It makes no provider calls, is not an effectiveness experiment, and cannot support a model-capability or leaderboard claim."
+}

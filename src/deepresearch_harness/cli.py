@@ -163,6 +163,7 @@ def main() -> int:
     run_pi_browsecomp.add_argument("--output-dir", type=Path, required=True)
     run_pi_browsecomp.add_argument("--node", type=Path, required=True)
     run_pi_browsecomp.add_argument("--adapter-dir", type=Path, required=True)
+    run_pi_browsecomp.add_argument("--adapter-runner", type=Path)
     run_pi_browsecomp.add_argument("--search-url", default="http://127.0.0.1:8765/search")
     run_pi_browsecomp.add_argument(
         "--model",
@@ -186,6 +187,7 @@ def main() -> int:
     run_pi_browsecomp.add_argument("--timeout-seconds", type=int, default=900)
     run_pi_browsecomp.add_argument("--retriever-id", default="bm25")
     run_pi_browsecomp.add_argument("--retriever-manifest", type=Path)
+    run_pi_browsecomp.add_argument("--max-search-results", type=int, default=5)
     run_pi_browsecomp.add_argument(
         "--resume-failed",
         action="store_true",
@@ -223,6 +225,7 @@ def main() -> int:
     )
     audit_pi_resume.add_argument("--retriever-id", default="bm25")
     audit_pi_resume.add_argument("--retriever-manifest", type=Path)
+    audit_pi_resume.add_argument("--max-search-results", type=int, default=5)
     export_pi_browsecomp = subparsers.add_parser(
         "export-pi-browsecomp-runs",
         help="Convert frozen Pi traces into the official evaluator input shape.",
@@ -271,7 +274,7 @@ def main() -> int:
     replay_browsecomp_retrieval.add_argument("--batch-size", type=int, default=8)
     aggregate_browsecomp_repeats = subparsers.add_parser(
         "aggregate-browsecomp-plus-repeats",
-        help="Validate and aggregate paired v6 repeat trials without an official judge.",
+        help="Validate and aggregate paired registered-adapter trials without an official judge.",
     )
     aggregate_browsecomp_repeats.add_argument(
         "--experiment-manifest", type=Path, required=True
@@ -562,18 +565,21 @@ def main() -> int:
             output_dir=args.output_dir,
             node_executable=args.node,
             adapter_dir=args.adapter_dir,
+            adapter_runner_path=args.adapter_runner,
             search_url=args.search_url,
             model=args.model,
             control_policy=args.control_policy,
             timeout_seconds=args.timeout_seconds,
             retriever_id=args.retriever_id,
             retriever_manifest_path=args.retriever_manifest,
+            max_search_results=args.max_search_results,
             resume_failed=args.resume_failed,
         )
         print(
             f"output={args.output_dir}\nstatus={summary.status}\n"
             f"control_policy={summary.control_policy}\n"
             f"retriever_id={summary.retriever_id}\n"
+            f"max_search_results={summary.max_search_results}\n"
             f"queries={summary.query_count}\nsucceeded={summary.succeeded}\n"
             f"budget_exhausted={summary.budget_exhausted}\nfailed={summary.failed}\n"
             f"schema_complete={summary.schema_complete}\n"
@@ -600,6 +606,7 @@ def main() -> int:
             control_policy=args.control_policy,
             retriever_id=args.retriever_id,
             retriever_manifest_path=args.retriever_manifest,
+            max_search_results=args.max_search_results,
         )
         print(
             f"status={audit.status}\n"
@@ -607,6 +614,7 @@ def main() -> int:
             f"queries={audit.query_count}\n"
             f"immutable_queries={audit.immutable_query_count}\n"
             f"retry_eligible={audit.retry_eligible_count}\n"
+            f"max_search_results={audit.max_search_results}\n"
             f"retry_query_ids_sha256={audit.retry_query_ids_sha256}\n"
             f"resume_count={audit.resume_count}\n"
             f"attempts={audit.total_attempts}\n"

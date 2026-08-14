@@ -78,6 +78,7 @@ class RepeatExperimentManifest(StrictContract):
     schema_version: Literal[
         "browsecomp-plus-repeat-experiment-v0",
         "browsecomp-plus-repeat-experiment-v1",
+        "browsecomp-plus-repeat-experiment-v2",
     ] = "browsecomp-plus-repeat-experiment-v1"
     registered_at: str = Field(min_length=1)
     registration_status: Literal[
@@ -87,13 +88,23 @@ class RepeatExperimentManifest(StrictContract):
     development_queries_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
-    expected_adapter_version: Literal["pi-browsecomp-v6"] = "pi-browsecomp-v6"
+    expected_adapter_version: Literal[
+        "pi-browsecomp-v6", "pi-browsecomp-v7", "pi-browsecomp-v8"
+    ] = "pi-browsecomp-v6"
     model: Literal["deepseek-v4-flash", "deepseek-v4-pro"]
     control_policy: Literal["answer_reserve_nonthinking_v0"]
     baseline_retriever_id: Literal["bm25"] = "bm25"
     candidate_retriever_id: str = Field(pattern=r"^[a-z0-9][a-z0-9._-]*$")
     candidate_retriever_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    baseline_max_search_results: int = Field(default=5, ge=1, le=20)
+    candidate_max_search_results: int = Field(default=5, ge=1, le=20)
     provider_failure_retry_policy: ProviderFailureRetryPolicy | None = None
+    source_manifest_path: str | None = None
+    source_manifest_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
+    amendment_reason: str | None = None
+    amended_at: str | None = None
     minimum_trials: int = Field(default=3, ge=3)
     pairs: list[RepeatPairInput] = Field(min_length=3)
 
@@ -110,10 +121,30 @@ class RepeatExperimentManifest(StrictContract):
         ):
             raise ValueError("v1 repeat manifest must preregister provider retry policy")
         if (
+            self.schema_version == "browsecomp-plus-repeat-experiment-v2"
+            and self.provider_failure_retry_policy is None
+        ):
+            raise ValueError("v2 repeat manifest must preserve provider retry policy")
+        if (
             self.schema_version == "browsecomp-plus-repeat-experiment-v0"
             and self.provider_failure_retry_policy is not None
         ):
             raise ValueError("v0 repeat manifest cannot contain a retry policy")
+        amendment_values = (
+            self.source_manifest_path,
+            self.source_manifest_sha256,
+            self.amendment_reason,
+            self.amended_at,
+        )
+        if self.schema_version == "browsecomp-plus-repeat-experiment-v2":
+            if (
+                self.registration_status != "reconstructed_after_interruption"
+                or self.expected_adapter_version != "pi-browsecomp-v7"
+                or any(value is None for value in amendment_values)
+            ):
+                raise ValueError("v2 repeat manifest requires a complete v7 amendment")
+        elif any(value is not None for value in amendment_values):
+            raise ValueError("only v2 repeat manifests may contain an amendment")
         if len(self.pairs) < self.minimum_trials:
             raise ValueError("repeat manifest does not meet its minimum trial count")
         if self.candidate_retriever_id == self.baseline_retriever_id:
@@ -240,7 +271,11 @@ class RepeatComparisonSummary(StrictContract):
     development_queries_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
-    adapter_version: Literal["pi-browsecomp-v6"] = "pi-browsecomp-v6"
+    adapter_version: Literal[
+        "pi-browsecomp-v6", "pi-browsecomp-v7", "pi-browsecomp-v8"
+    ] = "pi-browsecomp-v6"
+    baseline_max_search_results: int = Field(default=5, ge=1, le=20)
+    candidate_max_search_results: int = Field(default=5, ge=1, le=20)
     model: Literal["deepseek-v4-flash", "deepseek-v4-pro"]
     control_policy: Literal["answer_reserve_nonthinking_v0"]
     trial_count: int = Field(ge=3)
@@ -319,6 +354,11 @@ def aggregate_repeat_experiment(
     manifest = RepeatExperimentManifest.model_validate_json(
         manifest_path.read_text(encoding="utf-8")
     )
+    if manifest.schema_version == "browsecomp-plus-repeat-experiment-v2":
+        _validate_adapter_contract_amendment(
+            manifest=manifest,
+            repository_root=repository_root,
+        )
     target_hash = normalized_text_file_sha256(target_manifest_path)
     if manifest.target_manifest_sha256 != target_hash:
         raise ValueError("repeat manifest targets a different benchmark manifest")
@@ -344,6 +384,7 @@ def aggregate_repeat_experiment(
             expected_development_queries_sha256=(
                 manifest.development_queries_sha256
             ),
+            expected_max_search_results=manifest.baseline_max_search_results,
         )
         candidate = _load_variant(
             source=pair.candidate,
@@ -359,6 +400,7 @@ def aggregate_repeat_experiment(
             expected_development_queries_sha256=(
                 manifest.development_queries_sha256
             ),
+            expected_max_search_results=manifest.candidate_max_search_results,
         )
         query_ids = tuple(sorted(baseline.observations))
         if query_ids != tuple(sorted(candidate.observations)):
@@ -448,6 +490,9 @@ def aggregate_repeat_experiment(
         registration_status=manifest.registration_status,
         target_manifest_sha256=target_hash,
         development_queries_sha256=manifest.development_queries_sha256,
+        adapter_version=manifest.expected_adapter_version,
+        baseline_max_search_results=manifest.baseline_max_search_results,
+        candidate_max_search_results=manifest.candidate_max_search_results,
         model=manifest.model,
         control_policy=manifest.control_policy,
         trial_count=len(manifest.pairs),
@@ -490,6 +535,7 @@ def _load_variant(
     expected_retriever_manifest_sha256: str | None,
     expected_target_manifest_sha256: str,
     expected_development_queries_sha256: str | None,
+    expected_max_search_results: int,
 ) -> _LoadedVariant:
     summary_path = _resolve_runs_path(source.summary_path, repository_root)
     gold_slice_path = _resolve_runs_path(source.gold_slice_path, repository_root)
@@ -531,6 +577,8 @@ def _load_variant(
         raise ValueError("repeat summary uses the wrong retriever")
     if summary.retriever_manifest_sha256 != expected_retriever_manifest_sha256:
         raise ValueError("repeat summary retriever manifest hash differs")
+    if summary.max_search_results != expected_max_search_results:
+        raise ValueError("repeat summary search width differs")
     if summary.total_output_budget_overshoot_tokens != 0:
         raise ValueError("repeat summary contains output-budget overshoot")
     _validate_official_export(
@@ -565,6 +613,7 @@ def _load_variant(
             expected_model=expected_model,
             expected_control_policy=expected_control_policy,
             expected_adapter_version=expected_adapter_version,
+            expected_max_search_results=expected_max_search_results,
         )
         if run.run_id in run_ids:
             raise ValueError("repeat summary contains duplicate run IDs")
@@ -680,11 +729,14 @@ def _validate_v6_run(
     expected_model: str,
     expected_control_policy: str,
     expected_adapter_version: str,
+    expected_max_search_results: int,
 ) -> None:
     if run.adapter_version != expected_adapter_version:
         raise ValueError("repeat run does not use the registered adapter version")
     if run.model != expected_model or run.control_policy != expected_control_policy:
         raise ValueError("repeat run changes the frozen model or control policy")
+    if run.max_search_results != expected_max_search_results:
+        raise ValueError("repeat run changes the registered search width")
     if run.output_budget_overshoot_tokens != 0 or run.usage.output_tokens > 10_000:
         raise ValueError("repeat run violates the 10k output-token contract")
     if not run.model_requests or not run.provider_request_limits:
@@ -844,6 +896,39 @@ def _source_ref(path: Path, repository_root: Path) -> SourceArtifact:
         path=path.resolve().relative_to(repository_root.resolve()).as_posix(),
         sha256=sha256(path.read_bytes()).hexdigest(),
     )
+
+
+def _validate_adapter_contract_amendment(
+    *, manifest: RepeatExperimentManifest, repository_root: Path
+) -> None:
+    assert manifest.source_manifest_path is not None
+    assert manifest.source_manifest_sha256 is not None
+    source_path = _resolve_runs_path(
+        manifest.source_manifest_path, repository_root
+    )
+    source_bytes = source_path.read_bytes()
+    if sha256(source_bytes).hexdigest() != manifest.source_manifest_sha256:
+        raise ValueError("repeat adapter amendment source hash differs")
+    source = RepeatExperimentManifest.model_validate_json(source_bytes)
+    if (
+        source.schema_version != "browsecomp-plus-repeat-experiment-v1"
+        or source.registration_status != "pre_generation"
+        or source.expected_adapter_version != "pi-browsecomp-v6"
+    ):
+        raise ValueError("repeat adapter amendment source is not the stale v6 manifest")
+    amendment_fields = {
+        "schema_version",
+        "registration_status",
+        "expected_adapter_version",
+        "source_manifest_path",
+        "source_manifest_sha256",
+        "amendment_reason",
+        "amended_at",
+    }
+    if source.model_dump(exclude=amendment_fields) != manifest.model_dump(
+        exclude=amendment_fields
+    ):
+        raise ValueError("repeat adapter amendment changes generation controls")
 
 
 def _resolve_runs_path(value: str, repository_root: Path) -> Path:

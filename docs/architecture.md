@@ -22,9 +22,11 @@ CLI input
 The BrowseComp-Plus path has a deliberately separate adapter boundary. Pi
 0.84.1 supplies only the generic DeepSeek tool loop. The project disables Pi's
 coding prompt and all ambient resources, injects the pinned benchmark prompt,
-serves pinned BM25 or dense top-5 retrieval over loopback with the same
-Qwen-tokenizer snippet contract, and validates the result back in Python with
-strict Pydantic contracts. Query preparation projects
+serves pinned BM25, dense top-5, or Evidence Bandwidth top-20 retrieval over
+loopback with a Qwen-tokenizer snippet contract, and validates the result back
+in Python with strict Pydantic contracts. The top-20 policy allocates one fixed
+snippet-token budget across the result set rather than granting 20 full-size
+snippets. Query preparation projects
 only `query_id` and encrypted `query` columns; answer and evidence columns never
 enter generation. Decrypted questions and raw traces are restricted to ignored
 `runs/` paths. The adapter clamps each provider turn to the remaining global
@@ -42,8 +44,9 @@ retriever effect from a query-policy or provider effect before another paid run.
 provider runs. A repeat experiment normally writes its manifest before the first
 generation, alternates baseline/candidate execution order, and uses a distinct
 provider run ID for every query-trial observation. Aggregation fails closed
-unless all trials use adapter v6, the same model, control policy, query file,
-prompt hashes, 10k no-overshoot contract, and expected retriever identities. It
+unless all trials use the adapter version and per-variant result widths named by
+the pre-generation manifest, the same model, control policy, query file, prompt
+hashes, 10k no-overshoot contract, and expected retriever identities. It
 also verifies the source summary, diagnostic, run, prediction, and official
 export hashes, recomputes exact/recall rows from each prediction-bound gold
 slice, and requires identical canonical gold rows across all variants before
@@ -144,6 +147,37 @@ query wins, final provider failures, combined generation cost, and the
 candidate/baseline cost ratio. It reuses saved candidate diagnostics to route
 the next experiment by failure layer and emits a hash-bound decision under
 ignored `runs/`.
+
+`evidence_bandwidth.py` and `evidence_bandwidth_server.py` implement the next
+retrieval-interface experiment without changing the frozen generator. The
+server retrieves dense top-20, assigns every result a minimum allocation, then
+water-fills the remaining fixed snippet-token budget in rank order. Adapter v8
+records the widened result contract while older v7 runs retain their original
+hashes and behavior. `dense_depth_probe.py` and `wide_selector_probe.py` are
+zero-provider-call localization tools: the first measures whether relevant
+documents exist below rank 5; the second tests whether a simpler fixed top-5
+selector is sufficient before paying for a wider live run.
+
+`evidence_bandwidth_decision.py` revalidates the pre-registration, candidate
+manifest, six generation summaries, automatic comparison, persistent-Judge
+execution, and calibration before applying all 16 conjunctive gates. In
+addition to recall and resource ratios, it compares the saved diagnostic rows
+with paired Judge labels. This exposes a synthesis-loss signal when broader
+retrieval reduces no-evidence failures but increases failures where relevant
+evidence was already present. The signal routes the next experiment; it is not
+treated as causal proof or a model-capability change.
+
+`evidence_selectivity_probe.py` is the zero-provider-call bridge from that
+decision to the next mechanism. It revalidates all 150 saved generation traces,
+their prediction-bound development docids, paired Judge labels, and source
+hashes. For each query-trial pair it records unique versus repeated result
+slots, distinct query strings, first relevant call, minimum relevant rank,
+tokens, and latency. Grouping by candidate improvement/regression/both outcomes
+showed that dense rescues long-tail evidence while also losing BM25 anchors and
+reinjecting the same documents across different searches. This evidence supports
+a planned dual-channel progressive-disclosure boundary: BM25 full anchors,
+deduplicated dense leads, and explicit bounded evidence opens. That boundary is
+not yet an effectiveness result.
 
 `browsecomp_decision.py` is the mechanism-selection boundary after official
 evaluation. It revalidates the repeat comparison, judge batch, execution, and

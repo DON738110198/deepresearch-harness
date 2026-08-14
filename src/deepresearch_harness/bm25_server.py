@@ -38,7 +38,7 @@ class SearchResult(BaseModel):
 class SearchResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    results: list[SearchResult] = Field(max_length=5)
+    results: list[SearchResult] = Field(max_length=20)
     latency_ms: int = Field(ge=0)
 
 

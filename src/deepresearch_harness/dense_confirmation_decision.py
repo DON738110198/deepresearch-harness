@@ -181,9 +181,12 @@ def decide_dense_confirmation(
     execution_contract = _require_object(preregistration, "execution")
     gates_contract = _require_object(preregistration, "acceptance_gates")
     fresh_queries = _require_object(preregistration, "fresh_query_selection")
-    if execution_contract.get("repeat_manifest_sha256") != sha256(
-        repeat_bytes
-    ).hexdigest():
+    registered_repeat_hash = (
+        experiment.source_manifest_sha256
+        if experiment.schema_version == "browsecomp-plus-repeat-experiment-v2"
+        else sha256(repeat_bytes).hexdigest()
+    )
+    if execution_contract.get("repeat_manifest_sha256") != registered_repeat_hash:
         raise ValueError("preregistration targets another repeat manifest")
     if fixed.get("model") != repeat.model or fixed.get("control_policy") != (
         repeat.control_policy
@@ -336,14 +339,14 @@ def decide_dense_confirmation(
         "final_provider_failures",
     }
     gate_by_id = {row.gate_id: row for row in gate_values}
-    if not all(gate_by_id[gate_id].passed for gate_id in structural_ids):
-        next_action = "audit_incomplete_or_structurally_invalid_grid"
-    elif not gate_by_id["evidence_recall_delta"].passed or not gate_by_id[
+    if not gate_by_id["evidence_recall_delta"].passed or not gate_by_id[
         "evidence_query_wins_minus_losses"
     ].passed:
         next_action = "diagnose_retrieval_policy_from_saved_replays"
     elif not gate_by_id["judge_accuracy_delta"].passed:
         next_action = "diagnose_evidence_to_answer_control"
+    elif not all(gate_by_id[gate_id].passed for gate_id in structural_ids):
+        next_action = "audit_incomplete_or_structurally_invalid_grid"
     else:
         next_action = "promote_dense_and_cluster_remaining_failures"
 
@@ -456,7 +459,11 @@ def _validate_execution_wrapper(
     judge_comparison_path: Path,
 ) -> None:
     if (
-        registration.get("status") != "registered_pre_inference"
+        registration.get("status")
+        not in {
+            "registered_pre_inference",
+            "registered_pre_aggregation_recovery",
+        }
         or registration.get("metric_status")
         != "calibrated_development_diagnostic_not_official"
         or execution.get("status") != "succeeded"
@@ -465,6 +472,11 @@ def _validate_execution_wrapper(
         != sha256(registration_path.read_bytes()).hexdigest()
     ):
         raise ValueError("repeat Judge execution wrapper did not succeed")
+    if registration.get("status") == "registered_pre_aggregation_recovery" and (
+        registration.get("provider_calls") != 0
+        or execution.get("provider_calls") != 0
+    ):
+        raise ValueError("repeat Judge aggregation recovery made provider calls")
     comparison = execution.get("comparison")
     if not isinstance(comparison, dict) or comparison.get("sha256") != sha256(
         judge_comparison_path.read_bytes()

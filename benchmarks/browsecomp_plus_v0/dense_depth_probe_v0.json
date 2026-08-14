@@ -1,0 +1,69 @@
+{
+  "schema_version": "browsecomp-plus-dense-depth-probe-v0",
+  "status": "preregistered_not_run",
+  "registered_at": "2026-08-14T17:35:34.2867624+08:00",
+  "target_manifest_sha256": "dad4e291d9bf1223cd2e4e56067948883736b6a8732d29b57cc06a03d1b140c0",
+  "problem": {
+    "decision_path": "runs/browsecomp_plus_v0/repeats/dense-confirmation-v1-fresh25-20260814/dense_confirmation_decision.json",
+    "decision_sha256": "75c4df70fd9adb6b925ad07d4c4fc60bdd66f52614272d289c4f0a6c61e9b6f4",
+    "retrieval_pool_probe_path": "runs/browsecomp_plus_v0/repeats/dense-confirmation-v1-fresh25-20260814/retrieval_pool_probe.json",
+    "retrieval_pool_probe_sha256": "f7ac29c436c669f2f644caae60a0df5719459015a6b4bb31879b4ffe5ec49727",
+    "live_dense_evidence_recall_delta_pp": 3.636667,
+    "frozen_query_dense_top5_delta_pp": 4.46,
+    "frozen_query_rrf_top5_delta_pp": 3.796667,
+    "bm25_dense_union_pool_delta_pp": 7.389259,
+    "diagnosis": "Simple top-5 fusion cannot reach the registered +10 point gate. The next zero-LLM question is whether relevant documents exist just below dense rank 5 or remain absent even at depth 50."
+  },
+  "hypothesis": "If dense rank truncation is the main remaining bottleneck, replaying the same frozen agent queries at depth 20 or 50 will raise evidence recall by at least 10 percentage points over stored BM25 top-5. Otherwise, candidate-depth expansion is rejected and the next diagnosis must target query formulation or corpus mismatch.",
+  "fixed_contract": {
+    "provider_calls": 0,
+    "source_queries": "frozen_agent_search_calls",
+    "model": "Qwen/Qwen3-Embedding-0.6B",
+    "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "retriever_manifest": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+    "retriever_manifest_sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899",
+    "depths": [5, 10, 20, 50],
+    "baseline": "stored_bm25_top5",
+    "trial_count": 3,
+    "queries_per_trial": 25,
+    "sealed_holdout_access": "forbidden"
+  },
+  "sources": [
+    {
+      "trial_id": "trial-01",
+      "summary_path": "runs/browsecomp_plus_v0/repeats/dense-confirmation-v1-fresh25-20260814/trial-01-baseline/summary.json",
+      "summary_sha256": "e2e699936ceffb353fabf26bcbd31a161fa26ef16bb1e79e403389bf9cfde265",
+      "gold_path": "runs/browsecomp_plus_v0/repeats/dense-confirmation-v1-fresh25-20260814/trial-01-baseline.gold.json",
+      "gold_sha256": "1d84a681872bd026d6e290512850d93fbb72ee708ab55253ccdeebace61949b9",
+      "top5_replay_path": "runs/browsecomp_plus_v0/repeats/dense-confirmation-v1-fresh25-20260814/trial-01-baseline.retrieval-replay.json",
+      "top5_replay_sha256": "3cedfa78c81918925093697d42222f702a8da2aa23b019fe0826d30262c64f2e"
+    },
+    {
+      "trial_id": "trial-02",
+      "summary_path": "runs/browsecomp_plus_v0/repeats/dense-confirmation-v1-fresh25-20260814/trial-02-baseline/summary.json",
+      "summary_sha256": "d485dcc4c29a34284afbfdc34a18c09aaa6f9992488970a259ff1ae03a8a9818",
+      "gold_path": "runs/browsecomp_plus_v0/repeats/dense-confirmation-v1-fresh25-20260814/trial-02-baseline.gold.json",
+      "gold_sha256": "c99ff30505be06b87d268278b926562d84b62ff3629e2c086bbcef8f270a9d71",
+      "top5_replay_path": "runs/browsecomp_plus_v0/repeats/dense-confirmation-v1-fresh25-20260814/trial-02-baseline.retrieval-replay.json",
+      "top5_replay_sha256": "9950bf73ded4fa594f9048bf997ac4f3fbbd6a22597b8723e3775d5258cdc8a7"
+    },
+    {
+      "trial_id": "trial-03",
+      "summary_path": "runs/browsecomp_plus_v0/repeats/dense-confirmation-v1-fresh25-20260814/trial-03-baseline/summary.json",
+      "summary_sha256": "5a9dfe0f5782690788348e183926ea771ec97abe4ca9c97357724cf264723fc3",
+      "gold_path": "runs/browsecomp_plus_v0/repeats/dense-confirmation-v1-fresh25-20260814/trial-03-baseline.gold.json",
+      "gold_sha256": "37460dca45c385496458e3f24fa87f31232e444b3e295f4d975da5760c8d7479",
+      "top5_replay_path": "runs/browsecomp_plus_v0/repeats/dense-confirmation-v1-fresh25-20260814/trial-03-baseline.retrieval-replay.json",
+      "top5_replay_sha256": "ceedef03d8979b904db16402ea1ffa1ddbae1f02db25209b264e465102ed12fb"
+    }
+  ],
+  "decision_rule": {
+    "top5_reproduction_tolerance_pp": 0.000001,
+    "minimum_depth20_delta_pp": 10.0,
+    "minimum_depth50_delta_pp": 10.0,
+    "if_depth20_passes": "select_candidate_generation_plus_reranking_as_next_layer",
+    "if_only_depth50_passes": "test_depth_efficiency_and_reranking_before_live_generation",
+    "if_depth50_fails": "reject_depth_expansion_and_diagnose_query_or_corpus_mismatch"
+  },
+  "claim_boundary": "This is a post-result, zero-LLM development diagnostic on saved queries. Depth 10/20/50 exposes more documents than the live top-5 tool and cannot be reported as a deployable benchmark improvement."
+}
