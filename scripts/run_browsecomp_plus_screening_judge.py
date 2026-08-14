@@ -17,6 +17,7 @@ from deepresearch_harness.screening_judge import (
     load_screening_manifest,
     run_screening_judge,
 )
+from deepresearch_harness.browsecomp_plus import normalized_text_file_sha256
 
 
 def sha256_file(path: Path) -> str:
@@ -262,7 +263,7 @@ def main() -> int:
         "schema_version": "browsecomp-plus-screening-judge-execution-v0",
         "status": "registered_pre_inference",
         "registered_at": utc_now(),
-        "screening_manifest_sha256": sha256_file(screening_path),
+        "screening_manifest_sha256": normalized_text_file_sha256(screening_path),
         "batch_manifest_sha256": sha256_file(batch_path),
         "judge_model": screening.judge.model,
         "judge_revision": screening.judge.revision,

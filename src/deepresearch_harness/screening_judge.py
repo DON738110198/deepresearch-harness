@@ -18,6 +18,7 @@ from .browsecomp_judge import (
     OfficialJudgeComparison,
     validate_official_judge_batch,
 )
+from .browsecomp_plus import normalized_text_file_sha256
 
 
 GRADER_TEMPLATE = r"""
@@ -325,7 +326,6 @@ def run_screening_judge(
         raise ValueError("screening concurrency must be positive")
     if output_dir.exists():
         raise ValueError("screening output directory must not exist")
-    screening_bytes = screening_manifest_path.read_bytes()
     screening = load_screening_manifest(screening_manifest_path)
     batch_bytes = batch_manifest_path.read_bytes()
     batch = validate_official_judge_batch(batch_manifest_path)
@@ -396,7 +396,9 @@ def run_screening_judge(
         created_at=datetime.now(timezone.utc).isoformat(),
         status=status,
         batch_manifest_sha256=sha256(batch_bytes).hexdigest(),
-        screening_manifest_sha256=sha256(screening_bytes).hexdigest(),
+        screening_manifest_sha256=normalized_text_file_sha256(
+            screening_manifest_path
+        ),
         judge_model=screening.judge.model,
         judge_revision=screening.judge.revision,
         served_model_name=screening.engine.served_model_name,
@@ -427,7 +429,6 @@ def calibrate_screening_judge(
     if output_path.exists():
         raise ValueError("screening calibration output already exists")
     manifest = load_screening_manifest(screening_manifest_path)
-    manifest_bytes = screening_manifest_path.read_bytes()
     result_bytes = screening_result_path.read_bytes()
     result = ScreeningJudgeResult.model_validate_json(result_bytes)
     comparison_bytes = official_comparison_path.read_bytes()
@@ -448,7 +449,9 @@ def calibrate_screening_judge(
         raise ValueError("official comparison evaluation count differs")
     if result.status != "succeeded" or result.request_failures:
         raise ValueError("screening execution did not succeed")
-    if result.screening_manifest_sha256 != sha256(manifest_bytes).hexdigest():
+    if result.screening_manifest_sha256 != normalized_text_file_sha256(
+        screening_manifest_path
+    ):
         raise ValueError("screening result is not bound to its manifest")
     if (
         result.judge_model != manifest.judge.model
@@ -521,9 +524,9 @@ def calibrate_screening_judge(
         "status": "accepted_for_development_screening" if passed else "rejected",
         "official_status": "reference_bf16_development_slice",
         "screening_status": "non_official_awq_development_screening",
-        "screening_manifest_sha256": sha256(
-            manifest_bytes
-        ).hexdigest(),
+        "screening_manifest_sha256": normalized_text_file_sha256(
+            screening_manifest_path
+        ),
         "screening_result_sha256": sha256(result_bytes).hexdigest(),
         "official_comparison_sha256": sha256(comparison_bytes).hexdigest(),
         "evaluations": len(pairs),

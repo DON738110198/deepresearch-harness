@@ -14,6 +14,7 @@ from deepresearch_harness.screening_judge import (
     load_screening_manifest,
     parse_judge_response,
 )
+from deepresearch_harness.browsecomp_plus import normalized_text_file_sha256
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -208,7 +209,7 @@ def test_calibration_accepts_identical_awq_and_bf16_labels(tmp_path: Path) -> No
     manifest = _screening_manifest(comparison_hash)
     manifest_path = tmp_path / "screening.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
-    manifest_hash = sha256(manifest_path.read_bytes()).hexdigest()
+    manifest_hash = normalized_text_file_sha256(manifest_path)
 
     observations = [
         ScreeningObservation(
