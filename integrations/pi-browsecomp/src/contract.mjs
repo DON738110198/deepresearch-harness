@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-export const ADAPTER_VERSION = "pi-browsecomp-v6";
+export const ADAPTER_VERSION = "pi-browsecomp-v7";
 export const PI_VERSION = "0.84.1";
 export const ANSWER_RESERVE_EXPLORATION_TOKENS = 8000;
 export const ANSWER_RESERVE_COMPILATION_TOKENS = 2000;
@@ -11,6 +11,8 @@ export const TOOL_BOOTSTRAP_TOKENS = 512;
 export const TOOL_BOOTSTRAP_EXPLORATION_TOKENS = 7488;
 export const RARE_ANCHOR_BOOTSTRAP_TOKENS = 1024;
 export const RARE_ANCHOR_EXPLORATION_TOKENS = 6976;
+export const CONSTRAINT_PORTFOLIO_BOOTSTRAP_TOKENS = 1024;
+export const CONSTRAINT_PORTFOLIO_EXPLORATION_TOKENS = 6976;
 export const ANSWER_COMPILER_PROMPT = [
   "The exploration phase is over. Do not search or request more evidence.",
   "Using only evidence already present in this conversation, produce the final response now.",
@@ -51,6 +53,21 @@ export function formatRareAnchorBootstrapPrompt(question) {
   ].join("\n");
 }
 
+export function formatConstraintPortfolioPrompt(question) {
+  requireString(question, "question");
+  return [
+    "Start this research task with exactly three search tool calls.",
+    "Compile a general constraint portfolio from the question without guessing the answer:",
+    "1. Rare-anchor query: preserve the two least common concrete clues and one explicit relation.",
+    "2. Chronology-relation query: preserve exact names, titles, numbers, dates, decades, places, and role changes that appear in the question.",
+    "3. Orthogonal query: use a different pair of constraints; include a domain or entity hypothesis only when the question directly supports it.",
+    "Keep original-language strings and quoted phrases intact. Avoid generic personality words, repeated anchor pairs, and queries that merely restate the whole question.",
+    "Each query should contain 5 to 18 terms. Do not answer the research question and do not respond in prose; issue the three tool calls now.",
+    "",
+    `Question: ${question}`,
+  ].join("\n");
+}
+
 const REQUEST_KEYS = new Set([
   "schema_version",
   "run_id",
@@ -78,7 +95,7 @@ export function validateRequest(value) {
   requireInteger(value.max_output_tokens, "max_output_tokens", 1, 10000);
   requireInteger(value.max_iterations, "max_iterations", 1, 100);
   const controlPolicy = value.control_policy ?? "standard";
-  if (!["standard", "answer_reserve_v0", "answer_reserve_v1", "answer_reserve_nonthinking_v0", "first_tool_deadline_v0", "tool_bootstrap_v0", "rare_anchor_portfolio_v0"].includes(controlPolicy)) {
+  if (!["standard", "answer_reserve_v0", "answer_reserve_v1", "answer_reserve_nonthinking_v0", "first_tool_deadline_v0", "tool_bootstrap_v0", "rare_anchor_portfolio_v0", "constraint_portfolio_v1"].includes(controlPolicy)) {
     throw new Error("control_policy is not registered");
   }
   if (controlPolicy !== "standard" && value.max_output_tokens !== 10000) {
@@ -171,10 +188,14 @@ export function answerReserveAllocation(controlPolicy) {
       compilation: ANSWER_RESERVE_COMPILATION_TOKENS,
     };
   }
-  if (controlPolicy === "rare_anchor_portfolio_v0") {
+  if (["rare_anchor_portfolio_v0", "constraint_portfolio_v1"].includes(controlPolicy)) {
     return {
-      bootstrap: RARE_ANCHOR_BOOTSTRAP_TOKENS,
-      exploration: RARE_ANCHOR_EXPLORATION_TOKENS,
+      bootstrap: controlPolicy === "constraint_portfolio_v1"
+        ? CONSTRAINT_PORTFOLIO_BOOTSTRAP_TOKENS
+        : RARE_ANCHOR_BOOTSTRAP_TOKENS,
+      exploration: controlPolicy === "constraint_portfolio_v1"
+        ? CONSTRAINT_PORTFOLIO_EXPLORATION_TOKENS
+        : RARE_ANCHOR_EXPLORATION_TOKENS,
       compilation: ANSWER_RESERVE_COMPILATION_TOKENS,
     };
   }

@@ -1,0 +1,67 @@
+{
+  "schema_version": "browsecomp-plus-query-compiler-experiment-v0",
+  "status": "preregistered_not_run",
+  "registered_at": "2026-08-14T12:04:21.5896405+08:00",
+  "target_manifest_sha256": "dad4e291d9bf1223cd2e4e56067948883736b6a8732d29b57cc06a03d1b140c0",
+  "problem": {
+    "source_decision": "runs/browsecomp_plus_v0/official_judge/flash-v6-dense25-paired3-preregistered-v2-20260814-layer-decision.json",
+    "source_decision_sha256": "5b9cb57d349fc061ba4d910c3be9abe5d48863894890cda221f92b6aa8152a3",
+    "candidate_incorrect_evaluations": 54,
+    "no_relevant_document_retrieved": 20,
+    "relevant_document_retrieved_but_incorrect": 27,
+    "diagnosis": "The rejected dense layer leaves a query-compilation bottleneck; scaling the same retriever is not the next intervention."
+  },
+  "hypothesis": "A typed three-query constraint portfolio will retrieve more benchmark evidence than unconstrained exploration on fresh development questions without changing the model, BM25 tool, or total output-token allowance.",
+  "simpler_controls_already_tested": [
+    "bm25_answer_reserve_nonthinking_v0",
+    "dense_retrieval_v0_rejected",
+    "rare_anchor_portfolio_v0_single_case_negative"
+  ],
+  "fixed_contract": {
+    "model": "deepseek-v4-flash",
+    "thinking_level": "high",
+    "retriever_id": "bm25",
+    "search_top_k": 5,
+    "max_iterations": 100,
+    "max_output_tokens": 10000,
+    "system_prompt_policy": "empty",
+    "baseline_control_policy": "answer_reserve_nonthinking_v0",
+    "candidate_control_policy": "constraint_portfolio_v1",
+    "candidate_adapter_version": "pi-browsecomp-v7",
+    "candidate_contract_sha256": "9f5e9e63e39ce25edeb0353bd5d28be861369afd0499fcdba7e2c0ff5524fb47",
+    "candidate_runner_sha256": "43d1dfeaca0046d3827be80ab60ae32afe8159f60489e72971a7424566e2b3e1",
+    "candidate_prompt_sentinel": "Who is the scientist?",
+    "candidate_prompt_sentinel_sha256": "fbd1e88076f1794421677d7e07d237af9c9794dd8566a5ccf35b7755bb94ebb3"
+  },
+  "fresh_query_selection": {
+    "ordering": "sorted_development_query_id",
+    "probe_offset": 25,
+    "probe_limit": 5,
+    "confirmation_offset": 30,
+    "confirmation_limit": 50,
+    "overlap_with_prior_25": 0,
+    "gold_access": "after_both_variant_predictions_are_frozen"
+  },
+  "probe_gate": {
+    "trials": 1,
+    "maximum_total_provider_cost_usd": 0.3,
+    "maximum_provider_failures": 0,
+    "minimum_candidate_schema_complete_percent": 80.0,
+    "minimum_completed_three-search_bootstraps": 5,
+    "minimum_evidence_recall_delta_pp": 0.0,
+    "minimum_query_level_evidence_recall_wins": 1,
+    "minimum_strict_exact_delta_pp": -20.0
+  },
+  "confirmation_gate": {
+    "trials": 3,
+    "queries_per_trial": 50,
+    "maximum_total_provider_cost_usd": 5.0,
+    "minimum_evidence_recall_delta_pp": 10.0,
+    "minimum_strict_exact_delta_pp": 0.0,
+    "minimum_schema_complete_delta_pp": -5.0,
+    "maximum_candidate_to_baseline_cost_ratio": 1.15,
+    "minimum_official_or_calibrated_judge_delta_pp": 0.0
+  },
+  "stopping_rule": "Stop after the probe if any probe gate fails. Run the 50-query three-trial confirmation only without changing the registered candidate. Do not access the sealed holdout.",
+  "claim_boundary": "Any difference is a frozen-model harness effect on a development slice, not a model-capability improvement or leaderboard result."
+}

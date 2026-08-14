@@ -151,6 +151,7 @@ def main() -> int:
     prepare_browsecomp_plus.add_argument("--partitions", type=Path, required=True)
     prepare_browsecomp_plus.add_argument("--output", type=Path, required=True)
     prepare_browsecomp_plus.add_argument("--limit", type=int)
+    prepare_browsecomp_plus.add_argument("--offset", type=int, default=0)
     run_pi_browsecomp = subparsers.add_parser(
         "run-pi-browsecomp-smoke",
         help="Run a gold-free development smoke through Pi and a recorded local retriever.",
@@ -177,6 +178,7 @@ def main() -> int:
             "first_tool_deadline_v0",
             "tool_bootstrap_v0",
             "rare_anchor_portfolio_v0",
+            "constraint_portfolio_v1",
         ],
         default="standard",
     )
@@ -214,6 +216,7 @@ def main() -> int:
             "first_tool_deadline_v0",
             "tool_bootstrap_v0",
             "rare_anchor_portfolio_v0",
+            "constraint_portfolio_v1",
         ],
         default="standard",
     )
@@ -524,6 +527,7 @@ def main() -> int:
             partitions_path=args.partitions,
             output_path=args.output,
             limit=args.limit,
+            offset=args.offset,
         )
         print(
             f"output={args.output}\npartition={artifact.partition}\n"

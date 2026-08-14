@@ -4,7 +4,7 @@ param(
     [string]$OutputDir = "runs\browsecomp_plus_v0\pi_flash_smoke",
     [ValidateSet("deepseek-v4-flash", "deepseek-v4-pro")]
     [string]$Model = "deepseek-v4-flash",
-    [ValidateSet("standard", "answer_reserve_v0", "answer_reserve_v1", "answer_reserve_nonthinking_v0", "first_tool_deadline_v0", "tool_bootstrap_v0", "rare_anchor_portfolio_v0")]
+    [ValidateSet("standard", "answer_reserve_v0", "answer_reserve_v1", "answer_reserve_nonthinking_v0", "first_tool_deadline_v0", "tool_bootstrap_v0", "rare_anchor_portfolio_v0", "constraint_portfolio_v1")]
     [string]$ControlPolicy = "standard",
     [string]$Node = "",
     [switch]$ResumeFailed

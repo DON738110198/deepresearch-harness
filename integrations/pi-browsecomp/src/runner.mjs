@@ -14,6 +14,7 @@ import {
   ANSWER_COMPILER_PROMPT,
   FIRST_TOOL_DEADLINE_PROMPT,
   FIRST_TOOL_DEADLINE_TOKENS,
+  formatConstraintPortfolioPrompt,
   formatRareAnchorBootstrapPrompt,
   PI_VERSION,
   answerReserveAllocation,
@@ -54,12 +55,14 @@ const toolBootstrapPrompt = request.control_policy === "tool_bootstrap_v0"
   ? formatToolBootstrapPrompt(request.question)
   : request.control_policy === "rare_anchor_portfolio_v0"
     ? formatRareAnchorBootstrapPrompt(request.question)
+    : request.control_policy === "constraint_portfolio_v1"
+      ? formatConstraintPortfolioPrompt(request.question)
     : null;
 const searchCalls = [];
 const providerRequestLimits = [];
 let modelRequests = 0;
 let observedOutputTokens = 0;
-let phase = ["tool_bootstrap_v0", "rare_anchor_portfolio_v0"].includes(request.control_policy)
+let phase = ["tool_bootstrap_v0", "rare_anchor_portfolio_v0", "constraint_portfolio_v1"].includes(request.control_policy)
   ? "bootstrap"
   : "exploration";
 const phaseOutputTokens = { bootstrap: 0, exploration: 0, compilation: 0 };
@@ -202,9 +205,9 @@ session.agent.shouldStopAfterTurn = () => {
     budgetStop = `global_output_token_budget_exhausted:${request.max_output_tokens}`;
     return true;
   }
-  if (["tool_bootstrap_v0", "rare_anchor_portfolio_v0"].includes(request.control_policy) && phase === "bootstrap") {
+  if (["tool_bootstrap_v0", "rare_anchor_portfolio_v0", "constraint_portfolio_v1"].includes(request.control_policy) && phase === "bootstrap") {
     const bootstrapLimit = answerReserveAllocation(request.control_policy).bootstrap;
-    const targetSearchCalls = request.control_policy === "rare_anchor_portfolio_v0" ? 3 : 1;
+    const targetSearchCalls = ["rare_anchor_portfolio_v0", "constraint_portfolio_v1"].includes(request.control_policy) ? 3 : 1;
     if (searchCalls.length >= targetSearchCalls) {
       bootstrapStopReason = "bootstrap_search_completed";
       return true;
@@ -231,7 +234,7 @@ session.agent.shouldStopAfterTurn = () => {
 };
 
 try {
-  if (["tool_bootstrap_v0", "rare_anchor_portfolio_v0"].includes(request.control_policy)) {
+  if (["tool_bootstrap_v0", "rare_anchor_portfolio_v0", "constraint_portfolio_v1"].includes(request.control_policy)) {
     session.setThinkingLevel("off");
     await runPrompt(toolBootstrapPrompt);
     if (!bootstrapStopReason) {
@@ -272,7 +275,7 @@ try {
     answerCompilerInvoked = true;
     phase = "compilation";
     session.setActiveToolsByName([]);
-    if (["answer_reserve_nonthinking_v0", "first_tool_deadline_v0", "tool_bootstrap_v0", "rare_anchor_portfolio_v0"].includes(request.control_policy)) {
+    if (["answer_reserve_nonthinking_v0", "first_tool_deadline_v0", "tool_bootstrap_v0", "rare_anchor_portfolio_v0", "constraint_portfolio_v1"].includes(request.control_policy)) {
       session.setThinkingLevel("off");
     }
     await runPrompt(ANSWER_COMPILER_PROMPT);
@@ -311,7 +314,7 @@ try {
     model: request.model,
     thinking_level: request.thinking_level,
     compilation_thinking_level:
-      answerCompilerInvoked && ["answer_reserve_nonthinking_v0", "first_tool_deadline_v0", "tool_bootstrap_v0", "rare_anchor_portfolio_v0"].includes(request.control_policy)
+      answerCompilerInvoked && ["answer_reserve_nonthinking_v0", "first_tool_deadline_v0", "tool_bootstrap_v0", "rare_anchor_portfolio_v0", "constraint_portfolio_v1"].includes(request.control_policy)
         ? "off"
         : request.thinking_level,
     control_policy: request.control_policy,

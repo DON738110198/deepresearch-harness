@@ -354,6 +354,7 @@ class PiBrowseCompRun(StrictContract):
         "pi-browsecomp-v4",
         "pi-browsecomp-v5",
         "pi-browsecomp-v6",
+        "pi-browsecomp-v7",
     ]
     pi_version: Literal["0.84.1"]
     run_id: str = Field(min_length=1)
@@ -368,6 +369,7 @@ class PiBrowseCompRun(StrictContract):
         "first_tool_deadline_v0",
         "tool_bootstrap_v0",
         "rare_anchor_portfolio_v0",
+        "constraint_portfolio_v1",
     ] = "standard"
     compilation_thinking_level: Literal["high", "off"] = "high"
     system_prompt: Literal[""]
@@ -438,6 +440,7 @@ class PiBrowseCompRun(StrictContract):
             "first_tool_deadline_v0",
             "tool_bootstrap_v0",
             "rare_anchor_portfolio_v0",
+            "constraint_portfolio_v1",
         }:
             if self.answer_compiler_invoked and self.compilation_thinking_level != "off":
                 raise ValueError("non-thinking compiler policy must record thinking off")
@@ -456,14 +459,24 @@ class PiBrowseCompRun(StrictContract):
             or self.first_tool_deadline_prompt_sha256 is not None
         ):
             raise ValueError("only the first-tool policy may record a deadline")
-        if self.control_policy in {"tool_bootstrap_v0", "rare_anchor_portfolio_v0"}:
+        if self.control_policy in {
+            "tool_bootstrap_v0",
+            "rare_anchor_portfolio_v0",
+            "constraint_portfolio_v1",
+        }:
             if self.bootstrap_prompt_sha256 is None or self.bootstrap_stop_reason is None:
                 raise ValueError("tool bootstrap policy requires its prompt and stop trace")
             bootstrap_limit = (
-                1_024 if self.control_policy == "rare_anchor_portfolio_v0" else 512
+                1_024
+                if self.control_policy
+                in {"rare_anchor_portfolio_v0", "constraint_portfolio_v1"}
+                else 512
             )
             exploration_limit = (
-                6_976 if self.control_policy == "rare_anchor_portfolio_v0" else 7_488
+                6_976
+                if self.control_policy
+                in {"rare_anchor_portfolio_v0", "constraint_portfolio_v1"}
+                else 7_488
             )
             if self.bootstrap_output_tokens > bootstrap_limit:
                 raise ValueError("tool bootstrap output exceeds its phase budget")
@@ -474,8 +487,17 @@ class PiBrowseCompRun(StrictContract):
                 raise ValueError("tool bootstrap exploration exceeds its phase budget")
             if self.compilation_output_tokens > 2_000:
                 raise ValueError("tool bootstrap compilation exceeds its phase budget")
-            if self.bootstrap_stop_reason == "bootstrap_search_completed" and not self.search_calls:
-                raise ValueError("completed tool bootstrap must record a search call")
+            required_bootstrap_searches = (
+                3
+                if self.control_policy
+                in {"rare_anchor_portfolio_v0", "constraint_portfolio_v1"}
+                else 1
+            )
+            if (
+                self.bootstrap_stop_reason == "bootstrap_search_completed"
+                and len(self.search_calls) < required_bootstrap_searches
+            ):
+                raise ValueError("completed tool bootstrap lacks required search calls")
         elif (
             self.bootstrap_stop_reason is not None
             or self.bootstrap_output_tokens != 0
@@ -490,6 +512,7 @@ class PiBrowseCompRun(StrictContract):
                 "pi-browsecomp-v4",
                 "pi-browsecomp-v5",
                 "pi-browsecomp-v6",
+                "pi-browsecomp-v7",
             } and any(
                 limit.output_limit_field != "max_tokens"
                 for limit in self.provider_request_limits
@@ -501,6 +524,7 @@ class PiBrowseCompRun(StrictContract):
                 "pi-browsecomp-v4",
                 "pi-browsecomp-v5",
                 "pi-browsecomp-v6",
+                "pi-browsecomp-v7",
             }:
                 for limit in self.provider_request_limits:
                     expected_thinking = (
@@ -512,19 +536,24 @@ class PiBrowseCompRun(StrictContract):
                                 "first_tool_deadline_v0",
                                 "tool_bootstrap_v0",
                                 "rare_anchor_portfolio_v0",
+                                "constraint_portfolio_v1",
                             }
                             and limit.phase == "compilation"
                         )
                         or (
                             self.control_policy
-                            in {"tool_bootstrap_v0", "rare_anchor_portfolio_v0"}
+                            in {
+                                "tool_bootstrap_v0",
+                                "rare_anchor_portfolio_v0",
+                                "constraint_portfolio_v1",
+                            }
                             and limit.phase == "bootstrap"
                         )
                         else "enabled"
                     )
                     if limit.thinking_type != expected_thinking:
                         raise ValueError("v2 provider thinking mode does not match phase policy")
-                    if self.adapter_version == "pi-browsecomp-v6":
+                    if self.adapter_version in {"pi-browsecomp-v6", "pi-browsecomp-v7"}:
                         expected_temperature = (
                             0.0 if expected_thinking == "disabled" else None
                         )
@@ -535,6 +564,7 @@ class PiBrowseCompRun(StrictContract):
             if self.control_policy in {
                 "tool_bootstrap_v0",
                 "rare_anchor_portfolio_v0",
+                "constraint_portfolio_v1",
             }:
                 bootstrap_limits = [
                     limit
@@ -543,7 +573,8 @@ class PiBrowseCompRun(StrictContract):
                 ]
                 bootstrap_limit = (
                     1_024
-                    if self.control_policy == "rare_anchor_portfolio_v0"
+                    if self.control_policy
+                    in {"rare_anchor_portfolio_v0", "constraint_portfolio_v1"}
                     else 512
                 )
                 if not bootstrap_limits or any(
@@ -731,10 +762,13 @@ def fetch_development_queries(
     partitions_path: Path,
     output_path: Path,
     limit: int | None = None,
+    offset: int = 0,
 ) -> DevelopmentQueryArtifact:
     """Project only encrypted query text for the development split; never read gold columns."""
     if limit is not None and limit <= 0:
         raise ValueError("limit must be positive")
+    if offset < 0:
+        raise ValueError("offset must be non-negative")
     repository_root = manifest_path.resolve().parents[2]
     runs_root = (repository_root / "runs").resolve()
     if not output_path.resolve().is_relative_to(runs_root):
@@ -745,8 +779,11 @@ def fetch_development_queries(
     development_ids = sorted(
         row.query_id for row in partitions.rows if row.partition == "development"
     )
+    development_ids = development_ids[offset:]
     if limit is not None:
         development_ids = development_ids[:limit]
+    if not development_ids:
+        raise ValueError("development query selection is empty")
 
     try:
         import duckdb

@@ -1,0 +1,40 @@
+{
+  "schema_version": "browsecomp-plus-screening-judge-v0",
+  "status": "planned_not_run",
+  "purpose": "Single-GPU screening only; never label this track as the official BrowseComp-Plus score.",
+  "target_manifest_sha256": "dad4e291d9bf1223cd2e4e56067948883736b6a8732d29b57cc06a03d1b140c0",
+  "engine": {
+    "name": "vllm_openai_compatible_server",
+    "version": "0.9.0.1",
+    "host": "127.0.0.1",
+    "tensor_parallel_size": 1,
+    "gpu_id": 5,
+    "gpu_model": "NVIDIA RTX A6000",
+    "gpu_memory_mib": 49140
+  },
+  "judge": {
+    "model": "Qwen/Qwen3-32B-AWQ",
+    "revision": "0499c3ac83fdef8810b907a23894ba91e95eddd8",
+    "quantization": "awq_int4",
+    "base_model": "Qwen/Qwen3-32B"
+  },
+  "inference": {
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 20,
+    "max_output_tokens": 4096,
+    "enable_thinking": false
+  },
+  "calibration": {
+    "reference_track": "official_qwen3_32b_bf16_two_gpu",
+    "reference_evaluations": 150,
+    "reference_execution_result_sha256": "5cdd002d05cfad25535b598689aa78327c3a2166f4faa65e335e8f2b30e384c8",
+    "minimum_label_agreement_percent": 90.0,
+    "minimum_cohens_kappa": 0.75,
+    "maximum_parse_failures": 0,
+    "maximum_absolute_pooled_accuracy_delta_pp": 3.0,
+    "require_paired_variant_delta_sign_match": true
+  },
+  "acceptance": "Only a calibration pass permits AWQ judgments to screen development variants. Final claims still require the pinned BF16 official evaluator.",
+  "claim_boundary": "Quantization and the service adapter change the evaluator contract; screening results are not official benchmark accuracy."
+}

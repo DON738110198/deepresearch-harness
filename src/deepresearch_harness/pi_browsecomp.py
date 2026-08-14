@@ -62,6 +62,7 @@ class PiSmokeItem(StrictContract):
         "first_tool_deadline_v0",
         "tool_bootstrap_v0",
         "rare_anchor_portfolio_v0",
+        "constraint_portfolio_v1",
     ] = "standard"
     answer_schema_complete: bool | None = None
     answer_compiler_invoked: bool = False
@@ -141,6 +142,7 @@ class PiSmokeSummary(StrictContract):
         "first_tool_deadline_v0",
         "tool_bootstrap_v0",
         "rare_anchor_portfolio_v0",
+        "constraint_portfolio_v1",
     ] = "standard"
     system_prompt_policy: Literal["empty"] = "empty"
     retriever_id: str = Field(default="bm25", min_length=1)
@@ -236,6 +238,7 @@ class PiResumeAudit(StrictContract):
         "first_tool_deadline_v0",
         "tool_bootstrap_v0",
         "rare_anchor_portfolio_v0",
+        "constraint_portfolio_v1",
     ]
     retriever_id: str = Field(min_length=1)
     retriever_manifest_sha256: str | None = Field(
@@ -316,6 +319,7 @@ def audit_pi_failed_resume(
         "first_tool_deadline_v0",
         "tool_bootstrap_v0",
         "rare_anchor_portfolio_v0",
+        "constraint_portfolio_v1",
     ] = "standard",
     retriever_id: str = "bm25",
     retriever_manifest_path: Path | None = None,
@@ -432,6 +436,7 @@ def run_pi_unscored_smoke(
         "first_tool_deadline_v0",
         "tool_bootstrap_v0",
         "rare_anchor_portfolio_v0",
+        "constraint_portfolio_v1",
     ] = "standard",
     timeout_seconds: int,
     retriever_id: str = "bm25",
@@ -689,6 +694,7 @@ def export_pi_runs_for_official_evaluator(
                     "first_tool_deadline_v0",
                     "tool_bootstrap_v0",
                     "rare_anchor_portfolio_v0",
+                    "constraint_portfolio_v1",
                 }
                 else summary.thinking_level
             )

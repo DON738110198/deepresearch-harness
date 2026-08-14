@@ -9,10 +9,13 @@ import {
   TOOL_BOOTSTRAP_TOKENS,
   RARE_ANCHOR_BOOTSTRAP_TOKENS,
   RARE_ANCHOR_EXPLORATION_TOKENS,
+  CONSTRAINT_PORTFOLIO_BOOTSTRAP_TOKENS,
+  CONSTRAINT_PORTFOLIO_EXPLORATION_TOKENS,
   answerReserveAllocation,
   classifyRunOutcome,
   clampProviderOutput,
   formatBenchmarkPrompt,
+  formatConstraintPortfolioPrompt,
   formatRareAnchorBootstrapPrompt,
   formatToolBootstrapPrompt,
   hasRequiredAnswerSchema,
@@ -83,6 +86,13 @@ test("accepts a pinned DeepSeek request", () => {
   });
   assert.equal(RARE_ANCHOR_BOOTSTRAP_TOKENS, 1024);
   assert.equal(RARE_ANCHOR_EXPLORATION_TOKENS, 6976);
+  assert.deepEqual(answerReserveAllocation("constraint_portfolio_v1"), {
+    bootstrap: 1024,
+    exploration: 6976,
+    compilation: 2000,
+  });
+  assert.equal(CONSTRAINT_PORTFOLIO_BOOTSTRAP_TOKENS, 1024);
+  assert.equal(CONSTRAINT_PORTFOLIO_EXPLORATION_TOKENS, 6976);
   assert.equal(FIRST_TOOL_DEADLINE_TOKENS, 512);
   assert.equal(
     sha256(FIRST_TOOL_DEADLINE_PROMPT),
@@ -101,6 +111,17 @@ test("formats a deterministic rare-anchor portfolio prompt", () => {
   assert.equal(
     sha256(prompt),
     "6224db89eac7f9d41b26e96bc6b5c5da8c4b10d774fd674ec7eb14a576bb9add",
+  );
+});
+
+test("formats a general constraint portfolio prompt", () => {
+  const prompt = formatConstraintPortfolioPrompt("Who is the scientist?");
+  assert.match(prompt, /exactly three search tool calls/);
+  assert.match(prompt, /without guessing the answer/);
+  assert.match(prompt, /5 to 18 terms/);
+  assert.equal(
+    sha256(prompt),
+    "fbd1e88076f1794421677d7e07d237af9c9794dd8566a5ccf35b7755bb94ebb3",
   );
 });
 

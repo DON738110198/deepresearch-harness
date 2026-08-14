@@ -52,6 +52,13 @@ failed the relevance/accuracy diagnostic and are not promoted candidate
 policies. Their prompts, phase allocations, and negative traces remain auditable
 so the failed hypotheses are not silently discarded.
 
+`constraint_portfolio_v1` is the adapter-v7, development-only successor. It
+uses a general typed portfolio of rare anchors, chronology/relations, and an
+orthogonal clue pair rather than a prompt written around one saved question.
+Its fresh-query probe and stop gates are pinned in
+`benchmarks/browsecomp_plus_v0/query_compiler_v1_gates.json`; it is a planned
+candidate until those gates are actually run.
+
 Transient provider retries are fixed at three. Every attempted provider
 request receives its own indexed limit record, so a retry cannot disappear from
 the audit trail.

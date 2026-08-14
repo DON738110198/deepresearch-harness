@@ -53,6 +53,12 @@ EVALUATOR_MANIFEST = ROOT / "benchmarks" / "browsecomp_plus_v0" / "official_eval
 PROVIDER_SNAPSHOT = (
     ROOT / "benchmarks" / "browsecomp_plus_v0" / "deepseek_provider_snapshot.json"
 )
+QUERY_COMPILER_GATES = (
+    ROOT / "benchmarks" / "browsecomp_plus_v0" / "query_compiler_v1_gates.json"
+)
+SCREENING_JUDGE = (
+    ROOT / "benchmarks" / "browsecomp_plus_v0" / "screening_judge_v0.json"
+)
 PROMOTION_GATES = ROOT / "benchmarks" / "browsecomp_plus_v0" / "promotion_gates.json"
 
 
@@ -197,6 +203,39 @@ def test_query_decryption_is_limited_to_the_requested_string() -> None:
     ).decode("ascii")
 
     assert _decrypt_query(encrypted) == plaintext
+
+
+def test_query_compiler_registration_binds_v7_sources_and_fresh_slices() -> None:
+    registration = json.loads(QUERY_COMPILER_GATES.read_text(encoding="utf-8"))
+    fixed = registration["fixed_contract"]
+    selection = registration["fresh_query_selection"]
+
+    assert registration["status"] == "preregistered_not_run"
+    assert registration["target_manifest_sha256"] == normalized_text_file_sha256(
+        MANIFEST
+    )
+    assert fixed["candidate_adapter_version"] == "pi-browsecomp-v7"
+    assert fixed["candidate_contract_sha256"] == normalized_text_file_sha256(
+        ROOT / "integrations" / "pi-browsecomp" / "src" / "contract.mjs"
+    )
+    assert fixed["candidate_runner_sha256"] == normalized_text_file_sha256(
+        ROOT / "integrations" / "pi-browsecomp" / "src" / "runner.mjs"
+    )
+    assert selection["probe_offset"] + selection["probe_limit"] == selection[
+        "confirmation_offset"
+    ]
+    assert selection["overlap_with_prior_25"] == 0
+
+
+def test_single_gpu_screening_judge_is_explicitly_non_official() -> None:
+    manifest = json.loads(SCREENING_JUDGE.read_text(encoding="utf-8"))
+
+    assert manifest["status"] == "planned_not_run"
+    assert manifest["engine"]["tensor_parallel_size"] == 1
+    assert manifest["engine"]["gpu_id"] == 5
+    assert manifest["judge"]["model"] == "Qwen/Qwen3-32B-AWQ"
+    assert len(manifest["judge"]["revision"]) == 40
+    assert "not official" in manifest["claim_boundary"].lower()
 
 
 def test_pi_run_contract_requires_empty_system_prompt() -> None:
@@ -389,6 +428,7 @@ def test_rare_anchor_bootstrap_trace_binds_phases_and_tool_calls() -> None:
                 "phase": "bootstrap",
                 "output_limit_field": "max_tokens",
                 "thinking_type": "disabled",
+                "temperature": 0.0,
                 "remaining_output_tokens": 1_024,
                 "global_remaining_output_tokens": 10_000,
                 "phase_remaining_output_tokens": 1_024,
@@ -399,6 +439,7 @@ def test_rare_anchor_bootstrap_trace_binds_phases_and_tool_calls() -> None:
                 "phase": "exploration",
                 "output_limit_field": "max_tokens",
                 "thinking_type": "enabled",
+                "temperature": None,
                 "remaining_output_tokens": 6_976,
                 "global_remaining_output_tokens": 9_900,
                 "phase_remaining_output_tokens": 6_976,
@@ -409,6 +450,7 @@ def test_rare_anchor_bootstrap_trace_binds_phases_and_tool_calls() -> None:
                 "phase": "compilation",
                 "output_limit_field": "max_tokens",
                 "thinking_type": "disabled",
+                "temperature": 0.0,
                 "remaining_output_tokens": 2_000,
                 "global_remaining_output_tokens": 3_400,
                 "phase_remaining_output_tokens": 2_000,
@@ -422,8 +464,15 @@ def test_rare_anchor_bootstrap_trace_binds_phases_and_tool_calls() -> None:
     run = PiBrowseCompRun.model_validate(payload)
     assert run.bootstrap_output_tokens == 100
     assert len(run.search_calls) == 3
+    constraint_payload = json.loads(json.dumps(payload))
+    constraint_payload["adapter_version"] = "pi-browsecomp-v7"
+    constraint_payload["control_policy"] = "constraint_portfolio_v1"
+    assert (
+        PiBrowseCompRun.model_validate(constraint_payload).control_policy
+        == "constraint_portfolio_v1"
+    )
     payload["search_calls"] = []
-    with pytest.raises(ValidationError, match="must record a search call"):
+    with pytest.raises(ValidationError, match="lacks required search calls"):
         PiBrowseCompRun.model_validate(payload)
 
 
