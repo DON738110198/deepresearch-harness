@@ -1,0 +1,85 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "visible-pivot-bridge-v0",
+  "status": "preregistering",
+  "problem": "The same 48 queries recovered 0/7 gold-document cases at full-document BM25 top-20, 2/7 at passage BM25 top-20, 0/7 at dense top-20, and only 1/7 at dense top-100. Reopening candidate depth, reranking, or unconstrained query generation would violate the registered stopping rules.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/persistent-miss-dense-rank-v0-20260816/audit.json",
+      "sha256": "0ceeddf7fb1e54fb94c90f4920e577ae71917ed7007d02cd1681c7c226a97bb6"
+    }
+  ],
+  "simplest_baseline": "Reuse the identical successful trial-1 queries without a pivot; the frozen full-document BM25 top-20 result is 0/7.",
+  "hypothesis": "At least four of seven persistent misses have one analyzed term that was literally exposed in a saved non-gold result snippet, also occurs in an indexed gold document, is absent from the question, generated queries, and gold answer, and brings a gold document into BM25 top-20 when appended to one frozen query.",
+  "changed_mechanisms": [
+    "one gold-aware visible-pivot token appended to a frozen generated query"
+  ],
+  "anti_claim": "The pivot is selected with gold-document knowledge for sufficiency diagnosis only; this is not a deployable selector, end-to-end improvement, or model-capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["Lead Agent decomposition", "isolated Sub-Agent research"],
+      "current_gap": "Before assigning another worker, test whether the current single context already saw a reusable bridge token and simply failed to turn it into the next search constraint.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["configurable search backend", "research compression"],
+      "current_gap": "Changing the backend is larger than the remaining causal question; this oracle keeps the index and scorer fixed while testing one evidence-derived query transition.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["planner-generated research questions", "crawler execution agents"],
+      "current_gap": "A broader crawl adds calls before proving that saved snippets already contain a sufficient pivot for one bounded follow-up query.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["WebPlanner search graph", "parallel WebSearcher nodes"],
+      "current_gap": "A visible-pivot hop is the smallest testable edge of a search graph; only a positive oracle would justify implementing a gold-blind edge selector before parallel graph expansion.",
+      "disposition": "borrow_boundary"
+    }
+  ],
+  "frozen_controls": [
+    "same seven outcome-selected persistent retrieval misses",
+    "same trial-1 set and order of 48 successful generated queries",
+    "same saved successful search-result snippets as the only visible pivot source",
+    "same 100,195-document full-document BM25 index with k1 0.9 and b 0.4",
+    "default Pyserini English analyzer",
+    "pivot must occur in a visible non-gold snippet and a gold document",
+    "raw-question, generated-query, and gold-answer analyzed terms excluded",
+    "maximum 64 pivots per case ordered by document frequency then term",
+    "one pivot token appended to one frozen query and top-k fixed at 20",
+    "maximum 3,120 offline BM25 queries",
+    "zero provider, online search, and Judge calls",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 7,
+    "maximum_provider_cost_usd": 0.0,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": null,
+  "decision": null,
+  "next_action": "Commit this registration before implementation, then build a deterministic offline oracle that verifies saved-snippet provenance, exclusion vocabularies, index hashes, baseline 0/7 reproduction, the 3,120-query cap, and the fixed 4/7 decision without provider, online search, Judge, GPU, or sealed-holdout access.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "A pass is only evidence that a one-hop visible lexical bridge exists on these observed failures. It cannot support an effectiveness claim until a separate gold-blind selector passes a frozen unseen development comparison."
+}

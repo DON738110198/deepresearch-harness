@@ -1,0 +1,70 @@
+{
+  "schema_version": "visible-pivot-bridge-registration-v0",
+  "status": "posthoc_registered_failure_cluster",
+  "registered_at": "2026-08-16T22:18:49.7743054+08:00",
+  "purpose": "Test whether one lexical pivot already exposed in saved baseline evidence can bridge the frozen generated queries to an indexed gold document after full-document BM25, passage BM25, and dense candidate-depth gates all failed.",
+  "dense_rank_result": {
+    "path": "runs/browsecomp_plus_v0/persistent-miss-dense-rank-v0-20260816/audit.json",
+    "sha256": "0ceeddf7fb1e54fb94c90f4920e577ae71917ed7007d02cd1681c7c226a97bb6"
+  },
+  "passage_index_result": {
+    "path": "runs/browsecomp_plus_v0/passage-index-representation-v0-20260816/audit.json",
+    "sha256": "38a214707d926b59e5a4c2720d027fe0315bac32a93f41c813b883b33c7d2f92"
+  },
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline.gold.json",
+    "sha256": "2ef96bc47f0f89d1fa60aaac082a3d7b087737f1041bec579b2dc21a29034fd2"
+  },
+  "baseline_run_root": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline",
+  "query_ids": ["875", "754", "898", "710", "873", "869", "805"],
+  "document_index_path": "runs/_external/browsecomp-plus-indexes-direct/bm25",
+  "document_count": 100195,
+  "document_index_files": [
+    {"name": "_3_Lucene90_0.dvd", "bytes": 590329, "sha256": "40c91ac892c45d0d35ca47118f1b5c0173c2c1cbf856a0727e566198c3a29317"},
+    {"name": "_3_Lucene90_0.dvm", "bytes": 192, "sha256": "a42c3f7b8a782a3daec2f92c0063fdb460f15938fd875e9ca8f84f279498d7be"},
+    {"name": "_3_Lucene99_0.doc", "bytes": 140473531, "sha256": "e2fef3a4511048a8217e82e958b95e532f5993d30c8d75e8d859d949229bbecf"},
+    {"name": "_3_Lucene99_0.tim", "bytes": 36731670, "sha256": "01311e1096e3917dada8da2af01b6072b3899400a79b5fd47f61a5b47a9934ba"},
+    {"name": "_3_Lucene99_0.tip", "bytes": 1046419, "sha256": "ce663e3f8e341eac97596413bcda8ab63fd1a698206019eb29e8538031c47fa3"},
+    {"name": "_3_Lucene99_0.tmd", "bytes": 284, "sha256": "fedef29c806a393397c5bdbd17818225a44d359cb89c5cebb428f68370231457"},
+    {"name": "_3.fdm", "bytes": 957, "sha256": "fc9944ba7f16c140c2e8d99ac64d252eb78f58aac4ac309b48f80a18c81e3ee7"},
+    {"name": "_3.fdt", "bytes": 1991597789, "sha256": "756db803e706c6f372c5b9ff7ae90a7ebbc511812026d4ea92117b6fa0aaba7b"},
+    {"name": "_3.fdx", "bytes": 81648, "sha256": "e71b113388397f896f38388968207b1842aed36f14ad8d457f5fd6d27a1e5474"},
+    {"name": "_3.fnm", "bytes": 343, "sha256": "22e9099dbfccf427cd9d19c96f33d0073b9a9a1edea905cb3d8b3a00bf1eae99"},
+    {"name": "_3.nvd", "bytes": 100254, "sha256": "ecc4f5218929dc41da8b1d6ae1a24eafa58f78c5fe139e7d1ea1d694fb88311a"},
+    {"name": "_3.nvm", "bytes": 103, "sha256": "6b3932f8da1886e06e059e2c7f06bc793bc258cb7d1e0cff63d6a773494c2a43"},
+    {"name": "_3.si", "bytes": 474, "sha256": "7c8ab5a2b8002983d91785a762771d7231b7209b0153b83b94ccc66efb7dd417"},
+    {"name": "segments_3", "bytes": 154, "sha256": "e0a7e730510505f90596fc6438061b947dd5e786fc4b5fc2c722442c2b493a65"}
+  ],
+  "visible_evidence_source": "trial1_saved_successful_search_result_snippets",
+  "pivot_policy": {
+    "analyzer_id": "pyserini_default_english_v1.2.0",
+    "minimum_term_characters": 3,
+    "maximum_document_frequency": 10000,
+    "maximum_candidate_terms_per_case": 64,
+    "candidate_order": "document_frequency_ascending_then_term",
+    "require_term_in_visible_non_gold_snippet": true,
+    "require_term_in_gold_document": true,
+    "excluded_vocabularies": ["raw_question", "recorded_generated_queries", "gold_answer"]
+  },
+  "retrieval": {
+    "base_query_source": "trial1_recorded_successful_search_calls",
+    "composition": "append_single_analyzed_pivot_token_v0",
+    "analyzer_id": "pyserini_default_english_v1.2.0",
+    "bm25_k1": 0.9,
+    "bm25_b": 0.4,
+    "top_k": 20,
+    "stop_after_first_case_rescue": true
+  },
+  "acceptance": {
+    "minimum_visible_pivot_gold_doc_recall_at20_cases": 4,
+    "required_baseline_gold_doc_recall_at20_cases": 0
+  },
+  "budgets": {
+    "maximum_offline_bm25_queries": 3120,
+    "maximum_provider_calls": 0,
+    "maximum_online_search_calls": 0,
+    "maximum_judge_calls": 0
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "This is an outcome-selected, gold-aware bridge-sufficiency oracle. Gold documents and answers are used only to construct exclusions and score candidate pivots; a pass may justify a separate gold-blind selector experiment but cannot establish retrieval improvement, end-to-end accuracy, leaderboard performance, or model capability improvement."
+}
