@@ -1,7 +1,7 @@
 {
   "schema_version": "deepresearch-research-loop-checkpoint-v0",
   "loop_id": "visible-pivot-bridge-v0",
-  "status": "preregistering",
+  "status": "closed",
   "problem": "The same 48 queries recovered 0/7 gold-document cases at full-document BM25 top-20, 2/7 at passage BM25 top-20, 0/7 at dense top-20, and only 1/7 at dense top-100. Reopening candidate depth, reranking, or unconstrained query generation would violate the registered stopping rules.",
   "observed_evidence": [
     {
@@ -71,9 +71,12 @@
     "sealed_holdout_access": "forbidden"
   },
   "multi_agent_status": "deferred",
-  "measured_result": null,
-  "decision": null,
-  "next_action": "Commit this registration before implementation, then build a deterministic offline oracle that verifies saved-snippet provenance, exclusion vocabularies, index hashes, baseline 0/7 reproduction, the 3,120-query cap, and the fixed 4/7 decision without provider, online search, Judge, GPU, or sealed-holdout access.",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/visible-pivot-bridge-v0-20260816/audit.json",
+    "sha256": "bbf01d457b45001fd15409349bd0c59a4767446274cd317dd19b85f2b9279a05"
+  },
+  "decision": "accept",
+  "next_action": "The registered lexical sufficiency gate passed exactly 4/7, but post-hoc context inspection found that q875's selected analyzed token 'inlin' came only from frontmatter coordinate-format text ('inline'). Pre-register a separate gold-blind selector that removes wrappers/frontmatter before candidate extraction, preserves snippet and source-query provenance, selects a fixed small pivot slate without gold documents or answers, and remains calibration-only until it passes an unseen fixed-budget development comparison.",
   "active_paid_calls": 0,
   "retained_services": [
     "qwen3-32b-bf16-judge@127.0.0.1:18015",

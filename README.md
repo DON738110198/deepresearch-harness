@@ -538,6 +538,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `docs/evidence_debt_loop_results_2026-08-16.zh-CN.md`: execution audit, rejected repair branches, span/target calibration, overlay negatives, and retrieval-rank diagnosis.
 - `docs/passage_index_representation_results_2026-08-16.zh-CN.md`: preregistered full-corpus passage-index build, transport recovery, negative Recall@20 gate, and frozen next boundary.
 - `docs/persistent_miss_dense_rank_results_2026-08-16.zh-CN.md`: CPU-only dense top-20/100/1000 rank audit, retained local crash, negative gates, and the next query-bridge boundary.
+- `docs/visible_pivot_bridge_results_2026-08-16.zh-CN.md`: gold-aware one-hop bridge sufficiency, exact 4/7 gate, metadata-artifact caveat, and the gold-blind selector boundary.
 - `docs/b1_b2_token_v1.md`: retained negative B2 v1 result and causal follow-up.
 - `docs/b1_b2_token_v2.md`: retained B2 v2 tie and search-layer diagnosis.
 - `docs/b1_b2_v3_results.md`: token/cost automatic results and current claim boundary.
@@ -551,5 +552,5 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 3. **Completed:** bounded BM25-anchor/Dense-lead Progressive Disclosure, eight-search governor, query-aware preview calibration, and one fresh paired-25 development confirmation.
 4. **Completed with retained negatives:** structured Evidence Debt, selective repair, span opening, and fail-closed execution loops.
 5. **Completed with retained negatives:** full-corpus passage BM25 and fixed-query dense rank gates; neither cleared 4/7, so candidate-depth and reranker tuning are frozen on this cluster.
-6. Register and run a zero-provider Visible-Pivot Bridge Sufficiency oracle before implementing another query generator. Treat it as gold-aware diagnosis only.
-7. Permit a gold-blind selector and fresh development slice only after its own offline gate passes. Keep B3/B4 multi-Agent, sealed holdout, official execution, and leaderboard submission `planned` until their entry conditions are met.
+6. **Completed with a strict claim boundary:** zero-provider Visible-Pivot sufficiency reached 4/7, but one rescue was frontmatter metadata; it is an oracle, not a selector result.
+7. Build a gold-blind, body-only, provenance-bound pivot slate under a fixed search budget. Permit a fresh development slice only after that offline gate passes. Keep B3/B4 multi-Agent, sealed holdout, official execution, and leaderboard submission `planned` until their entry conditions are met.

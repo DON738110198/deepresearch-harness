@@ -79,8 +79,9 @@ pool diagnosis，两者都失败。
 
 ## 下一步
 
-`planned`：Visible-Pivot Bridge Sufficiency oracle。候选词必须同时出现在当前已
-可见的非 gold 文档与 gold 文档中，并且不在 raw question、48 条 query 或 gold
-answer 中。只允许一个 bounded BM25 bridge hop，检查至少 `4/7` 是否进入 top-20。
-即使 oracle 通过，也只能授权设计 gold-blind pivot selector；fresh paired run、
-Judge accuracy、citation support、Token、费用和多 Agent 仍保持 `planned`。
+该 Visible-Pivot Bridge Sufficiency oracle 已完成并以 `4/7` 刚好通过。它只授权
+设计一个新的 gold-blind pivot selector；其中 q875 的成功 token `inlin` 来自坐标
+frontmatter 中的格式词 `inline`，所以 selector 必须先删除 wrapper/frontmatter，
+不能把 oracle pass 写成语义检索改进。完整结果见
+`docs/visible_pivot_bridge_results_2026-08-16.zh-CN.md`。fresh paired run、Judge
+accuracy、citation support、Token、费用和多 Agent 仍保持 `planned`。

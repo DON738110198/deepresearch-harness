@@ -244,9 +244,12 @@ four-case threshold. That branch is frozen. The zero-provider dense-rank audit
 over the identical queries then recovered 0/7 at top-20 and 1/7 at top-100,
 also below registered four-case gates; top-1000 was 5/7 but did not authorize
 post-hoc reranker tuning. The dense depth branch is frozen. The next planned
-boundary is a gold-aware, one-hop Visible-Pivot oracle over already visible
-documents; no paid fresh-slice comparison is allowed until a retrieval
-candidate clears its own offline gate.
+boundary was a gold-aware, one-hop Visible-Pivot oracle over already visible
+documents. It passed exactly 4/7, but one selected token was frontmatter format
+metadata rather than a semantic bridge. The next boundary must therefore be a
+gold-blind, body-only, provenance-bound pivot slate with a fixed search budget;
+no paid fresh-slice comparison is allowed until that selector clears its own
+offline gate.
 
 ## Contracts and audit boundary
 

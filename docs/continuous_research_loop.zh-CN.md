@@ -83,13 +83,18 @@
 - 相同 48 条查询的 Qwen3-Embedding-0.6B dense rank 为 top-20 `0/7`、top-100
   `1/7`、top-1000 `5/7`；top-20 和 top-100 两个预注册 `4/7` gate 均失败，
   dense candidate-depth 与 bounded reranker 分支冻结。
+- Visible-Pivot lexical oracle 在保存的非 gold snippet 与 gold 文档共有词中排除
+  question/query/answer vocabulary，再追加一个 token；它以 `4/7` 刚好过线，
+  但 q875 的 `inlin` 来自坐标 frontmatter 的 `inline` 格式词。该结果只证明一跳
+  lexical sufficiency，不能当作 semantic selector 效果。
 
 因此当前差异点不再表述为泛化的 `repair_search`，而是 **Evidence Debt 驱动的
 检索表示诊断**：先证明 obligation、目标文档、答案 span 分别在哪一层丢失，再
 决定是否改变 index、candidate pool 或验证器。passage 与 dense gate 均已以负结果
-关闭；下一候选是 Visible-Pivot Bridge Sufficiency oracle：只允许使用已可见非 gold
-文档与 gold 文档共有、且不在 question/query/answer 中的 pivot term，检查一跳词汇桥
-是否足以让冻结 BM25 top-20 命中。它是 gold-aware 诊断，不是可部署 selector。
+关闭；Visible-Pivot Bridge Sufficiency oracle 已过最小存在性门槛。下一候选不是
+再扩 oracle，而是 gold-blind、body-only、provenance-bound 的小 pivot slate：删除
+wrapper/frontmatter，只从真实可见正文提取候选，固定选择数和 pivot search 预算，
+且不读取 gold 文档或 answer。oracle 本身仍不是可部署 selector。
 多 Agent、fresh paired run、sealed holdout、official Judge 和 leaderboard submission
 都保持 `planned`。
 

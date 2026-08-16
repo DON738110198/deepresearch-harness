@@ -192,6 +192,14 @@ development comparison with the model, prompt, search provider, query-call cap,
 Token budget, cost budget, and Judge held fixed. All unrun accuracy, citation,
 latency, Token, and cost fields remain `planned`.
 
+The registered Visible-Pivot oracle passed its lexical existence gate exactly
+4/7 after 1,088 offline BM25 queries. That result is not a selector metric: it
+used gold-document overlap to choose terms, and one successful term came only
+from frontmatter coordinate-format metadata. Any follow-up selector must strip
+wrappers and frontmatter before candidate extraction, receive neither gold
+documents nor answers, preserve the candidate snippet and source-query
+provenance, and freeze both slate size and actual pivot-search calls.
+
 The standard-loop adapter pins Pi 0.84.1 but clears Pi's system prompt and all
 ambient coding context. Pi is held fixed in harness ablations and is not an
 innovation variable. Matching the reference loop, tool calls already emitted
