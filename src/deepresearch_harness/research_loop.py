@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from hashlib import sha256
 from pathlib import Path
 from typing import Literal
 from urllib.parse import urlparse
@@ -132,5 +133,111 @@ class PauseAudit(StrictContract):
     next_action: str = Field(min_length=1)
 
 
+class RejectedLoopReference(ArtifactReference):
+    loop_id: str = Field(min_length=1)
+    role: Literal["same_cluster_selection", "prior_analogue"]
+
+
+class FailureClusterRoute(StrictContract):
+    schema_version: Literal["deepresearch-failure-cluster-route-v0"] = (
+        "deepresearch-failure-cluster-route-v0"
+    )
+    cluster_id: str = Field(min_length=1)
+    status: Literal["regression_only"]
+    query_ids: tuple[str, ...] = Field(min_length=1)
+    selection_attempt_limit: int = Field(ge=1)
+    same_cluster_rejections: tuple[RejectedLoopReference, ...] = Field(min_length=1)
+    prior_analogue_rejections: tuple[RejectedLoopReference, ...] = ()
+    prohibited_same_cluster_actions: tuple[str, ...] = Field(min_length=1)
+    permitted_next_action: Literal["broader_development_profile"]
+    framework_comparisons: list[FrameworkComparison] = Field(min_length=3)
+    sealed_holdout_access: Literal["forbidden"] = "forbidden"
+    claim_boundary: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def route_is_consistent(self) -> "FailureClusterRoute":
+        if len(self.query_ids) != len(set(self.query_ids)):
+            raise ValueError("failure-cluster query IDs must be unique")
+        references = (*self.same_cluster_rejections, *self.prior_analogue_rejections)
+        loop_ids = [reference.loop_id for reference in references]
+        paths = [reference.path for reference in references]
+        if len(loop_ids) != len(set(loop_ids)):
+            raise ValueError("failure-cluster loop references must be unique")
+        if len(paths) != len(set(paths)):
+            raise ValueError("failure-cluster checkpoint paths must be unique")
+        if any(
+            reference.role != "same_cluster_selection"
+            for reference in self.same_cluster_rejections
+        ):
+            raise ValueError("same-cluster references must use the matching role")
+        if any(
+            reference.role != "prior_analogue"
+            for reference in self.prior_analogue_rejections
+        ):
+            raise ValueError("prior analogues must use the matching role")
+        if len(self.same_cluster_rejections) < self.selection_attempt_limit:
+            raise ValueError(
+                "regression-only routing requires the registered rejection cap"
+            )
+        return self
+
+    def audit(self) -> "FailureClusterAudit":
+        return FailureClusterAudit(
+            cluster_id=self.cluster_id,
+            status=self.status,
+            selection_allowed=False,
+            same_cluster_rejections=len(self.same_cluster_rejections),
+            prior_analogue_rejections=len(self.prior_analogue_rejections),
+            next_action=self.permitted_next_action,
+        )
+
+
+class FailureClusterAudit(StrictContract):
+    cluster_id: str = Field(min_length=1)
+    status: Literal["regression_only"]
+    selection_allowed: Literal[False]
+    same_cluster_rejections: int = Field(ge=1)
+    prior_analogue_rejections: int = Field(ge=0)
+    next_action: Literal["broader_development_profile"]
+
+
 def load_research_loop_checkpoint(path: Path) -> ResearchLoopCheckpoint:
     return ResearchLoopCheckpoint.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def load_failure_cluster_route(path: Path) -> FailureClusterRoute:
+    route = FailureClusterRoute.model_validate_json(path.read_text(encoding="utf-8"))
+    root = _repository_root(path)
+    for reference in (
+        *route.same_cluster_rejections,
+        *route.prior_analogue_rejections,
+    ):
+        checkpoint_path = (root / reference.path).resolve()
+        if not checkpoint_path.is_relative_to(root) or not checkpoint_path.is_file():
+            raise ValueError(
+                f"failure-cluster checkpoint is missing or escapes root: {reference.path}"
+            )
+        if _sha256_file(checkpoint_path) != reference.sha256:
+            raise ValueError(f"failure-cluster checkpoint hash changed: {reference.path}")
+        checkpoint = load_research_loop_checkpoint(checkpoint_path)
+        if checkpoint.loop_id != reference.loop_id:
+            raise ValueError(f"failure-cluster loop ID changed: {reference.path}")
+        if checkpoint.status != "closed" or checkpoint.decision != "reject":
+            raise ValueError(f"failure-cluster loop is not a closed rejection: {reference.path}")
+    return route
+
+
+def _repository_root(path: Path) -> Path:
+    resolved = path.resolve()
+    for candidate in (resolved.parent, *resolved.parents):
+        if (candidate / "pyproject.toml").is_file():
+            return candidate
+    raise ValueError("could not locate research-loop repository root")
+
+
+def _sha256_file(path: Path) -> str:
+    digest = sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()

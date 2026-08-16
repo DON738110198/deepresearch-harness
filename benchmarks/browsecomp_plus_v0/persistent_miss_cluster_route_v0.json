@@ -1,0 +1,119 @@
+{
+  "schema_version": "deepresearch-failure-cluster-route-v0",
+  "cluster_id": "browsecomp-plus-persistent-retrieval-miss-7-v0",
+  "status": "regression_only",
+  "query_ids": ["875", "754", "898", "710", "873", "869", "805"],
+  "selection_attempt_limit": 3,
+  "same_cluster_rejections": [
+    {
+      "path": "experiments/passage_index_representation_v0/checkpoint.json",
+      "sha256": "d554e029731c166d5688636608e21b6853c478658094dbd8205bed8c1bb8b427",
+      "loop_id": "passage-index-representation-v0",
+      "role": "same_cluster_selection"
+    },
+    {
+      "path": "experiments/persistent_miss_dense_rank_v0/checkpoint.json",
+      "sha256": "47831bad719e3716fadd5e7943a5b040bd3d951381eacf74d52b591845f6cf1a",
+      "loop_id": "persistent-miss-dense-rank-v0",
+      "role": "same_cluster_selection"
+    },
+    {
+      "path": "experiments/gold_blind_visible_pivot_slate_v0/checkpoint.json",
+      "sha256": "9b55a0267909f8db975874548d6d15cf3aa3e7d4573b3b1557096bb438b44860",
+      "loop_id": "gold-blind-visible-pivot-slate-v0",
+      "role": "same_cluster_selection"
+    },
+    {
+      "path": "experiments/multi_query_rrf_v0/checkpoint.json",
+      "sha256": "0a72da974ea87788ca75cfb00f2b63cbeda31d09d2db3f14c43dcf90b89efac3",
+      "loop_id": "multi-query-rrf-v0",
+      "role": "same_cluster_selection"
+    },
+    {
+      "path": "experiments/raw_question_dense_rank_v0/checkpoint.json",
+      "sha256": "a77dd9700052c0ee00c8951b34c0b8ef835631ccf6c9e6010091cacfab952b4c",
+      "loop_id": "raw-question-dense-rank-v0",
+      "role": "same_cluster_selection"
+    }
+  ],
+  "prior_analogue_rejections": [
+    {
+      "path": "experiments/obligation_grounded_repair_query_v0/checkpoint.json",
+      "sha256": "8868d7444b640f895cb0a5dd48c57bd8a4bc2c83174ae38fcf1eb42034d6dbf5",
+      "loop_id": "obligation-grounded-repair-query-v0",
+      "role": "prior_analogue"
+    },
+    {
+      "path": "experiments/contrastive_bridge_hypothesis_v0/checkpoint.json",
+      "sha256": "323115d343b0dc85e9b95ed60b8dadd658a4e2b5a8eea4579b84d39471747330",
+      "loop_id": "contrastive-bridge-hypothesis-v0",
+      "role": "prior_analogue"
+    },
+    {
+      "path": "experiments/draft_blind_counter_hypothesis_v0/checkpoint.json",
+      "sha256": "42f556056bc6ab69a8c57ee4aeb4256ea1d58dee6cd300feb72d64ef4c1b4f14",
+      "loop_id": "draft-blind-counter-hypothesis-v0",
+      "role": "prior_analogue"
+    },
+    {
+      "path": "experiments/hypothesis_firewall_slate_v0/checkpoint.json",
+      "sha256": "fd16ed1287ba96e533332964a328d398909443a42aaa11e9d3f6b10051504bb7",
+      "loop_id": "hypothesis-firewall-slate-v0",
+      "role": "prior_analogue"
+    },
+    {
+      "path": "experiments/bridge_generator_model_gate_v0/checkpoint.json",
+      "sha256": "65488c612d98075ec5d75928ffec96389615032425f2a47229771deeed021a32",
+      "loop_id": "bridge-generator-model-gate-v0",
+      "role": "prior_analogue"
+    },
+    {
+      "path": "experiments/corpus_grounded_bridge_induction_v0/checkpoint.json",
+      "sha256": "175edf8bf58e66aad148f80f6ea146a5a6424d01b37c906ff3148aa98066db90",
+      "loop_id": "corpus-grounded-bridge-induction-v0",
+      "role": "prior_analogue"
+    }
+  ],
+  "prohibited_same_cluster_actions": [
+    "retune passage size, overlap, dense depth, RRF parameters, or raw-query mixing",
+    "rename a prompt-only typed bridge, counter-hypothesis, or generator substitution",
+    "select a candidate from these seven outcomes and describe it as fresh evidence"
+  ],
+  "permitted_next_action": "broader_development_profile",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["dynamic scoped sub-agents", "context isolation", "structured sub-agent results"],
+      "current_gap": "DeerFlow explicitly treats sub-agents as an optimization rather than the default. The observed cluster is shared retrieval failure, so another role does not provide a new causal test.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["iterative research", "summarization", "research compression", "100-task evaluation"],
+      "current_gap": "Its older supervisor-researcher implementation is documented as less performant than the current design. The useful comparison boundary is benchmark scale and context compression, not Agent count.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["planner questions", "crawler execution", "source summaries", "publisher aggregation"],
+      "current_gap": "The current project has stronger artifact and matched-budget audit boundaries but a much smaller measured failure distribution. Broader profiling is required before copying its breadth-oriented topology.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["simultaneous multi-query search", "asynchronous agents", "multiple search backends"],
+      "current_gap": "Concurrency can reduce wall-clock latency but does not repair the measured zero-recall queries. It becomes relevant only after independent branch omission or serial latency dominates a broader profile.",
+      "disposition": "defer"
+    }
+  ],
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "Regression-only means these seven outcome-selected cases may detect future regressions but may not select or tune another mechanism. The next 175-question run is development profiling, not fresh confirmation, sealed-holdout evidence, official leaderboard accuracy, or model-capability improvement."
+}

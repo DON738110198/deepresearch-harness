@@ -520,6 +520,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/browsecomp_judge.py`: self-contained official-judge batches, execution contracts, result validation, and paired score aggregation.
 - `src/deepresearch_harness/browsecomp_decision.py`: frozen promotion gates, resource deltas, and official-judge bad-case routing.
 - `src/deepresearch_harness/pi_browsecomp.py`: auditable smoke orchestration, read-only resume audit, aggregate usage trace, and hash-bound official-run export.
+- `src/deepresearch_harness/research_loop.py`: one-variable checkpoints, framework comparisons, pause audits, and hash-bound failure-cluster stop routes.
 - `integrations/pi-browsecomp/`: pinned Pi/DeepSeek tool-loop adapter with no coding-agent prompt or ambient context.
 - `src/deepresearch_harness/benchmark.py`: pilot contracts, asset validation, and scoring boundaries.
 - `src/deepresearch_harness/batch.py`: frozen two-variant batch execution and automatic aggregation.

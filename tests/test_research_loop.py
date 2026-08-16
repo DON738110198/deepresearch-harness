@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
-from deepresearch_harness.research_loop import ResearchLoopCheckpoint
+from deepresearch_harness.research_loop import (
+    FailureClusterRoute,
+    ResearchLoopCheckpoint,
+    load_failure_cluster_route,
+)
 
 
 def _payload() -> dict[str, object]:
@@ -120,3 +125,51 @@ def test_zero_call_offline_loop_has_an_exact_zero_budget() -> None:
     }
     checkpoint = ResearchLoopCheckpoint.model_validate(payload)
     assert checkpoint.budget.maximum_provider_cost_usd == 0
+
+
+def test_failure_cluster_route_requires_the_rejection_cap() -> None:
+    comparison = deepcopy(_payload()["framework_comparisons"])
+    payload = {
+        "cluster_id": "cluster-v0",
+        "status": "regression_only",
+        "query_ids": ["1", "2"],
+        "selection_attempt_limit": 3,
+        "same_cluster_rejections": [
+            {
+                "path": "experiments/one/checkpoint.json",
+                "sha256": "a" * 64,
+                "loop_id": "one",
+                "role": "same_cluster_selection",
+            },
+            {
+                "path": "experiments/two/checkpoint.json",
+                "sha256": "b" * 64,
+                "loop_id": "two",
+                "role": "same_cluster_selection",
+            },
+        ],
+        "prohibited_same_cluster_actions": ["retune the same mechanism"],
+        "permitted_next_action": "broader_development_profile",
+        "framework_comparisons": comparison,
+        "sealed_holdout_access": "forbidden",
+        "claim_boundary": "Development routing only.",
+    }
+
+    with pytest.raises(ValidationError, match="registered rejection cap"):
+        FailureClusterRoute.model_validate(payload)
+
+
+def test_tracked_failure_cluster_route_is_hash_bound_and_regression_only() -> None:
+    root = Path(__file__).resolve().parents[1]
+    route = load_failure_cluster_route(
+        root
+        / "benchmarks"
+        / "browsecomp_plus_v0"
+        / "persistent_miss_cluster_route_v0.json"
+    )
+
+    audit = route.audit()
+    assert audit.selection_allowed is False
+    assert audit.same_cluster_rejections == 5
+    assert audit.prior_analogue_rejections == 6
+    assert audit.next_action == "broader_development_profile"

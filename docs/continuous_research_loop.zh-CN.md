@@ -129,3 +129,14 @@ python scripts/check_research_loop_checkpoint.py `
 
 日常检查允许 active loop 返回非暂停就绪；真正结束阶段时加
 `--require-pause-ready`，未闭环会以非零状态退出。
+
+同一 failure cluster 达到拒绝上限后，另一个机器检查负责阻止继续挑机制：
+
+```powershell
+python scripts/check_failure_cluster_route.py `
+  benchmarks/browsecomp_plus_v0/persistent_miss_cluster_route_v0.json
+```
+
+当前 route 绑定 5 个同 cluster 负实验和 6 个历史 bridge analogue，输出
+`selection_allowed=false`。此后这 7 题只能做 regression replay；下一动作必须是
+`broader_development_profile`，不能再以新的名称调同一批结果。
