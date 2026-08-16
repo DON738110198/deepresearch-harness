@@ -223,6 +223,25 @@ B0 and B1 share that state contract. B0 performs direct question retrieval and o
 
 B2 keeps B1's three provider calls and the same collector boundary, but turns the plan into an explicit answer contract. Each planned obligation has a dedicated evidence query and a persisted `EvidenceDebt` record linking obligation -> evidence -> claim or marking the obligation `open`. Open debt is appended to the report deterministically, so missing support cannot disappear between planning and writing.
 
+## Evidence Debt diagnostic boundary
+
+The current research loop diagnoses an unresolved obligation before adding more
+orchestration. `evidence_span_oracle.py` asks whether an already retrieved
+document contains a selectable answer-bearing span. `document_target_oracle.py`
+tests whether obligation-conditioned ranking can identify a bounded document
+slate without reading gold labels. `post_run_overlay.py` then applies a
+fail-closed replacement rule: it may replace the baseline answer only when the
+short answer and supporting quote are literal members of every cited span.
+
+For persistent retrieval misses, `corpus_answerability.py` separates corpus
+absence from retrieval failure, and `lexical_rank_audit.py` measures where gold
+documents appear under the frozen full-document BM25 representation. These are
+diagnostic or calibration tools, not additional Agent roles and not evidence of
+model improvement. The next planned boundary is a gold-independent,
+passage-level candidate index with frozen tokenizer, passage size, overlap,
+corpus hash, and candidate cap. It must clear its registered offline recall gate
+before any paid fresh-slice comparison is allowed.
+
 ## Contracts and audit boundary
 
 - `Task`, `Plan`, `Evidence`, `Claim`, and `Citation` are validated Pydantic models.

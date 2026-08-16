@@ -1,0 +1,65 @@
+{
+  "schema_version": "evidence-span-availability-oracle-registration-v0",
+  "status": "posthoc_registered_for_new_failure_cluster",
+  "registered_at": "2026-08-16T20:17:05.3445609+08:00",
+  "purpose": "Calibrate one deterministic change only: choose an explicit answer-intent clause when a long question has no question mark, while keeping the v0 evidence-window scorer, corpus, documents, and span budget fixed.",
+  "candidate_run_root": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline",
+  "diagnostic": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline.diagnostic.json",
+    "sha256": "060f61c653316b099329fe8f276e2399923e234d742c09fbabd6eece211303ba"
+  },
+  "judge_summary": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline-persistent-judge/evaluation/development_judge_result.json",
+    "sha256": "fdaf1959837b9c4c512d71d7fb47dff7498429dd36516ce6e9b440b1dde693aa"
+  },
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline.gold.json",
+    "sha256": "2ef96bc47f0f89d1fa60aaac082a3d7b087737f1041bec579b2dc21a29034fd2"
+  },
+  "query_ids": [
+    "772",
+    "579",
+    "552",
+    "679"
+  ],
+  "previously_spotchecked_query_ids": [
+    "679"
+  ],
+  "document_index_path": "runs/_external/browsecomp-plus-indexes-direct/bm25",
+  "selector_id": "answer_obligation_window_v1",
+  "maximum_span_characters": 2000,
+  "frozen_artifacts": [
+    {
+      "path": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/baseline-stability-audit.json",
+      "sha256": "0c2595a7078bfae6ad501710bb6358701a37fd51e4cc6a0f586ee1cbc1633d14"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/monotonic-overlay-v0-20260816/span-oracle.json",
+      "sha256": "77673039dab736307cf2e031044b2e83d2e255e6c30ac54ebfccd374ca4e3737"
+    },
+    {
+      "path": "experiments/answer_obligation_compiler_v1/checkpoint.json",
+      "sha256": "04d7947824aef300c909b0353303a0f346ea1a90613a196e8260a68186cdea6a"
+    },
+    {
+      "path": "src/deepresearch_harness/evidence_span_oracle.py",
+      "sha256": "2702dcbab2eef69c0dd21db19fc757d68d4ad874a4e4fedb14f38b4cf6664ac5"
+    },
+    {
+      "path": "scripts/run_evidence_span_oracle.py",
+      "sha256": "54a99562bfaad983616b1cdf81a9cd49959ec18b0afe02d4a4ca793504645ba3"
+    },
+    {
+      "path": "tests/test_evidence_span_oracle.py",
+      "sha256": "f6eb8a81e08451ee2595a23cfe4a84345477e6cf27cd9e43a3ac4aff76492d45"
+    }
+  ],
+  "acceptance": {
+    "minimum_selected_span_hit_cases": 4,
+    "minimum_uninspected_selected_span_hit_cases": 3,
+    "minimum_selected_over_head_delta": 4,
+    "missing_documents_must_equal": 0
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "This is an outcome-selected, gold-aware development calibration. Query 679 was inspected to identify the declarative answer-intent failure, and the other cases were visible in the v0 oracle result. Passing establishes only that the frozen deterministic compiler exposes the literal answers in these four already-retrieved gold documents. It does not validate document targeting without gold, end-to-end answer repair, official accuracy, or model capability improvement."
+}

@@ -1,0 +1,148 @@
+{
+  "schema_version": "obligation-span-calibration-registration-v0",
+  "status": "registered_pre_provider",
+  "registered_at": "2026-08-16T00:16:08.0570634+08:00",
+  "purpose": "Single failed-only resume of the outcome-selected calibration after all five first attempts completed remotely but the local Pydantic output contract rejected the new v14 adapter and obligation_query trace fields.",
+  "query_artifact": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-opening-v0-20260816/known5_queries.json",
+    "sha256": "4cdd88d3401075eb79cc19d4648525b9e6c4af717004ef63edc22a114fb3d125"
+  },
+  "query_ids": [
+    "715",
+    "569",
+    "942",
+    "701",
+    "58"
+  ],
+  "oracle_result": {
+    "path": "runs/browsecomp_plus_v0/evidence-span-availability-oracle-v0-20260815/oracle-result.json",
+    "sha256": "bd3e7699a379fe0a748eeb32ac0f296ab9bf0a4e82e6ec20cad35bd33a746348"
+  },
+  "baseline_summary": {
+    "path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate/summary.json",
+    "sha256": "2a911a92d62cadbcf08e2623ad5c8848dc2165c451a4426181c3ebd28aa6a750"
+  },
+  "baseline_judge": {
+    "path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate-persistent-judge/evaluation/development_judge_result.json",
+    "sha256": "f6cbb04807074164514a1f69dfb19ef4d3aa4416c1e8e1a1c4bd792f7c2326d8"
+  },
+  "fixed_contract": {
+    "model": "deepseek-v4-flash",
+    "model_parameters": "frozen API model; no training",
+    "thinking_level": "high",
+    "compilation_thinking_level": "off",
+    "control_policy": "answer_reserve_nonthinking_v0",
+    "adapter": "pi-browsecomp-v14",
+    "search_url": "http://127.0.0.1:8769/search",
+    "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64-anchor-reopen-answer_obligation_window_v0",
+    "retriever_manifest": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+    "retriever_manifest_sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899",
+    "anchor_count": 5,
+    "dense_lead_count": 15,
+    "anchor_token_cap": 512,
+    "dense_lead_token_cap": 64,
+    "maximum_search_calls": 8,
+    "maximum_open_calls": 8,
+    "open_token_cap": 512,
+    "total_evidence_ingress_token_budget": 33280,
+    "open_evidence_ingress_token_budget": 4096,
+    "maximum_output_tokens": 10000,
+    "maximum_iterations": 100,
+    "provider_attempts_per_case": 2,
+    "resume_failed_only": true,
+    "original_registration_path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_calibration_v0.json",
+    "original_registration_sha256": "a471c400f303d0916e7149dc5cd8def232bf9d6d7b58c5f4ed93bde41d12ffd7",
+    "failed_attempt_summary_path": "runs/browsecomp_plus_v0/obligation-span-opening-v0-20260816/known5-candidate-validation-failure-attempt1/summary.json",
+    "failed_attempt_summary_sha256": "03ff5fc03642a06e0ed00d361462e7aa93ffab5e907f9debc7188136e030cdc0",
+    "failed_attempt_provider_cost": "unobservable because validation failed before usage persistence; it must not be reported as zero",
+    "maximum_incremental_resume_cost_usd": 0.1,
+    "conservative_maximum_two_attempt_cost_usd": 0.2,
+    "allowed_implementation_change": "local output schema admits pi-browsecomp-v14 and records obligation_query; runner, prompts, service, retrieval, budgets, model, and Judge are unchanged",
+    "judge_url": "http://127.0.0.1:18015/v1",
+    "judge_served_model": "qwen3-32b-bf16-judge",
+    "sealed_holdout_access": "forbidden"
+  },
+  "frozen_artifacts": [
+    {
+      "path": "src/deepresearch_harness/progressive_disclosure.py",
+      "sha256": "6ec1dc431b4622ca8adeeabf04e868f42d7104d04f46b851e0c8b8463bdff3ca"
+    },
+    {
+      "path": "src/deepresearch_harness/progressive_disclosure_server.py",
+      "sha256": "5e99582cfa2775e6341545d2f1d73aa58746d2dd63544919f9540d0e76f619fb"
+    },
+    {
+      "path": "src/deepresearch_harness/evidence_span_oracle.py",
+      "sha256": "df3f9d97bb2b81c238bec438a560b1180d9cadd1374f34a19ce7e8a9def07b97"
+    },
+    {
+      "path": "src/deepresearch_harness/obligation_span_experiment.py",
+      "sha256": "4e28533bcb11df5fe9512a78f1ae0022e284d622c829da50d40f60213bbd05e4"
+    },
+    {
+      "path": "scripts/decide_obligation_span_calibration.py",
+      "sha256": "ce7856ee6ce37ba13744b7ba675161f8aee24b3d6fb0763607cd5e296d741653"
+    },
+    {
+      "path": "integrations/pi-browsecomp/v14/contract.mjs",
+      "sha256": "acc901f2ec4e677a7e1c7a4529359c79d534445d497f4834445cb859dd331860"
+    },
+    {
+      "path": "integrations/pi-browsecomp/v14/runner.mjs",
+      "sha256": "c7db43f12551198334d80c6565b092b92af479e2e5c4d327c8d2622a5552221c"
+    },
+    {
+      "path": "integrations/pi-browsecomp/v14/contract.test.mjs",
+      "sha256": "baac5e5e71f0b0050d105e78a55dbdfb2e47059eb680123d61ad5b923b830269"
+    },
+    {
+      "path": "tests/test_progressive_disclosure.py",
+      "sha256": "1e23b7dc6f707dbc0a41d8299b7aa62966d7909b038a04e7327759f6961c3ba8"
+    },
+    {
+      "path": "tests/test_progressive_disclosure_server.py",
+      "sha256": "5a226a8b7e6487337e51b54c5f49e42f2a23e832cc9a3e73c688c86a3c5bce76"
+    },
+    {
+      "path": "tests/test_obligation_span_experiment.py",
+      "sha256": "5b776f575c7e996576d4edf5376ee917090e83a23fcb24a6cc033220f2c556a0"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+      "sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899"
+    },
+    {
+      "path": "src/deepresearch_harness/browsecomp_plus.py",
+      "sha256": "3539f0c27fb38f0c02e75b0d7fc728f4ada6e1a1c43f62d89413e65958e1b80a"
+    },
+    {
+      "path": "src/deepresearch_harness/browsecomp_repeats.py",
+      "sha256": "993bf6eae4f02c271a8de77826691433e5e0aad8c34b57759fc69ae1cad6049d"
+    },
+    {
+      "path": "tests/test_browsecomp_plus.py",
+      "sha256": "9dd07d6488bde8dec573223d18efb8e9dcdcb9ced3f1a3e74535f0e5765045d0"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_calibration_v0.json",
+      "sha256": "a471c400f303d0916e7149dc5cd8def232bf9d6d7b58c5f4ed93bde41d12ffd7"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/obligation-span-opening-v0-20260816/known5-candidate-validation-failure-attempt1/summary.json",
+      "sha256": "03ff5fc03642a06e0ed00d361462e7aa93ffab5e907f9debc7188136e030cdc0"
+    }
+  ],
+  "acceptance": {
+    "minimum_opened_span_cases": 2,
+    "minimum_answer_bearing_span_cases": 2,
+    "minimum_judge_correct_cases": 2,
+    "minimum_judge_correct_delta": 2,
+    "schema_complete_must_equal": 5,
+    "generation_failures_must_equal": 0,
+    "judge_parse_failures_must_equal": 0,
+    "judge_request_failures_must_equal": 0,
+    "maximum_provider_cost_usd": 0.1
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "All five cases and their outcomes were known before this calibration, so a pass only licenses a fresh development comparison. The first remote attempts are preserved as local output-contract failures; their actual provider cost is unobservable and must never be reported as zero. This registration permits one failed-only resume after a tested local schema-only fix. The baseline is the saved pi-browsecomp-v10 run on the same questions and fixed Flash/search/token contract. The only harness mechanism is that every disclosed document is explicitly a preview and open_evidence accepts an answer obligation to return a deterministic 512-token window, including for BM25 anchors. No result from these five cases is an effectiveness, official benchmark, leaderboard, or model-capability claim."
+}

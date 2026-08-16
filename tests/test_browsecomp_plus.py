@@ -1,6 +1,7 @@
 import base64
 import json
 import subprocess
+from copy import deepcopy
 from hashlib import sha256
 from pathlib import Path
 
@@ -400,6 +401,35 @@ def test_pi_v9_run_binds_progressive_disclosure_and_open_trace() -> None:
     run = PiBrowseCompRun.model_validate(payload)
     assert run.disclosure_state is not None
     assert run.disclosure_state.cumulative_ingress_tokens == 36
+    v14_payload = deepcopy(payload)
+    v14_payload["adapter_version"] = "pi-browsecomp-v14"
+    v14_payload["run_id"] = "run-v14"
+    v14_payload["query_id"] = "query-v14"
+    for call in v14_payload["search_calls"]:
+        if call["state"] is not None:
+            call["state"]["run_id"] = "run-v14"
+    v14_payload["evidence_open_calls"][0]["obligation_query"] = (
+        "grant code in acknowledgments"
+    )
+    v14_payload["evidence_open_calls"][0]["state"]["run_id"] = "run-v14"
+    v14_payload["disclosure_state"]["run_id"] = "run-v14"
+    v14_payload["research_budget"] = {
+        "maximum_search_calls": 8,
+        "reserved_search_calls": 1,
+        "executed_search_calls": 1,
+        "blocked_search_calls": [],
+        "exhausted": False,
+        "stop_reason": None,
+    }
+    assert (
+        PiBrowseCompRun.model_validate(v14_payload)
+        .evidence_open_calls[0]
+        .obligation_query
+        == "grant code in acknowledgments"
+    )
+    del v14_payload["evidence_open_calls"][0]["obligation_query"]
+    with pytest.raises(ValidationError, match="answer obligation"):
+        PiBrowseCompRun.model_validate(v14_payload)
     payload["disclosure_state"] = search_state
     with pytest.raises(ValidationError, match="latest tool state"):
         PiBrowseCompRun.model_validate(payload)
@@ -448,6 +478,250 @@ def test_pi_v10_run_requires_a_consistent_research_budget() -> None:
     assert run.research_budget.maximum_search_calls == 8
     payload["research_budget"]["executed_search_calls"] = 1
     with pytest.raises(ValidationError, match="reserved search"):
+        PiBrowseCompRun.model_validate(payload)
+
+
+def test_pi_v11_run_requires_a_typed_bounded_debt_checkpoint() -> None:
+    answer = "Explanation: Supported [1].\nExact Answer: fixture\nConfidence: 90%"
+    payload = {
+        "schema_version": "pi-browsecomp-run-v0",
+        "adapter_version": "pi-browsecomp-v11",
+        "pi_version": "0.84.1",
+        "run_id": "run-v11",
+        "query_id": "query-v11",
+        "model": "deepseek-v4-flash",
+        "thinking_level": "high",
+        "max_search_results": 20,
+        "control_policy": "answer_reserve_nonthinking_v0",
+        "compilation_thinking_level": "off",
+        "system_prompt": "",
+        "prompt_sha256": "a" * 64,
+        "started_at": "2026-08-15T00:00:00Z",
+        "latency_ms": 10,
+        "status": "succeeded",
+        "stop_reason": "completed",
+        "answer_text": answer,
+        "usage": {
+            "input_tokens": 10,
+            "output_tokens": 3,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 1,
+            "total_tokens": 13,
+            "cost_usd": 0.001,
+        },
+        "exploration_output_tokens": 1,
+        "audit_output_tokens": 1,
+        "compilation_output_tokens": 1,
+        "answer_compiler_invoked": True,
+        "answer_compiler_prompt_sha256": (
+            "3e86775e1455eadc50433cf24b93f17585a79c22c0b548cdcd08dc8de5547861"
+        ),
+        "answer_schema_complete": True,
+        "model_requests": 3,
+        "provider_request_limits": [
+            {
+                "request_index": 1,
+                "phase": "exploration",
+                "output_limit_field": "max_tokens",
+                "thinking_type": "enabled",
+                "temperature": None,
+                "remaining_output_tokens": 8000,
+                "global_remaining_output_tokens": 10000,
+                "phase_remaining_output_tokens": 8000,
+                "requested_output_tokens": 10000,
+                "applied_output_tokens": 8000,
+            },
+            {
+                "request_index": 2,
+                "phase": "audit",
+                "output_limit_field": "max_tokens",
+                "thinking_type": "disabled",
+                "temperature": 0.0,
+                "remaining_output_tokens": 512,
+                "global_remaining_output_tokens": 9999,
+                "phase_remaining_output_tokens": 512,
+                "requested_output_tokens": 10000,
+                "applied_output_tokens": 512,
+            },
+            {
+                "request_index": 3,
+                "phase": "compilation",
+                "output_limit_field": "max_tokens",
+                "thinking_type": "disabled",
+                "temperature": 0.0,
+                "remaining_output_tokens": 1488,
+                "global_remaining_output_tokens": 9998,
+                "phase_remaining_output_tokens": 1488,
+                "requested_output_tokens": 10000,
+                "applied_output_tokens": 1488,
+            },
+        ],
+        "search_calls": [],
+        "evidence_debt_audit": {
+            "status": "resolved",
+            "exploration_search_limit": 6,
+            "repair_search_limit": 2,
+            "audit_output_token_limit": 512,
+            "compilation_output_token_limit": 1488,
+            "audit_prompt_sha256": (
+                "e321114f3a108d7d16034d7435c5df6fad2d471166936aeaf135a74a225116e7"
+            ),
+            "audit_output_sha256": "b" * 64,
+            "resolved_candidate_answer": "fixture",
+            "resolved_supporting_docids": [],
+            "repair_calls": [],
+            "blocked_exploration_calls": [],
+            "blocked_repair_calls": [],
+        },
+        "research_budget": {
+            "maximum_search_calls": 8,
+            "reserved_search_calls": 0,
+            "executed_search_calls": 0,
+            "blocked_search_calls": [],
+            "exhausted": False,
+            "stop_reason": None,
+        },
+        "messages": [],
+    }
+
+    run = PiBrowseCompRun.model_validate(payload)
+    assert run.evidence_debt_audit is not None
+    assert run.evidence_debt_audit.status == "resolved"
+
+    payload["compilation_output_tokens"] = 1_489
+    payload["usage"]["output_tokens"] = 1_491
+    with pytest.raises(ValidationError, match="compilation exceeds"):
+        PiBrowseCompRun.model_validate(payload)
+
+
+def test_pi_v12_run_requires_a_deterministic_answer_first_trace() -> None:
+    answer = "Explanation: Candidate [1].\nExact Answer: fixture\nConfidence: 90%"
+    payload = {
+        "schema_version": "pi-browsecomp-run-v0",
+        "adapter_version": "pi-browsecomp-v12",
+        "pi_version": "0.84.1",
+        "run_id": "run-v12",
+        "query_id": "query-v12",
+        "model": "deepseek-v4-flash",
+        "thinking_level": "high",
+        "max_search_results": 20,
+        "control_policy": "answer_reserve_nonthinking_v0",
+        "compilation_thinking_level": "off",
+        "system_prompt": "",
+        "prompt_sha256": "a" * 64,
+        "started_at": "2026-08-15T00:00:00Z",
+        "latency_ms": 10,
+        "status": "succeeded",
+        "stop_reason": "completed",
+        "answer_text": answer,
+        "usage": {
+            "input_tokens": 10,
+            "output_tokens": 2,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 1,
+            "total_tokens": 12,
+            "cost_usd": 0.001,
+        },
+        "exploration_output_tokens": 1,
+        "audit_output_tokens": 0,
+        "compilation_output_tokens": 1,
+        "answer_compiler_invoked": True,
+        "answer_compiler_prompt_sha256": (
+            "3e86775e1455eadc50433cf24b93f17585a79c22c0b548cdcd08dc8de5547861"
+        ),
+        "answer_schema_complete": True,
+        "model_requests": 2,
+        "provider_request_limits": [
+            {
+                "request_index": 1,
+                "phase": "exploration",
+                "output_limit_field": "max_tokens",
+                "thinking_type": "enabled",
+                "temperature": None,
+                "remaining_output_tokens": 8000,
+                "global_remaining_output_tokens": 10000,
+                "phase_remaining_output_tokens": 8000,
+                "policy_cap_output_tokens": None,
+                "requested_output_tokens": 10000,
+                "applied_output_tokens": 8000,
+            },
+            {
+                "request_index": 2,
+                "phase": "compilation",
+                "output_limit_field": "max_tokens",
+                "thinking_type": "disabled",
+                "temperature": 0.0,
+                "remaining_output_tokens": 1000,
+                "global_remaining_output_tokens": 9999,
+                "phase_remaining_output_tokens": 2000,
+                "policy_cap_output_tokens": 1000,
+                "requested_output_tokens": 10000,
+                "applied_output_tokens": 1000,
+            },
+        ],
+        "search_calls": [],
+        "answer_first_audit": {
+            "audit_status": "no_repair_trigger",
+            "policy_sha256": (
+                "dc5329daef3310e6b02c49e7cb0bb7fab21316f647dd2555e54708c0290c1a84"
+            ),
+            "draft_answer_sha256": sha256(answer.encode("utf-8")).hexdigest(),
+            "exact_answer": "fixture",
+            "subject_hypothesis": None,
+            "confidence_percent": 90,
+            "cited_docids": ["1"],
+            "supporting_cited_docids": [],
+            "supporting_all_docids": [],
+            "explicit_uncertainty_phrases": [],
+            "reasons": [],
+            "repair_queries": [],
+            "repair_status": "not_needed",
+            "repair_query": None,
+            "repair_outcome": None,
+            "repair_search_call_index": None,
+            "repair_returned_docids": [],
+            "repair_compiler_prompt_sha256": None,
+        },
+        "research_budget": {
+            "maximum_search_calls": 8,
+            "reserved_search_calls": 0,
+            "executed_search_calls": 0,
+            "blocked_search_calls": [],
+            "exhausted": False,
+            "stop_reason": None,
+        },
+        "messages": [],
+    }
+
+    run = PiBrowseCompRun.model_validate(payload)
+    assert run.answer_first_audit is not None
+    assert run.answer_first_audit.repair_status == "not_needed"
+
+    late_draft_payload = deepcopy(payload)
+    late_draft_payload["adapter_version"] = "pi-browsecomp-v13"
+    late_draft_payload["run_id"] = "run-v13"
+    late_draft_payload["query_id"] = "query-v13"
+    late_draft_payload["answer_first_audit"]["policy_sha256"] = (
+        "1ce01463cc48e3991825d3479965c6d51cb62d1bec41bcda7f70a68d4ac5d3a8"
+    )
+    late_draft_payload["answer_first_audit"]["exploration_search_limit"] = 7
+    late_draft_payload["answer_first_audit"]["blocked_exploration_calls"] = []
+    late_draft_payload["exploration_stop_reason"] = (
+        "exploration_output_token_limit_reached:8000"
+    )
+    late_draft = PiBrowseCompRun.model_validate(late_draft_payload)
+    assert late_draft.answer_first_audit is not None
+    assert late_draft.answer_first_audit.exploration_search_limit == 7
+
+    premature_stop = deepcopy(late_draft_payload)
+    premature_stop["exploration_stop_reason"] = "exploration_search_reserve_reached:7"
+    with pytest.raises(ValidationError, match="before seven searches"):
+        PiBrowseCompRun.model_validate(premature_stop)
+
+    payload["provider_request_limits"][1]["policy_cap_output_tokens"] = 1001
+    with pytest.raises(ValidationError, match="capped at 1000"):
         PiBrowseCompRun.model_validate(payload)
 
 
@@ -936,6 +1210,10 @@ def test_smoke_resume_retries_only_failed_query_end_to_end(
     monkeypatch.setenv("DEEPSEEK_API_KEY", "test-only-key")
     monkeypatch.setattr(
         "deepresearch_harness.pi_browsecomp.subprocess.run", fake_node_run
+    )
+    monkeypatch.setattr(
+        "deepresearch_harness.pi_browsecomp.require_search_service_health",
+        lambda *_args, **_kwargs: None,
     )
     common = {
         "manifest_path": manifest_path,

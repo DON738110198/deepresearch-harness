@@ -5,6 +5,8 @@ import {
   ADAPTER_VERSION,
   MAXIMUM_SEARCH_CALLS,
   reserveSearchCall,
+  selectLatestDisclosureState,
+  toolFailureReason,
   validateDisclosureSearchResponse,
   validateOpenEvidenceResponse,
   validateRequest,
@@ -124,4 +126,41 @@ test("progressive disclosure responses are strict and budget-auditable", () => {
     latency_ms: 1,
   });
   assert.equal(opened.result.outcome, "opened");
+});
+
+
+test("out-of-order tool responses cannot roll back final disclosure state", () => {
+  const older = {
+    run_id: "run-1",
+    search_calls: 1,
+    open_attempts: 0,
+    cumulative_ingress_tokens: 20,
+  };
+  const newer = {
+    run_id: "run-1",
+    search_calls: 2,
+    open_attempts: 1,
+    cumulative_ingress_tokens: 52,
+  };
+  assert.equal(selectLatestDisclosureState(older, newer), newer);
+  assert.equal(selectLatestDisclosureState(newer, older), newer);
+  assert.throws(
+    () => selectLatestDisclosureState(
+      { ...older, search_calls: 2 },
+      { ...older, open_attempts: 1 },
+    ),
+    /not monotonic/,
+  );
+});
+
+
+test("any transport-level tool failure fails the run closed", () => {
+  assert.equal(toolFailureReason([{ outcome: "ok" }], []), undefined);
+  assert.equal(
+    toolFailureReason(
+      [{ outcome: "error" }, { outcome: "ok" }],
+      [{ outcome: "error" }],
+    ),
+    "tool_call_failures:search=1:open=1",
+  );
 });

@@ -1,0 +1,106 @@
+{
+  "schema_version": "monotonic-post-run-overlay-registration-v0",
+  "status": "outcome_selected_development_calibration",
+  "registered_at": "2026-08-16T20:46:51.1241656+08:00",
+  "purpose": "Test one change against rejected overlay v0: hide the baseline response from the terminal verifier while preserving the exact four prepared cases, evidence spans, provider, output contract, literal-support gate, and development Judge.",
+  "baseline_run_root": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline",
+  "baseline_judge": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline-persistent-judge/evaluation/development_judge_result.json",
+    "sha256": "fdaf1959837b9c4c512d71d7fb47dff7498429dd36516ce6e9b440b1dde693aa"
+  },
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline.gold.json",
+    "sha256": "2ef96bc47f0f89d1fa60aaac082a3d7b087737f1041bec579b2dc21a29034fd2"
+  },
+  "target_oracle": {
+    "path": "runs/browsecomp_plus_v0/obligation-target-slate-v0-20260816/target-oracle.json",
+    "sha256": "a16f12beddfc3ca4032b7a01d6606d0782c49d09f9db2f421bab040f8d739a4e"
+  },
+  "span_oracle": {
+    "path": "runs/browsecomp_plus_v0/section-anchored-span-selector-v0-20260816/span-oracle.json",
+    "sha256": "05c56994e4afbf1d47d645a18a989ed6130d278b605593c7fe2749ab0eb84eac"
+  },
+  "prepared_reference": {
+    "path": "runs/browsecomp_plus_v0/monotonic-post-run-overlay-v0-20260816/prepared.json",
+    "sha256": "f62ca5639d695e52de2ec7cec54608cf1be5a51eb2b31340c547014ba51a4d9c"
+  },
+  "query_ids": [
+    "772",
+    "579",
+    "552",
+    "679"
+  ],
+  "document_index_path": "runs/_external/browsecomp-plus-indexes-direct/bm25",
+  "target_selector_id": "obligation_channel_slate_v0",
+  "maximum_target_search_calls": 2,
+  "target_slots_per_channel": 1,
+  "maximum_targets_per_case": 4,
+  "span_selector_id": "answer_obligation_window_v2",
+  "maximum_span_characters": 2000,
+  "prompt_variant": "evidence_only_v1",
+  "provider": {
+    "model": "deepseek-v4-flash",
+    "base_url": "https://api.deepseek.com",
+    "api_key_env": "DEEPSEEK_API_KEY",
+    "maximum_calls": 4,
+    "maximum_output_tokens_per_call": 400,
+    "maximum_estimated_cost_usd": 0.01
+  },
+  "judge": {
+    "manifest": {
+      "path": "benchmarks/browsecomp_plus_v0/persistent_bf16_judge_v0.json",
+      "sha256": "7d27f8e9739dc60ced49ee72cfe3191f36ef485403a4fd24539c932ceaf7277f"
+    },
+    "calibration": {
+      "path": "runs/browsecomp_plus_v0/persistent_judge/qwen3-32b-bf16-service-calibration-20260814/calibration.json",
+      "sha256": "ad68bf0cfcf2081e31135f75f3e7909117e59828c76553dc3cf8cf21b67c5be3"
+    },
+    "base_url": "http://127.0.0.1:18015/v1",
+    "served_model_name": "qwen3-32b-bf16-judge",
+    "maximum_calls": 4
+  },
+  "frozen_artifacts": [
+    {
+      "path": "runs/browsecomp_plus_v0/monotonic-post-run-overlay-v0-20260816/summary.json",
+      "sha256": "d53f48b61d06f83eeb74422b3c97ef8aa7e345a577756d8fb418f54210158d5e"
+    },
+    {
+      "path": "src/deepresearch_harness/post_run_overlay.py",
+      "sha256": "50379e9292a548d56177a5ac1632a643e97e57a4769c194229bf2559fff3feca"
+    },
+    {
+      "path": "scripts/run_post_run_overlay_calibration.py",
+      "sha256": "8ff7271579742512beb5d82ea7b4047c26cda1760a7e26052440fa4f5e2a6b4a"
+    },
+    {
+      "path": "tests/test_post_run_overlay.py",
+      "sha256": "0a11d2d323d9115576586b1e41a81063583c278dad9b2dcc2f58d917419860f3"
+    },
+    {
+      "path": "src/deepresearch_harness/document_target_oracle.py",
+      "sha256": "456103a0bf95a452f620b6955b705c80f4d19838aee92114cad4c231b9d27b44"
+    },
+    {
+      "path": "src/deepresearch_harness/evidence_span_oracle.py",
+      "sha256": "f866a2fa76b0090df3bda6a7b77c0bad1e3d230fb4ed062c3e82de451e4b7998"
+    },
+    {
+      "path": "src/deepresearch_harness/providers.py",
+      "sha256": "7153e209ed6443f65e50d432536a609182abd1e4c0380e9e24467cc0f7e01b31"
+    },
+    {
+      "path": "src/deepresearch_harness/screening_judge.py",
+      "sha256": "29970b1837a61f8f8cc1a0a82c6c5e236d88768821e6b878b44726554288a8d6"
+    }
+  ],
+  "acceptance": {
+    "minimum_literal_supported_replacements": 3,
+    "minimum_normalized_exact_matches": 3,
+    "minimum_judge_correct": 3,
+    "maximum_proposal_parse_failures": 0,
+    "maximum_unsupported_replacements": 0,
+    "maximum_provider_cost_usd": 0.01
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "This second calibration was designed after inspecting overlay v0's two keeps and reuses the same four outcome-selected development failures. A pass demonstrates only that hiding the prior draft helps this known mechanism calibration. It does not estimate fresh or official accuracy, leaderboard rank, or model capability improvement."
+}

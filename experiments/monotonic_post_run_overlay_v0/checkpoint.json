@@ -1,0 +1,101 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "monotonic-post-run-overlay-v0",
+  "status": "closed",
+  "problem": "Four persistent baseline failures already disclosed an answer-bearing document, but fixed head previews hid the answer. The accepted target slate and section-aware selector solve document and span availability separately; the remaining question is whether a bounded verifier can repair the final answer without perturbing exploration or introducing unsupported replacements.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/section-anchored-span-selector-v0-20260816/span-oracle.json",
+      "sha256": "05c56994e4afbf1d47d645a18a989ed6130d278b605593c7fe2749ab0eb84eac"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/obligation-target-slate-v0-20260816/target-oracle.json",
+      "sha256": "a16f12beddfc3ca4032b7a01d6606d0782c49d09f9db2f421bab040f8d739a4e"
+    }
+  ],
+  "simplest_baseline": "Keep the completed v10 baseline answer unchanged. The rejected v14 alternative globally exposed an open tool during exploration and changed behavior even when no useful document was opened.",
+  "hypothesis": "A post-run overlay that leaves the baseline trace untouched, selects at most four already-disclosed documents, opens one deterministic section-aware span per target, and accepts a verifier's replacement only when the short answer is literally present in its cited span will produce at least three Judge-correct and strict-exact repairs among the four diagnosed failures with zero unsupported replacements.",
+  "changed_mechanisms": [
+    "bounded post-run evidence overlay with literal-support replacement gate"
+  ],
+  "anti_claim": "This is a paid, outcome-selected development calibration on known failures. It measures a frozen-model harness repair and cannot be reported as model capability improvement, fresh-slice accuracy, or leaderboard performance.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "lead-agent orchestration",
+        "sub-agent isolation"
+      ],
+      "current_gap": "Role expansion can alter the whole trajectory. The overlay is deliberately narrower: it repairs only an unresolved terminal claim from already-collected evidence and is forced to keep the baseline when support is absent.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "research workflow",
+        "final answer synthesis"
+      ],
+      "current_gap": "A full synthesis pass may rewrite supported content as well as errors. This overlay constrains the repair surface to a typed short answer with literal cited support.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "crawler agents",
+        "publisher"
+      ],
+      "current_gap": "The measured issue is evidence visibility after collection, so a bounded verifier before publishing is cheaper and more causally targeted than another crawl.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "planner-search graph",
+        "parallel WebSearcher"
+      ],
+      "current_gap": "Graph fan-out targets missing research branches. These cases have answer-bearing documents already, so the overlay pays only for verification of residual Evidence Debt.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "same four outcome-selected v10 baseline traces",
+    "baseline exploration, search calls, and answer remain immutable inputs",
+    "same no-gold target slate with at most four documents",
+    "same answer_obligation_window_v2 span selector and 2,000-character cap",
+    "one DeepSeek verifier call per case with at most 400 output tokens",
+    "replacement requires cited doc ownership and normalized literal support",
+    "same calibrated persistent Qwen3-32B BF16 development Judge",
+    "zero new search calls",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 4,
+    "maximum_provider_cost_usd": 0.01,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 400,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/monotonic-post-run-overlay-v0-20260816/summary.json",
+    "sha256": "d53f48b61d06f83eeb74422b3c97ef8aa7e345a577756d8fb418f54210158d5e"
+  },
+  "decision": "reject",
+  "next_action": "Do not retry the registered prompt. q579 and q552 repaired exactly, while q772 and q679 returned keep despite the prepared spans literally containing Secretary and ASCENT Project 10. Test one evidence-only extractor that removes the long baseline response from the verifier context; preserve the same target slate, spans, literal gate, provider model, and four-case grid.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "A pass authorizes a preregistered fresh development paired test with a separate Token-matched or cost-matched control. It does not authorize sealed holdout access or a benchmark-ranking claim."
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": "contrastive-bridge-oracle-spec-v0",
+  "status": "posthoc_not_preregistered",
+  "source_summary": {
+    "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/summary.json",
+    "sha256": "b76f4586d3076e5374cb3556f0a21b335a8426dd17a2a934ad0f7bc21bcd5181"
+  },
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13.gold.json",
+    "sha256": "4d020433cf5765aae7ae0613107c8dfcd6671733bacf1ee975333e1e5c132fc1"
+  },
+  "search_url": "http://127.0.0.1:8768/search",
+  "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64",
+  "max_search_results": 20,
+  "cases": [
+    {
+      "query_id": "896",
+      "bridge_type": "domain",
+      "bridge_terms": [
+        "architect"
+      ],
+      "query": "architect adopted partner dismissed practice knighthood",
+      "provenance": "manual_after_gold_inspection"
+    },
+    {
+      "query_id": "653",
+      "bridge_type": "geography",
+      "bridge_terms": [
+        "Kenyan"
+      ],
+      "query": "Kenyan runner one second Berlin Marathon foundation honor",
+      "provenance": "manual_after_gold_inspection"
+    },
+    {
+      "query_id": "85",
+      "bridge_type": "topic",
+      "bridge_terms": [
+        "Genghis Khan"
+      ],
+      "query": "John Man Genghis Khan 2014 book",
+      "provenance": "manual_after_gold_inspection"
+    }
+  ],
+  "claim_boundary": "These bridge terms were selected manually after inspecting gold-linked development failures. The replay is an oracle feasibility diagnostic only; it is not preregistered retrieval performance, end-to-end effectiveness, or a model-capability result."
+}

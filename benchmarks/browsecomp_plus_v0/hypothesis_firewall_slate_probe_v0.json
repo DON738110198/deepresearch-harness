@@ -1,0 +1,121 @@
+{
+  "schema_version": "hypothesis-firewall-slate-registration-v0",
+  "status": "registered_pre_provider",
+  "registered_at": "2026-08-15T23:21:55.1549176+08:00",
+  "purpose": "Prediction-bound calibration of a typed Hypothesis Firewall Slate against the rejected draft-blind candidate frontier on three saved open-debt development cases.",
+  "source_summary": {
+    "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/summary.json",
+    "sha256": "b76f4586d3076e5374cb3556f0a21b335a8426dd17a2a934ad0f7bc21bcd5181"
+  },
+  "case_sources": [
+    {
+      "query_id": "896",
+      "request": {
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/896/request.json",
+        "sha256": "ed37d54e0fd62a1159f28e62a6b13b76a3cd3ede32f0a57d4459d336caa87a5e"
+      },
+      "run": {
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/896/run.json",
+        "sha256": "d4541f9ea5356b3067eed70965298de17657c5ee39342b8298845d1095b2c36c"
+      }
+    },
+    {
+      "query_id": "653",
+      "request": {
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/653/request.json",
+        "sha256": "b0b13c3e62d366dda34479845f8960715576df1cd4c75423fbdab341518feaf7"
+      },
+      "run": {
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/653/run.json",
+        "sha256": "5adf0b47eb1a50ef973991197afb4a11bb49f207e7d61a8a1b9f09e1af37d9cd"
+      }
+    },
+    {
+      "query_id": "85",
+      "request": {
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/85/request.json",
+        "sha256": "a6eba474faf5078ae2353fa8d2d1b34fcad31db42cddc1a86151a6b890169b97"
+      },
+      "run": {
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/85/run.json",
+        "sha256": "612830f12f3f0368ab77d832b984146513bb45c93b91d8d5a496b2b3b4314c6b"
+      }
+    }
+  ],
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13.gold.json",
+    "sha256": "4d020433cf5765aae7ae0613107c8dfcd6671733bacf1ee975333e1e5c132fc1"
+  },
+  "baseline_replay": {
+    "path": "runs/browsecomp_plus_v0/counter-candidate-frontier-v0-20260815/replay-result.json",
+    "sha256": "844bb506790193e7c200a79d77d19d5e2dfad9ded5c0a7e111cac7a3d9c20789"
+  },
+  "oracle_replay": {
+    "path": "runs/browsecomp_plus_v0/contrastive-bridge-hypothesis-v0-20260815/oracle-replay.json",
+    "sha256": "42e03ba13527964a07bde91f82d9fedd56d11d344d9a4b50adcc00d39994c908"
+  },
+  "query_ids": [
+    "896",
+    "653",
+    "85"
+  ],
+  "fixed_contract": {
+    "model": "deepseek-v4-flash",
+    "thinking_mode": "disabled",
+    "system_prompt_policy": "OpenAICompatibleProvider fixed unsupported-facts guard",
+    "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64",
+    "search_url": "http://127.0.0.1:8768/search",
+    "context_fields": [
+      "question",
+      "unresolved_obligation",
+      "unverified_prior_subject"
+    ],
+    "forbidden_context_fields": [
+      "draft_answer",
+      "prior_exact_answer",
+      "prior_query",
+      "gold_docids"
+    ],
+    "anchors_per_case": 3,
+    "max_search_results": 20,
+    "max_planner_output_tokens": 320,
+    "provider_attempts_per_case": 1,
+    "search_calls_per_case": 3,
+    "sealed_holdout_access": "forbidden"
+  },
+  "frozen_artifacts": [
+    {
+      "path": "src/deepresearch_harness/hypothesis_firewall.py",
+      "sha256": "0d6ca45e812fd5a0f91d8278940c47285c2456e0c7ee5e7447d57647baecbc27"
+    },
+    {
+      "path": "scripts/run_hypothesis_firewall_probe.py",
+      "sha256": "b0ca907d792d459ae3a713f5739f8b6b7f1cfd9bf5df98dfb686a4341b6e1649"
+    },
+    {
+      "path": "tests/test_hypothesis_firewall.py",
+      "sha256": "5dfd2ae95ddaf3b8a0656bd11340742fef2eee8ad64c3cccaf2c379724927f1f"
+    },
+    {
+      "path": "src/deepresearch_harness/providers.py",
+      "sha256": "7153e209ed6443f65e50d432536a609182abd1e4c0380e9e24467cc0f7e01b31"
+    },
+    {
+      "path": "src/deepresearch_harness/counter_candidate_replay.py",
+      "sha256": "4f356045c2a5a9cbc47dccb91220eba2cd8cbfd1a2ff0529e9b170a5324d7bae"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+      "sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899"
+    }
+  ],
+  "acceptance": {
+    "minimum_candidate_gold_hit_cases": 2,
+    "minimum_gold_hit_case_delta": 2,
+    "parse_failures_must_equal": 0,
+    "provider_request_failures_must_equal": 0,
+    "search_failures_must_equal": 0,
+    "maximum_provider_cost_usd": 0.05
+  },
+  "claim_boundary": "These three outcome-selected cases, their prior subject hypotheses, and the post-hoc oracle were known before registration. Prompts expose the subject only as an unverified seed and exclude full drafts, prior exact answers, prior queries, and gold IDs. A pass supports only the typed firewall mechanism on saved failures, not end-to-end effectiveness, official accuracy, unseen generalization, leaderboard rank, or model-capability improvement."
+}

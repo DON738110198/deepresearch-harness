@@ -1,0 +1,61 @@
+{
+  "schema_version": "obligation-open-audit-registration-v0",
+  "status": "posthoc_registered_after_fresh_decision",
+  "registered_at": "2026-08-16T01:36:52.4210907+08:00",
+  "purpose": "Separate direct span-opening evidence from run-to-run model and search variation before any new mechanism or paid experiment is allowed.",
+  "paired_decision": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/paired-decision.json",
+    "sha256": "4f5d949efa7c1643d3cce71caa0d48076e0f53bd00a0efadff80e89d26775740"
+  },
+  "development_gold": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/candidate.gold.json",
+    "sha256": "a8083f74e82627472f315a0a37ee6d5aa5b155bb32d7b6578666bcc8714f46bf"
+  },
+  "baseline_run_root": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline",
+  "candidate_run_root": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/candidate",
+  "query_ids": [
+    "772",
+    "769",
+    "875",
+    "579",
+    "754",
+    "985",
+    "790",
+    "898",
+    "710",
+    "79",
+    "552",
+    "621",
+    "873",
+    "583",
+    "6",
+    "784",
+    "591",
+    "796",
+    "869",
+    "679",
+    "962",
+    "577",
+    "598",
+    "805",
+    "558"
+  ],
+  "frozen_artifacts": [
+    {
+      "path": "src/deepresearch_harness/obligation_open_audit.py",
+      "sha256": "c900d000344a49e9118d47cd15d201c4d19fd06a2ce8017d3c2904445bbb3142"
+    },
+    {
+      "path": "scripts/run_obligation_open_audit.py",
+      "sha256": "901cfd7298400fd58500b2ad2bfb463cde891e7e952731c2080a52bc3b1d755f"
+    },
+    {
+      "path": "tests/test_obligation_open_audit.py",
+      "sha256": "e0fdac4b5f9d7da3a50e382035b255a936c2d4b6bc0c3ae7275a12f457a9ed16"
+    }
+  ],
+  "provider_calls": 0,
+  "search_calls": 0,
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "This posthoc development audit uses known gold and paired outcomes. Literal answer coverage in an opened gold document can support a mechanism attribution for an individual improvement, but absence of an open on a regression only rules out that tool execution as its direct cause. It cannot establish causality for aggregate accuracy, replace no-change repeats, access sealed holdout, or support official, leaderboard, general-superiority, or model-capability claims."
+}

@@ -1,0 +1,111 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "hypothesis-firewall-slate-v0",
+  "status": "closed",
+  "problem": "B4 draft blindness removed harmful answer anchoring but discarded potentially useful partial hypotheses, while the exhaustive B5 replay proved that its three generated bridges contained no hidden gold-retrieving candidate. The immediate gap is generating answer-linked anchors without treating a prior subject guess as fact.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/draft-blind-counter-hypothesis-v0-20260815/probe-result.json",
+      "sha256": "8651c1ffe3f01faf9a7773a9c3917b7c4674312c6c14ed35d7a14f2c3e5ed454"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/counter-candidate-frontier-v0-20260815/replay-result.json",
+      "sha256": "844bb506790193e7c200a79d77d19d5e2dfad9ded5c0a7e111cac7a3d9c20789"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/contrastive-bridge-hypothesis-v0-20260815/oracle-replay.json",
+      "sha256": "42e03ba13527964a07bde91f82d9fedd56d11d344d9a4b50adcc00d39994c908"
+    }
+  ],
+  "simplest_baseline": "B4 is one draft-blind generation call followed by one self-selected search; B5 showed that searching all three B4 candidates still yields zero gold hits.",
+  "hypothesis": "A Hypothesis Firewall that exposes only the original question, deterministic obligation, and one explicitly unverified prior subject seed, while requiring one seed expansion plus two seed-independent counter-hypotheses and searching all three, will retrieve gold on at least two of three saved failures.",
+  "changed_mechanisms": [
+    "typed hypothesis firewall with one unverified seed and two mandatory counter-hypotheses"
+  ],
+  "anti_claim": "This is frozen-model context governance and retrieval routing. It is not training and must not be described as improving the underlying model's capability.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow 2.0",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "isolated scoped sub-agent context",
+        "structured sub-agent output",
+        "lead-controlled delegation"
+      ],
+      "current_gap": "The firewall borrows isolation and structured return, but adds an epistemic type boundary: the retained subject is explicitly unverified, exact answers are blocked, and two counter-hypotheses are mandatory rather than optional delegation.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "single research agent implementation",
+        "legacy supervisor-researcher comparison",
+        "research compression boundary"
+      ],
+      "current_gap": "The legacy multi-agent warning keeps role count out of the hypothesis. This loop changes only information exposure and counter-hypothesis structure inside one generation call.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "planner and execution agents",
+        "parallel crawlers",
+        "publisher synthesis"
+      ],
+      "current_gap": "GPT Researcher expands research questions into execution agents. The firewall uses one model call and exactly three fixed local searches only after answer-level evidence debt, so its cost and causal variable remain narrower.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "multi-query search graph",
+        "parallel WebSearcher execution",
+        "iterative graph expansion"
+      ],
+      "current_gap": "The three-query slate is a bounded debt-triggered frontier, not a general search graph. It must first pass saved failures and later a matched-budget unseen comparison before graph expansion is considered.",
+      "disposition": "benchmark_later"
+    }
+  ],
+  "frozen_controls": [
+    "deepseek-v4-flash with thinking disabled",
+    "same three outcome-selected open-debt development cases",
+    "prior exact answer, full draft, prior query, and gold IDs excluded from prompt",
+    "one unverified subject seed extracted from the frozen audit",
+    "one provider attempt and exactly three top-20 searches per case",
+    "same query-aware BM25-anchor plus Dense-lead retriever",
+    "no Writer or Judge during retrieval calibration"
+  ],
+  "budget": {
+    "maximum_development_queries": 3,
+    "maximum_provider_cost_usd": 0.05,
+    "maximum_search_calls_per_query": 3,
+    "maximum_output_tokens_per_query": 320,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "eligible",
+  "multi_agent_failure_triggers": [
+    "independent_branch_omission",
+    "single_context_interference"
+  ],
+  "multi_agent_comparison_contract": "B2 = current single-context Evidence Debt; B3 = fixed three parallel Researchers and remains unimplemented; B4 = rejected draft-blind single packet; B6 = one Hypothesis Firewall call returning a three-query slate. Lock model, retriever, corpus, total provider calls, search calls, Token and USD accounting before any unseen comparison.",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/hypothesis-firewall-slate-v0-20260815/probe-result.json",
+    "sha256": "5397969100246b793a5a4986e95cbf82647f1d982be3ca0745e85bd939c796a1"
+  },
+  "decision": "reject",
+  "next_action": "Do not integrate the firewall slate. Run a separately labeled, matched-input bridge-generation capability diagnostic with deepseek-v4-pro before spending more effort on prompt-only Flash mechanisms; any model change must remain separate from harness-effect claims.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge at http://127.0.0.1:18015/v1",
+    "query-aware progressive-disclosure retriever at http://127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "A calibration pass would support only the typed firewall mechanism on three known failures. It would not establish end-to-end effectiveness, unseen generalization, official accuracy, leaderboard rank, or model-capability improvement."
+}

@@ -1,0 +1,103 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "answer-first-selective-repair-v0",
+  "status": "closed",
+  "problem": "Pi v11 repaired all five outcome-selected cases, including all three prior improvements, corrected neither known regression, and preserved only one of three improvements; proactive LLM auditing was not selective.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/evidence-debt-search-reserve-v0-20260815/known-outcome-live-calibration-decision.json",
+      "sha256": "60cc16ce67cb45db0324c6a50664fa9f583b72773827c11e4d3c60bee5738e3e"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/evidence-debt-search-reserve-v0-20260815/offline-audit-calibration.json",
+      "sha256": "c25a35f0cd52943a42bddc8bbf35e43a712dc206eb4f95d296d4a2ac17fa8ebc"
+    }
+  ],
+  "simplest_baseline": "Pi v10 keeps all eight searches available to normal exploration and compiles one final answer without a repair phase.",
+  "hypothesis": "Compile a draft first, run the already-calibrated deterministic evidence-debt gate, and execute at most one repair only from unused search capacity; this should avoid proactive false repairs while preserving the same eight-search and 10000-output-token ceilings.",
+  "changed_mechanisms": [
+    "answer-first deterministic opportunistic repair"
+  ],
+  "anti_claim": "This is a harness stopping-and-repair policy under a frozen provider model; it is not training or a model capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow 2.0",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "lead-agent termination conditions",
+        "scoped sub-agent context",
+        "token attribution"
+      ],
+      "current_gap": "Delegation would add contexts and cost, while this failure is an over-eager verifier acting before a stable answer exists.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "research compression",
+        "separate final report boundary",
+        "Deep Research Bench evaluation"
+      ],
+      "current_gap": "Its explicit compression/report boundary supports auditing a concrete draft, but a multi-agent supervisor is not justified by the observed selectivity failure.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "planner-execution-publisher separation",
+        "parallel crawling",
+        "report synthesis"
+      ],
+      "current_gap": "Publisher-after-research is the useful boundary here; adding parallel execution does not solve false repair triggers.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "dynamic WebPlanner graph",
+        "multiple WebSearchers",
+        "hierarchical retrieval"
+      ],
+      "current_gap": "Dynamic graph expansion targets branch coverage, whereas the measured failure is answer-level repair selectivity and preservation.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "deepseek-v4-flash with high-thinking exploration",
+    "empty system prompt",
+    "query-aware BM25-anchor plus Dense-lead retriever",
+    "eight total search calls",
+    "10000 total output tokens",
+    "calibrated qwen3-32b-bf16 Judge"
+  ],
+  "budget": {
+    "maximum_development_queries": 10,
+    "maximum_provider_cost_usd": 1.0,
+    "maximum_search_calls_per_query": 8,
+    "maximum_output_tokens_per_query": 10000,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/answer-first-selective-repair-v0-20260815/known-outcome-live-calibration-decision.json",
+    "sha256": "205119bfee30e35b0f5d816940f6afa04c360d7944900dffab09d5a455457c5a"
+  },
+  "decision": "reject",
+  "next_action": "Open a new loop that stops exploration after seven searches, compiles and audits a draft, and leaves exactly one search for selective repair; do not run Pi v12 on a fresh development slice.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge at http://127.0.0.1:18015/v1",
+    "query-aware progressive-disclosure retriever at http://127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "The next five known cases remain outcome-selected calibration only. A new development slice is permitted only after its frozen gate passes."
+}

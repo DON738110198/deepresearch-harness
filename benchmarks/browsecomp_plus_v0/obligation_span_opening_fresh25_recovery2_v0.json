@@ -1,0 +1,270 @@
+{
+  "schema_version": "obligation-span-fresh-registration-v0",
+  "status": "registered_pre_generation",
+  "registered_at": "2026-08-16T02:52:58.3438522+08:00",
+  "purpose": "Second failed-only engineering recovery after the no-change repeat exposed the same out-of-order disclosure-state recording race in v10. This reference freezes the shared monotonic recorder for both arms; neither prior effectiveness gate can be rescued by the retry.",
+  "query_artifact": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/dev_queries_25.json",
+    "sha256": "18fbaaed14512f88d83f7b105c8a912463be742ceaa687296372fbe038b9bf45"
+  },
+  "query_ids": [
+    "772",
+    "769",
+    "875",
+    "579",
+    "754",
+    "985",
+    "790",
+    "898",
+    "710",
+    "79",
+    "552",
+    "621",
+    "873",
+    "583",
+    "6",
+    "784",
+    "591",
+    "796",
+    "869",
+    "679",
+    "962",
+    "577",
+    "598",
+    "805",
+    "558"
+  ],
+  "excluded_query_artifacts": [
+    {
+      "path": "runs/browsecomp_plus_v0/dev_queries_2_remaining.json",
+      "sha256": "78b6d93b89b36e2a5deb46abbf77b884d3173f563ac7bc939804fc839b79e305"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/dev_queries_25.json",
+      "sha256": "92b3f27a3b7ef3b36b34bc0180c5ec0323541a45140b0fd35180df7381e7ea31"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/dev_queries_5.json",
+      "sha256": "eee2338dca7f4d0f6a892c76e463a90d0189c4b1bdbb1f13912f6ea74be1bdcd"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/dev_queries_constraint_probe_5.json",
+      "sha256": "0d263fcb90308f8000700ee9085d4c96e274d6d7da2381b2274f5f7d3601c756"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/dev_query_1005.json",
+      "sha256": "5f0cfe2592bd80afc457afd7be51b29a76e0fa6f3e49480bb4346fc13fb764b6"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/baseline_profile_v0_20260814/dev_queries.json",
+      "sha256": "31b614968d7d8e41b5201559523280e272e505037db037ed118546c9710d3f3e"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/dense_confirmation_v1_20260814/dev_queries.json",
+      "sha256": "d9e62ecd4914ee3c313dd144a5c78db29f4a899fc44cb07f2bad510966981072"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/evidence-debt-search-reserve-v0-20260815/known_outcome_queries_5.json",
+      "sha256": "a92a39360ce79e6fbc91e94fbd71d689d42e4c5ae87b8bf013527d605358e232"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/evidence_bandwidth_v0_20260814/dev_queries.json",
+      "sha256": "c3e06527a0109f278a1fb50a4e5a400ae08fed93c961ac4ffbcaff0bd7fbfd4d"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/obligation-span-opening-v0-20260816/known5_queries.json",
+      "sha256": "4cdd88d3401075eb79cc19d4648525b9e6c4af717004ef63edc22a114fb3d125"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/progressive-disclosure-v0-20260814/dev_queries_5.json",
+      "sha256": "38fa2b66eb77f9f74421955846ab4fdf9a1956cf48144a7fda312669f0c1f265"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/dev_queries_25.json",
+      "sha256": "3bb3774038bbe6a1bd946c3323c82e2c783e295935333259b41ef8346064235f"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/query-aware-preview-v0-20260815/dev_queries_5.json",
+      "sha256": "b352e79ae68bf311a1606a5ec16e22c93209a7d8657567472bfc9efbc316ae91"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/tool-loop-governor-v0-20260815/dev_queries_5.json",
+      "sha256": "49b200f5a9a6e504a612dbf8e051ed29eca0855536b7360143fb3824c39d5c02"
+    }
+  ],
+  "selection_prefix": "obligation-span-fresh25-v0",
+  "variants": [
+    {
+      "name": "baseline",
+      "adapter_version": "pi-browsecomp-v10",
+      "adapter_runner": {
+        "path": "integrations/pi-browsecomp/v10/runner.mjs",
+        "sha256": "43b10799055d9d4be87dc30d0477724d34a5cd22bd484d70e5b3bba4f2997024"
+      },
+      "search_url": "http://127.0.0.1:8768/search",
+      "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64"
+    },
+    {
+      "name": "candidate",
+      "adapter_version": "pi-browsecomp-v14",
+      "adapter_runner": {
+        "path": "integrations/pi-browsecomp/v14/runner.mjs",
+        "sha256": "d34a3c2236eb488d04d035e5f00a023952bbafcd136757ca26e173fc492c38c3"
+      },
+      "search_url": "http://127.0.0.1:8769/search",
+      "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64-anchor-reopen-answer_obligation_window_v0"
+    }
+  ],
+  "fixed_contract": {
+    "target_manifest": {
+      "path": "benchmarks/browsecomp_plus_v0/target_manifest.json",
+      "sha256": "dad4e291d9bf1223cd2e4e56067948883736b6a8732d29b57cc06a03d1b140c0"
+    },
+    "query_partitions": {
+      "path": "benchmarks/browsecomp_plus_v0/query_partitions.json",
+      "sha256": "8aa00956930382d893a6e115068f5a999cbc3dc66d96d8a583b5560856db8eb9"
+    },
+    "query_partitions_normalized_sha256": "ceeeca92afe139eec757aa70f4e7c22a1ea272735b31d8e3262ce0324ef00b83",
+    "query_artifact_normalized_sha256": "536960730e4747224ccd20dee60cf0398fad33ee45df07f98a4bdd3c01a6870d",
+    "model": "deepseek-v4-flash",
+    "model_parameters": "frozen API model; no training",
+    "thinking_level": "high",
+    "compilation_thinking_level": "off",
+    "control_policy": "answer_reserve_nonthinking_v0",
+    "system_prompt_policy": "empty",
+    "retriever_manifest": {
+      "path": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+      "sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899"
+    },
+    "anchor_count": 5,
+    "dense_lead_count": 15,
+    "anchor_token_cap": 512,
+    "dense_lead_token_cap": 64,
+    "maximum_search_calls": 8,
+    "maximum_open_calls": 8,
+    "open_token_cap": 512,
+    "total_evidence_ingress_token_budget": 33280,
+    "open_evidence_ingress_token_budget": 4096,
+    "max_search_results": 20,
+    "maximum_output_tokens": 10000,
+    "maximum_iterations": 100,
+    "provider_attempts_per_case": 2,
+    "judge_url": "http://127.0.0.1:18015/v1",
+    "judge_served_model": "qwen3-32b-bf16-judge",
+    "judge_artifacts": [
+      {
+        "path": "benchmarks/browsecomp_plus_v0/persistent_bf16_judge_v0.json",
+        "sha256": "7d27f8e9739dc60ced49ee72cfe3191f36ef485403a4fd24539c932ceaf7277f"
+      },
+      {
+        "path": "runs/browsecomp_plus_v0/persistent_judge/qwen3-32b-bf16-service-calibration-20260814/calibration.json",
+        "sha256": "ad68bf0cfcf2081e31135f75f3e7909117e59828c76553dc3cf8cf21b67c5be3"
+      },
+      {
+        "path": "runs/browsecomp_plus_v0/persistent_judge/qwen3-32b-bf16-service-calibration-20260814/evaluation/screening_result.json",
+        "sha256": "db4721717d36cdb9abeefc2052cceac1084034d2b9f8cc1cac66b76e06380134"
+      },
+      {
+        "path": "runs/browsecomp_plus_v0/official_judge/flash-v6-dense25-paired3-preregistered-v2-20260814-comparison.json",
+        "sha256": "0f3157e47b477018a5d8962fbd827ad166a41c7a7ffae50e6df06cf7f7c65ff9"
+      },
+      {
+        "path": "runs/services/qwen3-32b-bf16-gpu1-2-20260814/service_registration.json",
+        "sha256": "20056f365b94edb16bce532dec90c2f78ac3dd6d5af82b38654894c9bcc722f8"
+      },
+      {
+        "path": "runs/browsecomp_plus_v0/official_judge/judge_asset_verification.json",
+        "sha256": "f919e78fe5e8346aa84432616cbbec8bc32588387eebd18ce7d893c919215719"
+      }
+    ],
+    "sealed_holdout_access": "forbidden"
+  },
+  "frozen_artifacts": [
+    {
+      "path": "src/deepresearch_harness/progressive_disclosure.py",
+      "sha256": "6ec1dc431b4622ca8adeeabf04e868f42d7104d04f46b851e0c8b8463bdff3ca"
+    },
+    {
+      "path": "src/deepresearch_harness/progressive_disclosure_server.py",
+      "sha256": "5e99582cfa2775e6341545d2f1d73aa58746d2dd63544919f9540d0e76f619fb"
+    },
+    {
+      "path": "src/deepresearch_harness/browsecomp_plus.py",
+      "sha256": "3539f0c27fb38f0c02e75b0d7fc728f4ada6e1a1c43f62d89413e65958e1b80a"
+    },
+    {
+      "path": "src/deepresearch_harness/pi_browsecomp.py",
+      "sha256": "07b421c52f165aebe53c6bd9777d8f2f185aff8842d7e2caa82c9e19c2a0aacc"
+    },
+    {
+      "path": "src/deepresearch_harness/obligation_span_fresh.py",
+      "sha256": "0ba6235f1756c6ce5f81b5fd9855c9b072e7a3c49155d49fcd6863beab058479"
+    },
+    {
+      "path": "scripts/decide_obligation_span_fresh.py",
+      "sha256": "e9580322ca7abfbe32512c201dffa8fe55f98a4f3f039d95f2dcd8dfdb39f5a1"
+    },
+    {
+      "path": "tests/test_obligation_span_fresh.py",
+      "sha256": "1e6d2b54f7cf4ad05cb579296fb3bf89ae230689bb280440f50409cfe6adfe0d"
+    },
+    {
+      "path": "tests/test_progressive_disclosure.py",
+      "sha256": "1e23b7dc6f707dbc0a41d8299b7aa62966d7909b038a04e7327759f6961c3ba8"
+    },
+    {
+      "path": "tests/test_progressive_disclosure_server.py",
+      "sha256": "5a226a8b7e6487337e51b54c5f49e42f2a23e832cc9a3e73c688c86a3c5bce76"
+    },
+    {
+      "path": "integrations/pi-browsecomp/v10/contract.mjs",
+      "sha256": "953aee4dff05d2a5036d6b57ea8259a9a56f80a4301232563654b5bf3bf220e8"
+    },
+    {
+      "path": "integrations/pi-browsecomp/v10/contract.test.mjs",
+      "sha256": "8313456c047350444c1ea7cc9bc85d14b037163b513c1b3c11dc34e9409fa6d4"
+    },
+    {
+      "path": "integrations/pi-browsecomp/v14/contract.mjs",
+      "sha256": "9a50c2ebade789e90c7aa1625db61faa719b6af40772ca1c3e857b0a3ccee2e5"
+    },
+    {
+      "path": "integrations/pi-browsecomp/v14/contract.test.mjs",
+      "sha256": "4ed523341a4749975af6b0adc52a6bf59878a4ff65ff8c46a1fce30d5dafc33a"
+    }
+  ],
+  "acceptance": {
+    "query_count_must_equal": 25,
+    "schema_complete_must_equal": 25,
+    "generation_failures_must_equal": 0,
+    "output_budget_overshoot_must_equal": 0,
+    "judge_parse_failures_must_equal": 0,
+    "judge_request_failures_must_equal": 0,
+    "minimum_judge_correct_delta": 1,
+    "minimum_normalized_exact_delta": 0,
+    "minimum_evidence_recall_delta_pp": -1.0,
+    "minimum_candidate_successful_open_cases": 1,
+    "maximum_total_token_ratio": 1.15,
+    "maximum_provider_cost_ratio": 1.25,
+    "maximum_combined_recorded_provider_cost_usd": 1.0
+  },
+  "recovery": {
+    "reason": "post_provider_trace_validation_failure",
+    "original_registration": {
+      "path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_fresh25_recovery_v0.json",
+      "sha256": "fef6e8719c718b1a12e0a780c96bb8c64370c472c124e43a35c9022583ca53b6"
+    },
+    "failed_summary": {
+      "path": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-3-baseline-trace-validation-failure-attempt1/summary.json",
+      "sha256": "f5be7736b11bf6f2c5b4320dfabf1b1e2369beb31ffdcb393ab3703713c1fdb5"
+    },
+    "failed_query_ids": [
+      "769"
+    ],
+    "known_unobservable_provider_attempts": 2,
+    "maximum_additional_attempts_per_failed_query": 1,
+    "effectiveness_gate_already_failed": true
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "The fresh-development gate and the original no-change repeat protocol are already failed. A second post-provider trace-validation failure showed that v10 shared v14's out-of-order state recorder; both adapters now use the same tested monotonic recorder. The two failed paid attempts have unobservable cost and must never be counted as zero. A failed-only retry can complete diagnostics but cannot change either prior gate. The model remains frozen, the Qwen Judge is not official, and no result establishes leaderboard standing, general framework superiority, or model-capability improvement."
+}

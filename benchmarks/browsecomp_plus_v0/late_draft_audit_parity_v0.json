@@ -1,0 +1,68 @@
+{
+  "schema_version": "browsecomp-plus-answer-first-audit-parity-registration-v0",
+  "status": "registered_before_calibration_execution",
+  "registered_at": "2026-08-15T22:20:02.3071458+08:00",
+  "purpose": "Verify that the JavaScript audit embedded in Pi v13 preserves the accepted zero-call trigger behavior before testing its seven-search exploration boundary.",
+  "selection": {
+    "status": "outcome_selected_bad_case_calibration",
+    "source_decision_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-decision.json",
+    "source_decision_sha256": "4951c6eae999caf2f670e44ec59a16bcef5050bd94a40f89a50e554cb8c4bf26",
+    "claim_use": "implementation parity only; forbidden as benchmark effectiveness evidence"
+  },
+  "implementation": {
+    "contract_path": "integrations/pi-browsecomp/v13/contract.mjs",
+    "contract_sha256": "6ef2c2d0fcc23fd0100653b876b3f447fa2a539080edd6d29d00aeb9a17e85af",
+    "runner_path": "scripts/run_answer_first_audit_parity.mjs",
+    "runner_sha256": "85f4e0024d2ef83aed4c5ca74988b541d1818badb66fdc60730938dcd12ad81d",
+    "policy_sha256": "1ce01463cc48e3991825d3479965c6d51cb62d1bec41bcda7f70a68d4ac5d3a8",
+    "maximum_repair_queries": 1,
+    "provider_calls_must_equal": 0,
+    "search_calls_must_equal": 0
+  },
+  "cases": [
+    {
+      "query_id": "896",
+      "paired_outcome": "candidate_regression",
+      "expected_repair_trigger": true,
+      "run_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate/896/run.json",
+      "run_sha256": "47c0bf5b0283a140087043b176fd4d88d0036b4fb4454973dc14440b78e27461"
+    },
+    {
+      "query_id": "653",
+      "paired_outcome": "candidate_regression",
+      "expected_repair_trigger": true,
+      "run_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate/653/run.json",
+      "run_sha256": "bc2e2a04b2a5072c27557b882317be603ad6ca40ff26aa7ca8ddbfc2cc04c8df"
+    },
+    {
+      "query_id": "85",
+      "paired_outcome": "candidate_improvement",
+      "expected_repair_trigger": false,
+      "run_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate/85/run.json",
+      "run_sha256": "7c78355a4b15a0babce0abe18f2d453d1203e845b67e03b2badb80cab4358986"
+    },
+    {
+      "query_id": "78",
+      "paired_outcome": "candidate_improvement",
+      "expected_repair_trigger": false,
+      "run_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate/78/run.json",
+      "run_sha256": "8ecf170b823aebb701a601a50da03557a074310f2580ae046620866e58489f06"
+    },
+    {
+      "query_id": "987",
+      "paired_outcome": "candidate_improvement",
+      "expected_repair_trigger": false,
+      "run_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate/987/run.json",
+      "run_sha256": "d01d2f9b6b9f332660e6787ca4f2dd633eabdaa254c746df90013ca22192811e"
+    }
+  ],
+  "acceptance": {
+    "regression_trigger_recall_must_equal": 1.0,
+    "improvement_false_trigger_count_must_equal": 0,
+    "provider_calls_must_equal": 0,
+    "search_calls_must_equal": 0,
+    "maximum_repair_queries_per_open_case": 1
+  },
+  "routing_rule": "Pass permits the five-case outcome-selected Pi v13 live calibration. Failure rejects Pi v13 before any provider call.",
+  "claim_boundary": "Known-outcome saved-trace implementation parity only; no benchmark effectiveness claim."
+}

@@ -1,0 +1,52 @@
+{
+  "schema_version": "obligation-span-repeat-execution-audit-registration-v0",
+  "status": "registered_post_failure_for_integrity_audit",
+  "registered_at": "2026-08-16T03:11:33.6103972+08:00",
+  "purpose": "Preserve the failed repeat execution as an integrity incident, verify the raw tool-failure signature without any provider or Judge call, and forbid interpreting the invalid arm as model effectiveness.",
+  "original_repeat_registration": {
+    "path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_repeats_v0.json",
+    "sha256": "d03fee4419cb999e69dd3014f9eeeb99a172954e23b7e9fa00b6de3a0a0f0c64"
+  },
+  "recovery_registration": {
+    "path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_repeats_recovery_v0.json",
+    "sha256": "3e089e95b2a2eb4983d2ed4c8098691e43462a771c972147ad75a58b2e5d6ab6"
+  },
+  "invalid_arm_summary": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-3-candidate/summary.json",
+    "sha256": "4d3d34aa0b0d6ec70fdf5090eded53c8d4f91be6f31e9fccdb259a4a212c03aa"
+  },
+  "invalid_arm_diagnostic": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-3-candidate.diagnostic.json",
+    "sha256": "a4a2145f631865783d3e617e10a834d236da88e9c745b44f1b37b37aa975c3fb"
+  },
+  "failed_baseline_attempt_summary": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-3-baseline-trace-validation-failure-attempt1/summary.json",
+    "sha256": "f5be7736b11bf6f2c5b4320dfabf1b1e2369beb31ffdcb393ab3703713c1fdb5"
+  },
+  "invalid_arm": "trial-3-candidate",
+  "invalid_arm_run_root": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-3-candidate",
+  "search_url": "http://127.0.0.1:8769/search",
+  "expected_retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64-anchor-reopen-answer_obligation_window_v0",
+  "expected_query_count": 25,
+  "expected_total_search_calls": 200,
+  "expected_transport_failure_calls": 200,
+  "expected_invalid_arm_recorded_cost_usd": 0.0181841464,
+  "known_unobservable_provider_attempts": 2,
+  "provider_attempt_policy_violations": 1,
+  "frozen_artifacts": [
+    {
+      "path": "src/deepresearch_harness/repeat_execution_audit.py",
+      "sha256": "1101d805722dab917ea26b50cb3a393f0cb9215f3104f787dd26195cced248bb"
+    },
+    {
+      "path": "scripts/audit_obligation_span_repeat_execution.py",
+      "sha256": "828a4292231fbd7d46cb9cd67cbec2bf17c7e00bc3a24861b10827b91e5160ab"
+    },
+    {
+      "path": "tests/test_repeat_execution_audit.py",
+      "sha256": "cc7f8de468f1960ae61985d48ec02d7b43216e446a25b0c350d77d09a1f9e01e"
+    }
+  ],
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "This post-failure audit makes no provider or Judge call and accesses no sealed holdout. The trial-3 candidate arm is an invalid execution artifact caused by an unavailable search service, not a zero-scoring model or harness result. Recorded cost is a lower bound because two earlier post-provider validation failures have unobservable cost."
+}

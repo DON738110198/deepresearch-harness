@@ -19,6 +19,7 @@ from .browsecomp_plus import (
     load_pi_browsecomp_run,
     normalized_text_file_sha256,
 )
+from .tool_health import SearchServiceUnavailable, require_search_service_health
 
 
 class StrictContract(BaseModel):
@@ -438,6 +439,29 @@ def audit_pi_failed_resume(
     )
 
 
+def _run_adapter_after_search_preflight(
+    *,
+    search_url: str,
+    retriever_id: str,
+    command: list[str],
+    adapter_dir: Path,
+    timeout_seconds: int,
+) -> subprocess.CompletedProcess[str]:
+    require_search_service_health(
+        search_url,
+        expected_retriever_id=retriever_id,
+    )
+    return subprocess.run(
+        command,
+        cwd=adapter_dir,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=timeout_seconds,
+        check=False,
+    )
+
+
 def run_pi_unscored_smoke(
     *,
     manifest_path: Path,
@@ -546,6 +570,7 @@ def run_pi_unscored_smoke(
         )
 
     items: list[PiSmokeItem] = []
+    batch_abort_reason: str | None = None
 
     for query in queries.queries:
         query_root = output_dir / _safe_id(query.query_id)
@@ -606,14 +631,20 @@ def run_pi_unscored_smoke(
         )
         _atomic_write(request_path, json.dumps(request, indent=2, ensure_ascii=False))
         try:
-            completed = subprocess.run(
-                [str(node_executable.resolve()), str(runner_path), str(request_path.resolve())],
-                cwd=adapter_dir,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=timeout_seconds,
-                check=False,
+            if batch_abort_reason is not None:
+                raise SearchServiceUnavailable(
+                    f"batch_aborted_after_{batch_abort_reason}"
+                )
+            completed = _run_adapter_after_search_preflight(
+                search_url=search_url,
+                retriever_id=retriever_id,
+                command=[
+                    str(node_executable.resolve()),
+                    str(runner_path),
+                    str(request_path.resolve()),
+                ],
+                adapter_dir=adapter_dir,
+                timeout_seconds=timeout_seconds,
             )
             if completed.returncode != 0:
                 raise RuntimeError(_redact(completed.stderr.strip()))
@@ -627,8 +658,12 @@ def run_pi_unscored_smoke(
             _atomic_write(run_path, completed.stdout)
             run_bytes = run_path.read_bytes()
             current_item = _summarize_run(run, run_path, run_bytes)
+            if run.stop_reason.startswith("tool_call_failures:"):
+                batch_abort_reason = run.stop_reason
         except Exception as error:
             detail = _redact(str(error))[:4000]
+            if isinstance(error, SearchServiceUnavailable):
+                batch_abort_reason = detail
             error_path = query_dir / "error.json"
             _atomic_write(
                 error_path,

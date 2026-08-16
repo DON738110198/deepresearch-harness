@@ -1,0 +1,98 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "obligation-grounded-repair-query-v0",
+  "status": "closed",
+  "problem": "Pi v13 reserved a final search and opened both known regressions, but its repair queries copied an unsupported exact answer or even a refusal sentence instead of the unresolved question constraint. Both regressions stayed wrong, one known improvement was unnecessarily repaired, and only one of three known improvements survived.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-live-calibration-decision.json",
+      "sha256": "b5d0486eb105a1b25a444a28f8fc2febe76467d2168bd614a16e1189b1dd2671"
+    }
+  ],
+  "simplest_baseline": "Pi v13 deterministically searches the extracted exact answer plus a generic biography suffix, or the first relation terms for a year answer.",
+  "hypothesis": "A schema-constrained non-thinking query planner that sees the original question, unsupported draft, typed audit reasons, and failed repair query will produce one obligation-grounded counter-query whose top-20 retrieval contains gold evidence on at least two of the three open calibration cases, without changing the retriever or search budget.",
+  "changed_mechanisms": [
+    "schema-constrained obligation-grounded repair-query planner"
+  ],
+  "anti_claim": "This is a frozen-model harness query-allocation experiment, not training and not a model-capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow 2.0",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "failure replay workbench",
+        "scoped sub-agent termination conditions",
+        "per-step token attribution"
+      ],
+      "current_gap": "DeerFlow exposes broad failure replay and dynamic delegation; this loop isolates one saved late-stage evidence obligation and measures whether exactly one replacement query changes retrieval before rerunning synthesis.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "separate research and compression models",
+        "final report boundary",
+        "Deep Research Bench export and cost reporting"
+      ],
+      "current_gap": "Its phase separation supports a dedicated repair-planning boundary, while its official README does not make claim-level failed-query replay the evaluation unit.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "planner-generated research questions",
+        "crawler execution agents",
+        "publisher aggregation"
+      ],
+      "current_gap": "Its planner improves broad coverage; the measured failure is narrower: transform one typed unsupported answer obligation into one auditable replacement query under the same search cap.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "simultaneous multi-query search",
+        "asynchronous agent execution",
+        "search-engine abstraction"
+      ],
+      "current_gap": "Parallel query expansion could hide a weak query by spending more searches; this loop first requires one replacement query to beat the saved failed query at identical top-20 retrieval cost.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "deepseek-v4-flash with thinking disabled for repair-query planning",
+    "query-aware BM25-anchor plus Dense-lead retriever",
+    "one top-20 retrieval per calibration case",
+    "saved v13 question, draft audit, and failed repair query",
+    "no answer synthesis during retrieval calibration"
+  ],
+  "budget": {
+    "maximum_development_queries": 3,
+    "maximum_provider_cost_usd": 0.05,
+    "maximum_search_calls_per_query": 1,
+    "maximum_output_tokens_per_query": 256,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/obligation-grounded-repair-query-v0-20260815/probe-recovery-result.json",
+    "sha256": "5e41c7e4e002640ddfa7867032a2daef578e3e60be01334a5b5e8f853949d975"
+  },
+  "decision": "reject",
+  "next_action": "Start a new bridge-hypothesis loop: first preserve a post-hoc oracle showing whether one missing domain, geography, or topic bridge can make the frozen retriever hit gold, then test forced contrastive hypotheses rather than another unconstrained query rewrite.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge at http://127.0.0.1:18015/v1",
+    "query-aware progressive-disclosure retriever at http://127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "The three cases and their gold evidence were observed before this loop. They can calibrate query mechanics only and cannot support effectiveness, leaderboard, or model-capability claims."
+}

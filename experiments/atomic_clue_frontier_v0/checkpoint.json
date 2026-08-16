@@ -1,0 +1,108 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "atomic-clue-frontier-v0",
+  "status": "closed",
+  "problem": "Flash and Pro both failed to reliably hallucinate the missing bridge from the full clue conjunction, while the fixed retriever is known to hit gold once the correct bridge vocabulary is present. The simpler unresolved question is whether the original surface clues can retrieve gold when searched atomically instead of being compressed into one overconstrained query.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/hypothesis-firewall-slate-v0-20260815/probe-result.json",
+      "sha256": "5397969100246b793a5a4986e95cbf82647f1d982be3ca0745e85bd939c796a1"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/bridge-generator-model-gate-v0-20260815/probe-result.json",
+      "sha256": "fb883fcdec536f0543e81b23c54fd83f47fad550c793b7daf6e1fd9f861f2915"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/contrastive-bridge-hypothesis-v0-20260815/oracle-replay.json",
+      "sha256": "42e03ba13527964a07bde91f82d9fedd56d11d344d9a4b50adcc00d39994c908"
+    }
+  ],
+  "simplest_baseline": "Split each frozen question into its declarative clue sentences, exclude the answer request, and search every remaining sentence once with the unchanged retriever. Do not call an LLM or synthesize a bridge yet.",
+  "hypothesis": "Atomic sentence-level clue queries will retrieve at least one gold document on at least two of the three saved failures. A pass identifies query conjunction as the retrieval bottleneck; a failure means a later corpus-grounded synthesis stage must learn from near-miss snippets rather than expect direct recall.",
+  "changed_mechanisms": [
+    "deterministic atomic clue frontier instead of one conjunction query"
+  ],
+  "anti_claim": "This is a local retrieval diagnostic on known failures, not an end-to-end effectiveness result, training result, or model-capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow 2.0",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "lead decomposition and delegation",
+        "isolated research contexts",
+        "structured sub-agent results"
+      ],
+      "current_gap": "DeerFlow can delegate clue branches, but this loop first measures whether deterministic clue decomposition alone recovers evidence. No agent is needed to answer that causal question.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "iterative research queries",
+        "single research agent loop",
+        "research compression"
+      ],
+      "current_gap": "The atomic frontier tests only query decomposition and excludes iterative synthesis, keeping the smallest mechanism that can explain the observed retrieval miss.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "research-question decomposition",
+        "parallel crawlers",
+        "publisher synthesis"
+      ],
+      "current_gap": "This is the non-agent lower bound for research-question decomposition. Crawlers and publisher stages remain unnecessary until the frontier produces useful evidence.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "multi-query search graph",
+        "parallel WebSearchers",
+        "iterative graph expansion"
+      ],
+      "current_gap": "The frontier is a fixed one-depth graph generated without an LLM. It tests the simplest part of MindSearch-style decomposition before any asynchronous or iterative expansion.",
+      "disposition": "benchmark_later"
+    }
+  ],
+  "frozen_controls": [
+    "same three saved open-debt development cases",
+    "frozen original request questions",
+    "deterministic sentence splitter and answer-request filter",
+    "source-order queries with no gold-informed editing",
+    "maximum six top-20 searches per case",
+    "same query-aware BM25-anchor plus Dense-lead retriever",
+    "no provider, Writer, or Judge calls"
+  ],
+  "budget": {
+    "maximum_development_queries": 3,
+    "maximum_provider_cost_usd": 0.000001,
+    "maximum_search_calls_per_query": 6,
+    "maximum_output_tokens_per_query": 1,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/atomic-clue-frontier-v0-20260815/frontier-result.json",
+    "sha256": "3a681e252f2a6ba3ad09154630ad937c612b11adbc2cedb2b76e0beb12468ad7"
+  },
+  "decision": "reject",
+  "next_action": "Do not integrate sentence search as direct retrieval. Open a bounded Corpus-Grounded Bridge Induction loop that exposes a frozen top-k near-miss packet per clue to Pro, returns three structured bridge queries, and measures incremental gold recall under the total search budget.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge at http://127.0.0.1:18015/v1",
+    "query-aware progressive-disclosure retriever at http://127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "This loop can localize overconjunction versus missing-vocabulary failure on three known cases only. It cannot support end-to-end, unseen, official accuracy, leaderboard, training, or model-capability claims."
+}

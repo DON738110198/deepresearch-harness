@@ -1,0 +1,98 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "contrastive-bridge-hypothesis-v0",
+  "status": "closed",
+  "problem": "The obligation-grounded query planner produced valid queries and identified the requested fields, but all three queries only recombined words already present in the question or draft and retrieved zero gold documents. Post-hoc local probes indicate that one missing domain, geography, or topic bridge can make the unchanged retriever surface gold evidence.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/obligation-grounded-repair-query-v0-20260815/probe-recovery-result.json",
+      "sha256": "5e41c7e4e002640ddfa7867032a2daef578e3e60be01334a5b5e8f853949d975"
+    }
+  ],
+  "simplest_baseline": "The rejected planner emits one constraint-recombination query directly from the question, draft, audit reason, and prior failed query.",
+  "hypothesis": "Forcing three typed, mutually distinct bridge hypotheses before selecting one query, and requiring the selected bridge to add at least one term absent from the question and failed query, will yield top-20 gold evidence on at least two of three saved open-debt cases with the same single-search budget.",
+  "changed_mechanisms": [
+    "typed contrastive bridge hypotheses before repair-query selection"
+  ],
+  "anti_claim": "This is frozen-model harness inference-time hypothesis routing, not training and not a model-capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow 2.0",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "fewest-useful sub-agent policy",
+        "isolated scoped contexts",
+        "structured sub-agent results"
+      ],
+      "current_gap": "DeerFlow can delegate alternative research scopes, but the measured need is cheaper than another context: expose and rank alternative bridge concepts before spending the one reserved search.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "separate research and compression stages",
+        "configurable research model",
+        "legacy multi-agent comparison"
+      ],
+      "current_gap": "Its stage separation motivates an explicit planner boundary, while the lower-performing legacy multi-agent implementation reinforces testing a bounded hypothesis contract before adding researchers.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "planner-generated research questions",
+        "parallel crawler agents",
+        "source-tracked summaries"
+      ],
+      "current_gap": "GPT Researcher broadens coverage by executing many questions; this loop asks whether competing latent bridge hypotheses can improve one already-budgeted query without another crawler.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "simultaneous multi-query search",
+        "asynchronous execution",
+        "multiple search-engine backends"
+      ],
+      "current_gap": "MindSearch spends searches across simultaneous queries. The proposed contract represents those alternatives first, records why one wins, and executes only one under the frozen cap.",
+      "disposition": "benchmark_later"
+    }
+  ],
+  "frozen_controls": [
+    "deepseek-v4-flash with thinking disabled",
+    "same three saved open-debt development cases",
+    "query-aware BM25-anchor plus Dense-lead retriever",
+    "one top-20 retrieval per case",
+    "no synthesis or Judge during retrieval calibration"
+  ],
+  "budget": {
+    "maximum_development_queries": 3,
+    "maximum_provider_cost_usd": 0.05,
+    "maximum_search_calls_per_query": 1,
+    "maximum_output_tokens_per_query": 256,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/contrastive-bridge-hypothesis-v0-20260815/probe-result.json",
+    "sha256": "3acf27f1dfa75d699a67640eb9740d15a030c203809e8c873cf22aa66ded3f06"
+  },
+  "decision": "reject",
+  "next_action": "Open a bounded B4 loop for one Evidence-Debt-triggered, draft-blind Counter-Hypothesis packet; compare it with the current single-context planner while keeping B3 fixed parallel researchers as an unimplemented control.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge at http://127.0.0.1:18015/v1",
+    "query-aware progressive-disclosure retriever at http://127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "All three cases and bridge examples are outcome-selected development diagnostics. Only a later preregistered unseen slice can support an effectiveness claim."
+}

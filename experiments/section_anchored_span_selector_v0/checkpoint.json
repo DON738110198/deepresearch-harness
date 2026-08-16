@@ -1,0 +1,100 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "section-anchored-span-selector-v0",
+  "status": "closed",
+  "problem": "The rejected answer-obligation compiler v1 correctly extracts q679's request for a project named in the acknowledgments section, but the generic overlap scorer still selects an author-biography window. The literal answer occurs in the already-retrieved document under an ACKNOWLEDGMENT heading.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/answer-obligation-compiler-v1-20260816/span-oracle.json",
+      "sha256": "5d0b9625ef1d960529f2114329c629ff2150302e1b2e092c68fd870dc31c4c7b"
+    },
+    {
+      "path": "experiments/answer_obligation_compiler_v1/checkpoint.json",
+      "sha256": "b02022a266f2b010b28f2398b109356119269c6ddfeb254d75b16af49a7cb99b"
+    }
+  ],
+  "simplest_baseline": "Keep answer_obligation_window_v1: compile the intended answer clause, then rank every fixed-size window only by obligation and whole-question term overlap.",
+  "hypothesis": "When the compiled obligation explicitly names a document section, ranking windows that contain a normalized alias of that section before generic term overlap will preserve the three v1 hits and expose q679's answer, with no provider, search, or Judge call.",
+  "changed_mechanisms": [
+    "deterministic section-anchor priority in fixed-size evidence-window ranking"
+  ],
+  "anti_claim": "This is an outcome-selected, gold-aware development calibration. It tests evidence visibility inside already-retrieved gold documents and does not improve the frozen model or establish end-to-end benchmark gains.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "lead-agent decomposition",
+        "isolated sub-agent context"
+      ],
+      "current_gap": "The correct document and answer obligation are already known in this diagnosed cluster; another research role would add calls without correcting the deterministic section-selection error.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "research graph",
+        "final answer synthesis"
+      ],
+      "current_gap": "A larger graph cannot guarantee that an already-retrieved long document exposes the requested section; the smaller missing boundary is section-aware evidence selection.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "crawler agents",
+        "publisher boundary"
+      ],
+      "current_gap": "More crawling is unnecessary for a document that is already present; this test isolates evidence extraction before publisher repair.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "WebPlanner graph",
+        "parallel WebSearcher nodes"
+      ],
+      "current_gap": "Parallel search addresses branch coverage, not selection of a named section inside a retrieved document.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "same four outcome-selected development cases",
+    "same retrieved gold documents and local document index",
+    "same 2,000-character span cap",
+    "same v1 answer-obligation compiler and generic overlap scorer",
+    "zero provider calls",
+    "zero search calls",
+    "zero Judge calls",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 4,
+    "maximum_provider_cost_usd": 0.0,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/section-anchored-span-selector-v0-20260816/span-oracle.json",
+    "sha256": "05c56994e4afbf1d47d645a18a989ed6130d278b605593c7fe2749ab0eb84eac"
+  },
+  "decision": "accept",
+  "next_action": "Do not run an end-to-end paid arm yet. First test whether a deterministic no-gold selector can choose the answer-bearing document from only the documents already disclosed by the baseline trace. Require full four-case target coverage before wiring a bounded post-run evidence overlay.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "Even a 4/4 calibration pass authorizes only a later no-gold document-targeting oracle and bounded development repair. It is not a fresh-slice, official, leaderboard, or model-capability result."
+}

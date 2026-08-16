@@ -1,0 +1,71 @@
+{
+  "schema_version": "contrastive-bridge-probe-registration-v0",
+  "status": "registered_pre_provider",
+  "registered_at": "2026-08-15T23:00:02.7041979+08:00",
+  "purpose": "Prediction-bound calibration of typed contrastive bridge hypotheses against the rejected constraint-recombination planner on three saved open-debt development cases.",
+  "source_summary": {
+    "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/summary.json",
+    "sha256": "b76f4586d3076e5374cb3556f0a21b335a8426dd17a2a934ad0f7bc21bcd5181"
+  },
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13.gold.json",
+    "sha256": "4d020433cf5765aae7ae0613107c8dfcd6671733bacf1ee975333e1e5c132fc1"
+  },
+  "baseline_probe": {
+    "path": "runs/browsecomp_plus_v0/obligation-grounded-repair-query-v0-20260815/probe-recovery-result.json",
+    "sha256": "5e41c7e4e002640ddfa7867032a2daef578e3e60be01334a5b5e8f853949d975"
+  },
+  "oracle_replay": {
+    "path": "runs/browsecomp_plus_v0/contrastive-bridge-hypothesis-v0-20260815/oracle-replay.json",
+    "sha256": "42e03ba13527964a07bde91f82d9fedd56d11d344d9a4b50adcc00d39994c908"
+  },
+  "query_ids": [
+    "896",
+    "653",
+    "85"
+  ],
+  "fixed_contract": {
+    "model": "deepseek-v4-flash",
+    "thinking_mode": "disabled",
+    "system_prompt_policy": "OpenAICompatibleProvider fixed unsupported-facts guard",
+    "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64",
+    "search_url": "http://127.0.0.1:8768/search",
+    "hypotheses_per_case": 3,
+    "max_search_results": 20,
+    "max_planner_output_tokens": 256,
+    "provider_attempts_per_case": 1,
+    "search_calls_per_case": 1,
+    "sealed_holdout_access": "forbidden"
+  },
+  "frozen_artifacts": [
+    {
+      "path": "src/deepresearch_harness/bridge_hypothesis_probe.py",
+      "sha256": "0116900c75c88abc981c0fb47bad0480be10826437dcfb46e6e21fd3d4e245da"
+    },
+    {
+      "path": "scripts/run_contrastive_bridge_probe.py",
+      "sha256": "5be85613f1dba61544a03d7352f74dc72b75652136a4333dffea7c05374133c7"
+    },
+    {
+      "path": "src/deepresearch_harness/repair_query_probe.py",
+      "sha256": "b511ba5c26f76674ee99bc019c00a178ea9e17d16b566fab4666ef94051303bd"
+    },
+    {
+      "path": "src/deepresearch_harness/providers.py",
+      "sha256": "7153e209ed6443f65e50d432536a609182abd1e4c0380e9e24467cc0f7e01b31"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+      "sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899"
+    }
+  ],
+  "acceptance": {
+    "minimum_oracle_gold_hit_cases": 3,
+    "minimum_candidate_gold_hit_cases": 2,
+    "minimum_gold_hit_case_delta": 2,
+    "parse_failures_must_equal": 0,
+    "request_failures_must_equal": 0,
+    "maximum_provider_cost_usd": 0.05
+  },
+  "claim_boundary": "The three cases and oracle bridges were known before this calibration. Gold document IDs are excluded from planner prompts. A pass only supports the bridge-hypothesis mechanism on saved failures and does not establish end-to-end effectiveness, official accuracy, leaderboard rank, or model-capability improvement."
+}

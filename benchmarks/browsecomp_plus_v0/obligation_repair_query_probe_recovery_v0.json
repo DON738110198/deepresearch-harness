@@ -1,0 +1,69 @@
+{
+  "schema_version": "obligation-repair-query-probe-registration-v0",
+  "status": "registered_pre_provider",
+  "registered_at": "2026-08-15T22:53:10.5712462+08:00",
+  "purpose": "One protocol-only recovery of the prediction-bound obligation repair-query calibration after all initial requests were rejected by DeepSeek JSON-mode preflight.",
+  "source_summary": {
+    "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/summary.json",
+    "sha256": "b76f4586d3076e5374cb3556f0a21b335a8426dd17a2a934ad0f7bc21bcd5181"
+  },
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13.gold.json",
+    "sha256": "4d020433cf5765aae7ae0613107c8dfcd6671733bacf1ee975333e1e5c132fc1"
+  },
+  "query_ids": [
+    "896",
+    "653",
+    "85"
+  ],
+  "fixed_contract": {
+    "model": "deepseek-v4-flash",
+    "thinking_mode": "disabled",
+    "system_prompt_policy": "OpenAICompatibleProvider fixed unsupported-facts guard",
+    "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64",
+    "search_url": "http://127.0.0.1:8768/search",
+    "max_search_results": 20,
+    "max_planner_output_tokens": 128,
+    "provider_attempts_per_case": 1,
+    "search_calls_per_case": 1,
+    "sealed_holdout_access": "forbidden"
+  },
+  "frozen_artifacts": [
+    {
+      "path": "src/deepresearch_harness/repair_query_probe.py",
+      "sha256": "b511ba5c26f76674ee99bc019c00a178ea9e17d16b566fab4666ef94051303bd"
+    },
+    {
+      "path": "scripts/run_obligation_repair_query_probe.py",
+      "sha256": "ec9ada3c2d7046805d771ad79200cb1ddc2943a40aeac3aaa5054742c976e0d4"
+    },
+    {
+      "path": "src/deepresearch_harness/providers.py",
+      "sha256": "7153e209ed6443f65e50d432536a609182abd1e4c0380e9e24467cc0f7e01b31"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+      "sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899"
+    }
+  ],
+  "acceptance": {
+    "minimum_candidate_gold_hit_cases": 2,
+    "minimum_gold_hit_case_delta": 2,
+    "parse_failures_must_equal": 0,
+    "request_failures_must_equal": 0,
+    "maximum_provider_cost_usd": 0.05
+  },
+  "operational_recovery": {
+    "failure_artifact": {
+      "path": "runs/browsecomp_plus_v0/obligation-grounded-repair-query-v0-20260815/probe-result.json",
+      "sha256": "86961c110f129aba51087b43025d82f5112ba2db3d9a6ada6192b7433cae7cca"
+    },
+    "failure_class": "deepseek_json_mode_instruction_missing",
+    "official_contract_url": "https://api-docs.deepseek.com/guides/json_mode/",
+    "validation_change": "Add the literal instruction 'Return exactly one JSON object' required by DeepSeek JSON Output; case inputs, planner rules, output schema, model, token cap, retriever, gold, and gates remain unchanged.",
+    "previous_provider_attempts": 3,
+    "maximum_additional_provider_attempts": 3,
+    "prior_cost_observability": "unknown_http_400_usage"
+  },
+  "claim_boundary": "Gold and prior outcomes were known before this calibration. The initial three HTTP 400 attempts have unknown usage, so recorded provider cost remains a lower bound. A pass only supports saved-failure query mechanics, not end-to-end effectiveness, official accuracy, leaderboard evidence, or model-capability improvement."
+}

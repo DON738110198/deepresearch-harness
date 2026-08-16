@@ -1,0 +1,103 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "late-draft-last-mile-repair-v0",
+  "status": "closed",
+  "problem": "Pi v12 made deterministic auditing selective and preserved all three known improvements, but its only open regression had already consumed all eight searches, so the one permitted repair was blocked and the causal repair gates failed.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/answer-first-selective-repair-v0-20260815/known-outcome-live-calibration-decision.json",
+      "sha256": "205119bfee30e35b0f5d816940f6afa04c360d7944900dffab09d5a455457c5a"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/answer-first-selective-repair-v0-20260815/offline-js-parity.json",
+      "sha256": "8da1d024abd4c0ddc6b55dfa47680549c4e1549b581f658aca40ff63c7e494ef"
+    }
+  ],
+  "simplest_baseline": "Pi v12 compiles and audits after ordinary exploration, using a repair search only when fewer than eight searches happened to be consumed.",
+  "hypothesis": "Stopping normal exploration at seven searches, then compiling and deterministically auditing the draft, will preserve selective zero-LLM auditing while guaranteeing one final search only for open answer-critical evidence debt.",
+  "changed_mechanisms": [
+    "late-draft one-search reserve"
+  ],
+  "anti_claim": "This is a frozen-model harness budget-allocation policy, not training or a model capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow 2.0",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "lead-agent termination conditions",
+        "token attribution",
+        "dynamic scoped sub-agents"
+      ],
+      "current_gap": "The measured failure is one blocked final verification query, not missing parallel branches or context isolation.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "research compression",
+        "separate final report boundary",
+        "Deep Research Bench evaluation"
+      ],
+      "current_gap": "Its research-to-final boundary motivates a late draft checkpoint, while its legacy multi-agent supervisor is not evidence for this budget failure.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "planner-execution-publisher separation",
+        "parallel crawling",
+        "report synthesis"
+      ],
+      "current_gap": "A publisher boundary is relevant, but additional crawling breadth would violate the matched eight-search contract.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "dynamic WebPlanner graph",
+        "multiple WebSearchers",
+        "hierarchical retrieval"
+      ],
+      "current_gap": "Dynamic branch expansion addresses omitted subproblems; this loop instead reallocates the final existing search to a measured answer-level debt.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "deepseek-v4-flash with high-thinking exploration",
+    "empty system prompt",
+    "query-aware BM25-anchor plus Dense-lead retriever",
+    "eight total search calls",
+    "10000 total output tokens",
+    "calibrated qwen3-32b-bf16 Judge"
+  ],
+  "budget": {
+    "maximum_development_queries": 10,
+    "maximum_provider_cost_usd": 1.0,
+    "maximum_search_calls_per_query": 8,
+    "maximum_output_tokens_per_query": 10000,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-live-calibration-decision.json",
+    "sha256": "b5d0486eb105a1b25a444a28f8fc2febe76467d2168bd614a16e1189b1dd2671"
+  },
+  "decision": "reject",
+  "next_action": "Start a new outcome-selected diagnostic loop around obligation-grounded repair-query quality; require a gold-hit retrieval replay before any new end-to-end provider run.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge at http://127.0.0.1:18015/v1",
+    "query-aware progressive-disclosure retriever at http://127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "The next five known cases remain outcome-selected calibration only. Fresh development is permitted only after all frozen causal and preservation gates pass."
+}

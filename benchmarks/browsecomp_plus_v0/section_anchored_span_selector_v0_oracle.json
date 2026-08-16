@@ -1,0 +1,61 @@
+{
+  "schema_version": "evidence-span-availability-oracle-registration-v0",
+  "status": "posthoc_registered_for_new_failure_cluster",
+  "registered_at": "2026-08-16T20:22:28.8613691+08:00",
+  "purpose": "Calibrate one deterministic change only: when the v1 answer obligation explicitly names a document section, prioritize fixed-size windows containing a normalized alias of that section before applying the unchanged generic overlap score.",
+  "candidate_run_root": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline",
+  "diagnostic": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline.diagnostic.json",
+    "sha256": "060f61c653316b099329fe8f276e2399923e234d742c09fbabd6eece211303ba"
+  },
+  "judge_summary": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline-persistent-judge/evaluation/development_judge_result.json",
+    "sha256": "fdaf1959837b9c4c512d71d7fb47dff7498429dd36516ce6e9b440b1dde693aa"
+  },
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline.gold.json",
+    "sha256": "2ef96bc47f0f89d1fa60aaac082a3d7b087737f1041bec579b2dc21a29034fd2"
+  },
+  "query_ids": [
+    "772",
+    "579",
+    "552",
+    "679"
+  ],
+  "previously_spotchecked_query_ids": [
+    "679"
+  ],
+  "document_index_path": "runs/_external/browsecomp-plus-indexes-direct/bm25",
+  "selector_id": "answer_obligation_window_v2",
+  "maximum_span_characters": 2000,
+  "frozen_artifacts": [
+    {
+      "path": "runs/browsecomp_plus_v0/answer-obligation-compiler-v1-20260816/span-oracle.json",
+      "sha256": "5d0b9625ef1d960529f2114329c629ff2150302e1b2e092c68fd870dc31c4c7b"
+    },
+    {
+      "path": "experiments/section_anchored_span_selector_v0/checkpoint.json",
+      "sha256": "6f49a77d27e956688f487f9f9042a8b5b66c55916461fe140066fa03b04cb1f4"
+    },
+    {
+      "path": "src/deepresearch_harness/evidence_span_oracle.py",
+      "sha256": "f866a2fa76b0090df3bda6a7b77c0bad1e3d230fb4ed062c3e82de451e4b7998"
+    },
+    {
+      "path": "scripts/run_evidence_span_oracle.py",
+      "sha256": "54a99562bfaad983616b1cdf81a9cd49959ec18b0afe02d4a4ca793504645ba3"
+    },
+    {
+      "path": "tests/test_evidence_span_oracle.py",
+      "sha256": "05b753f336a2887eb51b5d735a1b47d99b60251acbf574c33ce52232a8425a93"
+    }
+  ],
+  "acceptance": {
+    "minimum_selected_span_hit_cases": 4,
+    "minimum_uninspected_selected_span_hit_cases": 3,
+    "minimum_selected_over_head_delta": 4,
+    "missing_documents_must_equal": 0
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "This is an outcome-selected, gold-aware development calibration. Query 679's correct section was manually localized after v1 failed, and all four prior outcomes are known. Passing means only that the frozen section-aware selector exposes literal answers inside these already-retrieved gold documents without regressing the three v1 hits. It does not validate document targeting without gold, end-to-end repair, official accuracy, or model capability improvement."
+}

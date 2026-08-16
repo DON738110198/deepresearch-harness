@@ -1,0 +1,120 @@
+{
+  "schema_version": "browsecomp-plus-evidence-debt-live-calibration-registration-v0",
+  "status": "registered_before_failed_only_resume",
+  "registered_at": "2026-08-15T22:29:52.1226706+08:00",
+  "purpose": "Validation-only failed-query recovery for the preregistered Pi v13 calibration; successful queries and generation controls remain immutable.",
+  "problem": "Pi v12 preserved all three known improvements and selectively opened one regression, but that case had consumed all eight searches and its repair was blocked.",
+  "simplest_baseline": "Pi v12 audits after ordinary exploration and repairs only when search capacity happens to remain.",
+  "hypothesis": "Pi v13 will stop normal exploration after seven searches, preserve the selective deterministic audit, use the final search only for open evidence debt, correct at least one known regression, and preserve all three known improvements.",
+  "selection": {
+    "status": "outcome_selected_bad_case_calibration",
+    "queries_path": "runs/browsecomp_plus_v0/evidence-debt-search-reserve-v0-20260815/known_outcome_queries_5.json",
+    "queries_sha256": "a92a39360ce79e6fbc91e94fbd71d689d42e4c5ae87b8bf013527d605358e232",
+    "query_ids": ["896", "653", "85", "78", "987"],
+    "prior_judge_result_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate-persistent-judge/evaluation/development_judge_result.json",
+    "prior_judge_result_sha256": "f6cbb04807074164514a1f69dfb19ef4d3aa4416c1e8e1a1c4bd792f7c2326d8",
+    "offline_parity_path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/offline-js-parity.json",
+    "offline_parity_sha256": "9db3d4e20bf3d3835d5b630202edc24586fa81585ad5a160200ab0fcfcee0c48",
+    "cases": [
+      {"query_id": "896", "prior_outcome": "candidate_regression", "prior_judge_correct": false},
+      {"query_id": "653", "prior_outcome": "candidate_regression", "prior_judge_correct": false},
+      {"query_id": "85", "prior_outcome": "candidate_improvement", "prior_judge_correct": true},
+      {"query_id": "78", "prior_outcome": "candidate_improvement", "prior_judge_correct": true},
+      {"query_id": "987", "prior_outcome": "candidate_improvement", "prior_judge_correct": true}
+    ],
+    "claim_use": "mechanism calibration only; forbidden as benchmark effectiveness evidence"
+  },
+  "fixed_contract": {
+    "model": "deepseek-v4-flash",
+    "thinking_level": "high for exploration; disabled for compilation",
+    "model_parameters": "frozen_provider_model",
+    "system_prompt_policy": "empty",
+    "adapter_version": "pi-browsecomp-v13",
+    "control_policy": "answer_reserve_nonthinking_v0",
+    "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64",
+    "max_search_results": 20,
+    "maximum_search_calls": 8,
+    "maximum_exploration_search_calls": 7,
+    "maximum_repair_search_calls": 1,
+    "repair_capacity_policy": "one search reserved after the late draft checkpoint",
+    "maximum_output_tokens": 10000,
+    "exploration_output_tokens": 8000,
+    "deterministic_audit_provider_calls": 0,
+    "compilation_output_tokens": 2000,
+    "maximum_compiler_output_tokens_per_request": 1000,
+    "provider_key_source": "DEEPSEEK_API_KEY environment variable only",
+    "failed_only_resume_limit": 1,
+    "budget_exhausted_retry": "forbidden",
+    "sealed_holdout_access": "forbidden"
+  },
+  "frozen_artifacts": [
+    {"path": "integrations/pi-browsecomp/v13/contract.mjs", "sha256": "6ef2c2d0fcc23fd0100653b876b3f447fa2a539080edd6d29d00aeb9a17e85af"},
+    {"path": "integrations/pi-browsecomp/v13/runner.mjs", "sha256": "723af1ab499d67535a7bff6b2705eacf3c3c0821f05a5bdb5d760c6fb6e586ad"},
+    {"path": "src/deepresearch_harness/browsecomp_plus.py", "sha256": "ebe18449671064f2a6f9583dc3245e0f742562e4c2f6d7fda06efee4d52bd4d1"},
+    {"path": "src/deepresearch_harness/evidence_debt_experiment.py", "sha256": "e3aedc036f8c88c21674b3337c3ec9730a301561c62b7d7287527e0249c949af"},
+    {"path": "scripts/decide_browsecomp_plus_evidence_debt_live_calibration.py", "sha256": "ba083ccbca0c35fbc1c63b15f5379a0a5362616e4bdd42883d041e959c2a0b3e"},
+    {"path": "src/deepresearch_harness/progressive_disclosure_server.py", "sha256": "21d420244d5d33d164c66106c91066648fc295c155e9982ab5e4dcc3f9cfdff9"},
+    {"path": "src/deepresearch_harness/evidence_preview.py", "sha256": "6b0052f90d766e1195091affe102369d0abddbcbea4d8e73ca9dc1fc9441b0cd"},
+    {"path": "benchmarks/browsecomp_plus_v0/retriever_candidates.json", "sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899"}
+  ],
+  "operational_recovery": {
+    "status": "registered_after_validation_failure_before_failed_only_resume",
+    "failure_class": "post_generation_pydantic_validation_bug",
+    "failure_reason": "The v13 validator incorrectly required a null exploration stop whenever fewer than seven searches executed, rejecting valid exploration_output_token_limit_reached traces.",
+    "original_registration": {
+      "path": "benchmarks/browsecomp_plus_v0/late_draft_live_calibration_v0.json",
+      "sha256": "c4494987958478e213d4f4c52a137276ee3203e5e9902f9feaabe79da3d06932"
+    },
+    "partial_summary": {
+      "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/recovery-registration-inputs/partial-summary.json",
+      "sha256": "9dc5c26f7bec5e80419de99459a67959a29a2dafc2ff6b22184ed84b63cec4c9"
+    },
+    "failed_query_ids": ["653", "987"],
+    "failed_error_artifacts": [
+      {
+        "query_id": "653",
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/recovery-registration-inputs/653-error.json",
+        "sha256": "53eea2b98896edacc317400d1f1748c1303fb7017f9fe3fb1d0486171164f9b3"
+      },
+      {
+        "query_id": "987",
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/recovery-registration-inputs/987-error.json",
+        "sha256": "819f21f75e4dff863bb656b1832e1346344540dd4d4faccf1d136d57929e3717"
+      }
+    ],
+    "validation_change": {
+      "path": "src/deepresearch_harness/browsecomp_plus.py",
+      "before_sha256": "f563f1ff86aabb2d8bf36791f855f9df501ecd41c5daad8bffaddf489c4805b7",
+      "after_sha256": "ebe18449671064f2a6f9583dc3245e0f742562e4c2f6d7fda06efee4d52bd4d1",
+      "scope": "accept a non-reserve exploration stop below seven searches; runner, prompts, audit policy, budgets, model, and retriever unchanged"
+    },
+    "adapter_runner_unchanged_sha256": "723af1ab499d67535a7bff6b2705eacf3c3c0821f05a5bdb5d760c6fb6e586ad",
+    "allowed_action": "one failed-only resume for query IDs 653 and 987",
+    "maximum_resume_invocations": 1,
+    "maximum_additional_provider_attempts": 2,
+    "successful_query_reruns": "forbidden",
+    "budget_exhausted_reruns": "forbidden",
+    "provider_cost_observability": "failed pre-validation attempts have unknown usage; final recorded cost is a lower bound"
+  },
+  "judge": {
+    "model": "Qwen/Qwen3-32B",
+    "served_model_name": "qwen3-32b-bf16-judge",
+    "base_url": "http://127.0.0.1:18015/v1",
+    "manifest_sha256": "7d27f8e9739dc60ced49ee72cfe3191f36ef485403a4fd24539c932ceaf7277f",
+    "calibration_sha256": "ad68bf0cfcf2081e31135f75f3e7909117e59828c76553dc3cf8cf21b67c5be3",
+    "service_registration_sha256": "20056f365b94edb16bce532dec90c2f78ac3dd6d5af82b38654894c9bcc722f8",
+    "metric_status": "calibrated_development_diagnostic_not_official"
+  },
+  "acceptance": {
+    "maximum_search_calls_per_query": 8,
+    "minimum_repair_triggered_regressions": 1,
+    "maximum_repair_triggered_improvements": 0,
+    "minimum_repaired_regression_corrections": 1,
+    "preserved_improvements_must_equal": 3,
+    "judge_parse_failures_must_equal": 0,
+    "judge_request_failures_must_equal": 0,
+    "maximum_generation_cost_usd": 0.25
+  },
+  "routing_rule": "Pass permits a separately preregistered paired v10-versus-v13 comparison on a previously unseen development slice. Reject preserves every trace and starts a new bad-case loop without threshold tuning or multi-agent expansion.",
+  "claim_boundary": "This set was selected using prior outcomes. It can debug the harness mechanism but cannot estimate effectiveness, official accuracy, leaderboard position, or model capability."
+}

@@ -27,8 +27,10 @@ import {
   hasRequiredAnswerSchema,
   remainingProviderOutput,
   reserveSearchCall,
+  selectLatestDisclosureState,
   sha256,
   shouldInvokeAnswerCompiler,
+  toolFailureReason,
   validateDisclosureSearchResponse,
   validateOpenEvidenceResponse,
   validateRequest,
@@ -115,7 +117,7 @@ const searchTool = defineTool({
       // response, then checks the global output/iteration budget.
       const response = await executeSearch(request.search, request.run_id, params.query);
       const results = response.results;
-      disclosureState = response.state;
+      disclosureState = selectLatestDisclosureState(disclosureState, response.state);
       searchCalls.push({
         query: params.query,
         outcome: "ok",
@@ -154,7 +156,7 @@ const openEvidenceTool = defineTool({
     const callStarted = performance.now();
     try {
       const response = await executeOpenEvidence(request.search, request.run_id, params.docid);
-      disclosureState = response.state;
+      disclosureState = selectLatestDisclosureState(disclosureState, response.state);
       evidenceOpenCalls.push({
         docid: params.docid,
         outcome: "ok",
@@ -374,6 +376,7 @@ try {
   if (outputBudgetOvershootTokens > 0 && !budgetStop) {
     budgetStop = `global_output_token_budget_overshot:${request.max_output_tokens}`;
   }
+  runtimeError = runtimeError ?? toolFailureReason(searchCalls, evidenceOpenCalls);
   const { status, stopReason } = classifyRunOutcome({
     answerText,
     finalHasToolCall,

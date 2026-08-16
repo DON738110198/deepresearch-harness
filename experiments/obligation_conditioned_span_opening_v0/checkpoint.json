@@ -1,0 +1,109 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "obligation-conditioned-span-opening-v0",
+  "status": "closed",
+  "problem": "For five Judge-wrong development cases the correct document was retrieved, but truncated anchors could not be reopened and three literal answers were hidden outside the fixed head window.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/evidence-span-availability-oracle-v0-20260815/oracle-result.json",
+      "sha256": "bd3e7699a379fe0a748eeb32ac0f296ab9bf0a4e82e6ec20cad35bd33a746348"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_calibration_v0.json",
+      "sha256": "a471c400f303d0916e7149dc5cd8def232bf9d6d7b58c5f4ed93bde41d12ffd7"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_calibration_resume_v0.json",
+      "sha256": "015d63fc44d0162cf2927618719145fb795a080c8b37bbf3071be6cf5477ef50"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_calibration_decision_v0.json",
+      "sha256": "43d143e8368738643b5c09d35f26510e07d28dd972bedde9726d7e5fecc4ec7c"
+    }
+  ],
+  "simplest_baseline": "Reuse the saved pi-browsecomp-v10 run with the same frozen Flash model, eight searches, 10,000 output-token allowance, retriever, corpus, and five questions; anchors remain non-reopenable head previews.",
+  "hypothesis": "Labeling all retrieved documents as previews and letting the agent open one deterministic answer-obligation window from an already disclosed docid will expose missing exact fields and repair at least two of the five known failures.",
+  "changed_mechanisms": [
+    "answer-obligation-conditioned span opening for previously disclosed anchors and leads"
+  ],
+  "anti_claim": "This outcome-selected calibration cannot establish fresh effectiveness or model capability improvement; it only decides whether the mechanism merits a new development slice.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "dynamic sub-agents",
+        "isolated context"
+      ],
+      "current_gap": "Spawning another researcher does not fix a tool contract that declares a truncated anchor complete and blocks reopening it.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "research compression",
+        "configurable tools"
+      ],
+      "current_gap": "The useful boundary is to recover an answer-bearing span before compression rather than adding another generic summarization pass.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "crawler agents",
+        "planner-publisher separation"
+      ],
+      "current_gap": "Crawler breadth is a more expensive response than reopening a source that the fixed retriever already found.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "search graph expansion",
+        "parallel WebSearcher"
+      ],
+      "current_gap": "No independent research branch is missing in this failure cluster; document-level evidence disclosure is the smaller causal intervention.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "deepseek-v4-flash model",
+    "BrowseComp-Plus development corpus",
+    "five saved outcome-selected questions",
+    "BM25 five anchors plus Qwen dense fifteen leads",
+    "eight search calls",
+    "10,000 output-token allowance",
+    "33,280 total evidence-ingress tokens",
+    "Qwen3-32B persistent development Judge",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 5,
+    "maximum_provider_cost_usd": 0.1,
+    "maximum_search_calls_per_query": 8,
+    "maximum_output_tokens_per_query": 10000,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-opening-v0-20260816/known5-calibration-decision.json",
+    "sha256": "1919bdbdf92750d7f2a82086f4c952d553c5f421433ed0f7294249f71e312229"
+  },
+  "decision": "accept",
+  "next_action": "Freeze a previously unseen development slice and run the saved v10 baseline against v14 obligation-span opening under the same model, corpus, search, output, Judge, and cost ceiling.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "On five outcome-selected failures, v14 opened spans in 5/5 cases, opened literal answer-bearing spans in 3/5, and moved the calibrated development Judge from the saved baseline's 0/5 to 3/5 at a recorded resume cost of $0.02506787. The first failed-validation attempt cost is unobservable and is not counted as zero. This result only passes the calibration gate and cannot establish fresh effectiveness, official accuracy, leaderboard performance, or model capability improvement."
+}

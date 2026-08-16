@@ -1,0 +1,774 @@
+import { createHash } from "node:crypto";
+
+export const ADAPTER_VERSION = "pi-browsecomp-v13";
+export const PI_VERSION = "0.84.1";
+export const MAXIMUM_SEARCH_CALLS = 8;
+export const MAXIMUM_EXPLORATION_SEARCH_CALLS = 7;
+export const ANSWER_RESERVE_EXPLORATION_TOKENS = 8000;
+export const ANSWER_RESERVE_COMPILATION_TOKENS = 2000;
+export const ANSWER_FIRST_COMPILER_REQUEST_TOKENS = 1000;
+export const ANSWER_RESERVE_V1_EXPLORATION_TOKENS = 6000;
+export const ANSWER_RESERVE_V1_COMPILATION_TOKENS = 4000;
+export const FIRST_TOOL_DEADLINE_TOKENS = 512;
+export const TOOL_BOOTSTRAP_TOKENS = 512;
+export const TOOL_BOOTSTRAP_EXPLORATION_TOKENS = 7488;
+export const RARE_ANCHOR_BOOTSTRAP_TOKENS = 1024;
+export const RARE_ANCHOR_EXPLORATION_TOKENS = 6976;
+export const CONSTRAINT_PORTFOLIO_BOOTSTRAP_TOKENS = 1024;
+export const CONSTRAINT_PORTFOLIO_EXPLORATION_TOKENS = 6976;
+export const ANSWER_COMPILER_PROMPT = [
+  "The exploration phase is over. Do not search or request more evidence.",
+  "Using only evidence already present in this conversation, produce the final response now.",
+  "Follow this exact format:",
+  "Explanation: {brief explanation with supporting document IDs in square brackets}",
+  "Exact Answer: {succinct final answer}",
+  "Confidence: {confidence between 0% and 100%}",
+  "Do not discuss this instruction. When evidence is incomplete, give the best-supported answer and lower the confidence rather than omitting the required fields.",
+].join("\n");
+export const DETERMINISTIC_AUDIT_POLICY = [
+  "late-draft-last-mile-evidence-debt-v0",
+  "open only for missing citations, explicit unresolved evidence, or low-confidence unsupported exact answers",
+  "use direct exact-answer support and requested relation terms",
+  "stop normal exploration at seven searches and reserve the eighth only for one open repair query",
+].join("\n");
+export const FIRST_TOOL_DEADLINE_PROMPT = [
+  "You have not used the search tool yet.",
+  "Before any further reasoning or final answer, issue one targeted search tool call now.",
+  "Do not answer this message in prose.",
+].join("\n");
+
+export function formatToolBootstrapPrompt(question) {
+  requireString(question, "question");
+  return [
+    "Start this research task by using the search tool exactly once.",
+    "Formulate one concise query aimed at identifying the entity from its most distinctive clues.",
+    "Do not answer the research question and do not respond in prose; issue the tool call now.",
+    "",
+    `Question: ${question}`,
+  ].join("\n");
+}
+
+export function formatRareAnchorBootstrapPrompt(question) {
+  requireString(question, "question");
+  return [
+    "Start this research task with exactly three search tool calls.",
+    "Build a diverse constraint portfolio rather than compressing every clue into one generic query:",
+    "1. Combine the rare chronology, education, and competition clues, preserving explicit years or decades.",
+    "2. Combine the scientific discovery, recognition, and military/geographic clues.",
+    "3. Search one plausible domain or entity hypothesis inferred from the clues.",
+    "Avoid generic personality clues. Do not answer the research question and do not respond in prose; issue the three tool calls now.",
+    "",
+    `Question: ${question}`,
+  ].join("\n");
+}
+
+export function formatConstraintPortfolioPrompt(question) {
+  requireString(question, "question");
+  return [
+    "Start this research task with exactly three search tool calls.",
+    "Compile a general constraint portfolio from the question without guessing the answer:",
+    "1. Rare-anchor query: preserve the two least common concrete clues and one explicit relation.",
+    "2. Chronology-relation query: preserve exact names, titles, numbers, dates, decades, places, and role changes that appear in the question.",
+    "3. Orthogonal query: use a different pair of constraints; include a domain or entity hypothesis only when the question directly supports it.",
+    "Keep original-language strings and quoted phrases intact. Avoid generic personality words, repeated anchor pairs, and queries that merely restate the whole question.",
+    "Each query should contain 5 to 18 terms. Do not answer the research question and do not respond in prose; issue the three tool calls now.",
+    "",
+    `Question: ${question}`,
+  ].join("\n");
+}
+
+const REQUEST_KEYS = new Set([
+  "schema_version",
+  "run_id",
+  "query_id",
+  "question",
+  "model",
+  "thinking_level",
+  "max_output_tokens",
+  "max_iterations",
+  "control_policy",
+  "search",
+]);
+
+export function validateRequest(value) {
+  requireObject(value, "request");
+  rejectUnknownKeys(value, REQUEST_KEYS, "request");
+  requireEqual(value.schema_version, "pi-browsecomp-request-v0", "schema_version");
+  requireString(value.run_id, "run_id");
+  requireString(value.query_id, "query_id");
+  requireString(value.question, "question");
+  if (!["deepseek-v4-flash", "deepseek-v4-pro"].includes(value.model)) {
+    throw new Error("model must be deepseek-v4-flash or deepseek-v4-pro");
+  }
+  requireEqual(value.thinking_level, "high", "thinking_level");
+  requireInteger(value.max_output_tokens, "max_output_tokens", 1, 10000);
+  requireInteger(value.max_iterations, "max_iterations", 1, 100);
+  const controlPolicy = value.control_policy ?? "standard";
+  if (!["standard", "answer_reserve_v0", "answer_reserve_v1", "answer_reserve_nonthinking_v0", "first_tool_deadline_v0", "tool_bootstrap_v0", "rare_anchor_portfolio_v0", "constraint_portfolio_v1"].includes(controlPolicy)) {
+    throw new Error("control_policy is not registered");
+  }
+  if (controlPolicy !== "standard" && value.max_output_tokens !== 10000) {
+    throw new Error("answer reserve policies require the registered 10000-token allowance");
+  }
+  if (controlPolicy !== "answer_reserve_nonthinking_v0") {
+    throw new Error("pi-browsecomp-v13 requires answer_reserve_nonthinking_v0");
+  }
+  validateSearch(value.search);
+  return { ...value, control_policy: controlPolicy };
+}
+
+export function formatBenchmarkPrompt(question) {
+  requireString(question, "question");
+  return [
+    "You are a deep research agent. You need to answer the given question by interacting with a search engine, using the search tool provided. Please perform reasoning and use the tool step by step, in an interleaved manner. You may use the search tool multiple times.",
+    "",
+    `Question: ${question}`,
+    "",
+    "Your response should be in the following format:",
+    "Explanation: {your explanation for your final answer. For this explanation section only, you should cite your evidence documents inline by enclosing their docids in square brackets [] at the end of sentences. For example, [20].}",
+    "Exact Answer: {your succinct, final answer}",
+    "Confidence: {your confidence score between 0% and 100% for your answer}",
+  ].join("\n");
+}
+
+export function sha256(text) {
+  return createHash("sha256").update(text, "utf8").digest("hex");
+}
+
+export function reserveSearchCall(reservedSearchCalls) {
+  requireInteger(
+    reservedSearchCalls,
+    "reservedSearchCalls",
+    0,
+    MAXIMUM_SEARCH_CALLS,
+  );
+  if (reservedSearchCalls >= MAXIMUM_SEARCH_CALLS) {
+    return {
+      allowed: false,
+      reserved_search_calls: reservedSearchCalls,
+      exhausted: true,
+      stop_reason: `search_call_limit_reached:${MAXIMUM_SEARCH_CALLS}`,
+    };
+  }
+  const next = reservedSearchCalls + 1;
+  const exhausted = next === MAXIMUM_SEARCH_CALLS;
+  return {
+    allowed: true,
+    reserved_search_calls: next,
+    exhausted,
+    stop_reason: exhausted
+      ? `search_call_limit_reached:${MAXIMUM_SEARCH_CALLS}`
+      : null,
+  };
+}
+
+export function reserveExplorationSearchCall(reservedSearchCalls) {
+  requireInteger(
+    reservedSearchCalls,
+    "reservedSearchCalls",
+    0,
+    MAXIMUM_SEARCH_CALLS,
+  );
+  if (reservedSearchCalls >= MAXIMUM_EXPLORATION_SEARCH_CALLS) {
+    return {
+      allowed: false,
+      reserved_search_calls: reservedSearchCalls,
+      exploration_exhausted: true,
+      stop_reason: `exploration_search_reserve_reached:${MAXIMUM_EXPLORATION_SEARCH_CALLS}`,
+    };
+  }
+  const next = reservedSearchCalls + 1;
+  const explorationExhausted = next === MAXIMUM_EXPLORATION_SEARCH_CALLS;
+  return {
+    allowed: true,
+    reserved_search_calls: next,
+    exploration_exhausted: explorationExhausted,
+    stop_reason: explorationExhausted
+      ? `exploration_search_reserve_reached:${MAXIMUM_EXPLORATION_SEARCH_CALLS}`
+      : null,
+  };
+}
+
+const EXACT_ANSWER = /(?:^|\n)\s*Exact Answer\s*:\s*(.+?)\s*(?:\n|$)/i;
+const CONFIDENCE = /(?:^|\n)\s*Confidence\s*:\s*(\d{1,3})\s*%/i;
+const CITATION = /\[(\d+)\]/g;
+const SUBJECT_PATTERNS = [
+  /\b(?:the\s+)?clues?\s+point(?:s)?\s+to\s+([^,.\n]+)/i,
+  /\bmost fitting match is\s+([^,.\n]+)/i,
+  /\b(?:the\s+)?(?:author|person|athlete|runner|kingdom|band)\s+is\s+([^,.\n]+)/i,
+];
+const UNCERTAINTY_PATTERNS = [
+  /not (?:fully|directly|definitively) confirm(?:ed)?/gi,
+  /does not directly confirm/gi,
+  /did not yield a definitive/gi,
+  /incomplete evidence/gi,
+  /confidence is limited/gi,
+  /cannot (?:be )?confirm(?:ed)?/gi,
+  /unverified/gi,
+  /unsupported by the available evidence/gi,
+];
+const RELATION_KEYWORDS = [
+  "foundation", "founded", "established", "adopted", "partner",
+  "dismissed", "practice", "knighted", "knighthood", "died", "death",
+  "honor", "honour", "award", "race", "title", "subtitle", "year",
+];
+const STOP_WORDS = new Set([
+  "a", "an", "and", "as", "at", "by", "for", "from", "his", "in",
+  "of", "on", "or", "sir", "the", "their", "to", "with",
+]);
+
+export function auditAnswerFirstDraft({ question, answerText, evidence }) {
+  requireString(question, "audit question");
+  requireString(answerText, "audit answerText");
+  if (!Array.isArray(evidence)) throw new Error("audit evidence must be an array");
+  for (const [index, row] of evidence.entries()) {
+    requireObject(row, `audit evidence[${index}]`);
+    rejectUnknownKeys(row, new Set(["docid", "text"]), `audit evidence[${index}]`);
+    requireString(row.docid, `audit evidence[${index}].docid`);
+    requireString(row.text, `audit evidence[${index}].text`);
+  }
+
+  const exactMatch = answerText.match(EXACT_ANSWER);
+  const confidenceMatch = answerText.match(CONFIDENCE);
+  const confidence = confidenceMatch ? Number(confidenceMatch[1]) : null;
+  const citedDocids = [...new Set([...answerText.matchAll(CITATION)].map((match) => match[1]))].sort();
+  if (!exactMatch) {
+    return {
+      audit_status: "unscorable",
+      exact_answer: null,
+      subject_hypothesis: null,
+      confidence_percent: confidence,
+      cited_docids: citedDocids,
+      supporting_cited_docids: [],
+      supporting_all_docids: [],
+      explicit_uncertainty_phrases: [],
+      reasons: ["answer_schema_missing"],
+      repair_queries: [],
+    };
+  }
+
+  const exactAnswer = exactMatch[1].trim();
+  const subject = extractSubject(answerText);
+  const supportingAll = evidence
+    .filter((row) => supportsAnswerClaim(row.text, {
+      exactAnswer,
+      subject,
+      question,
+    }))
+    .map((row) => row.docid)
+    .filter((docid, index, values) => values.indexOf(docid) === index)
+    .sort();
+  const cited = new Set(citedDocids);
+  const supportingCited = supportingAll.filter((docid) => cited.has(docid));
+  const uncertainty = [];
+  for (const pattern of UNCERTAINTY_PATTERNS) {
+    pattern.lastIndex = 0;
+    for (const match of answerText.matchAll(pattern)) uncertainty.push(match[0].trim());
+  }
+  const uniqueUncertainty = [...new Set(uncertainty)];
+  const reasons = [];
+  if (citedDocids.length === 0) {
+    reasons.push("missing_citations");
+  } else if (
+    supportingCited.length === 0 &&
+    (uniqueUncertainty.length > 0 || confidence === null || confidence <= 50)
+  ) {
+    reasons.push("cited_evidence_does_not_support_exact_answer");
+  }
+  if (uniqueUncertainty.length > 0) reasons.push("explicit_unresolved_evidence");
+  const auditStatus = reasons.length > 0
+    ? "open"
+    : supportingCited.length > 0
+      ? "supported"
+      : "no_repair_trigger";
+  return {
+    audit_status: auditStatus,
+    exact_answer: exactAnswer,
+    subject_hypothesis: subject,
+    confidence_percent: confidence,
+    cited_docids: citedDocids,
+    supporting_cited_docids: supportingCited,
+    supporting_all_docids: supportingAll,
+    explicit_uncertainty_phrases: uniqueUncertainty,
+    reasons,
+    repair_queries: auditStatus === "open"
+      ? buildRepairQueries({ question, answerText, exactAnswer, subject }).slice(0, 1)
+      : [],
+  };
+}
+
+function extractSubject(answerText) {
+  for (const pattern of SUBJECT_PATTERNS) {
+    const match = answerText.match(pattern);
+    if (match) return match[1].replace(/\s+/g, " ").replace(/^[ *_'\"]+|[ *_'\"]+$/g, "") || null;
+  }
+  return null;
+}
+
+function supportsAnswerClaim(text, { exactAnswer, subject, question }) {
+  const normalizedText = normalize(text);
+  if (/^\d{4}$/.test(exactAnswer.trim())) {
+    const escaped = exactAnswer.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (!new RegExp(`(^|\\D)${escaped}(\\D|$)`).test(text)) return false;
+    if (subject && !aliasSupported(normalizedText, subject, 0.5)) return false;
+    const relationTerms = presentRelationTerms(question);
+    return relationTerms.length === 0 || relationTerms.some((term) => normalizedText.includes(term));
+  }
+  return aliasSupported(normalizedText, exactAnswer, 0.8);
+}
+
+function aliasSupported(normalizedText, value, minimumCoverage) {
+  const aliases = [value];
+  const parenthetical = value.match(/\(([^)]+)\)/);
+  if (parenthetical) {
+    aliases.push(value.slice(0, parenthetical.index).trim(), parenthetical[1].trim());
+  }
+  const textTokens = new Set(normalizedText.split(" "));
+  for (const alias of aliases) {
+    const normalizedAlias = normalize(alias);
+    if (normalizedAlias && normalizedText.includes(normalizedAlias)) return true;
+    const tokens = contentTokens(alias);
+    if (tokens.length < 2) continue;
+    const present = tokens.filter((token) => textTokens.has(token)).length;
+    if (present / tokens.length >= minimumCoverage) return true;
+  }
+  return false;
+}
+
+function buildRepairQueries({ question, answerText, exactAnswer, subject }) {
+  const anchor = subject || exactAnswer;
+  const terms = presentRelationTerms(`${question}\n${answerText}`).slice(0, 5);
+  if (/^\d{4}$/.test(exactAnswer.trim())) {
+    return [
+      [`"${anchor}"`, ...terms].join(" ").trim(),
+      [`"${anchor}"`, exactAnswer.trim(), ...terms.slice(0, 3)].join(" ").trim(),
+    ];
+  }
+  return [
+    `"${exactAnswer}" biography`,
+    [`"${exactAnswer}"`, ...terms].join(" ").trim(),
+  ];
+}
+
+function presentRelationTerms(text) {
+  const normalized = normalize(text);
+  return RELATION_KEYWORDS.filter((term) => normalized.includes(term));
+}
+
+function contentTokens(value) {
+  return [...new Set((value.toLowerCase().match(/[a-z0-9]+/g) ?? [])
+    .filter((token) => token.length > 1 && !STOP_WORDS.has(token)))];
+}
+
+function normalize(value) {
+  return (value.toLowerCase().match(/[a-z0-9]+/g) ?? []).join(" ");
+}
+
+export function clampProviderOutput(payload, remainingOutputTokens) {
+  requireObject(payload, "provider payload");
+  requireInteger(remainingOutputTokens, "remaining output tokens", 1, 10000);
+  const bounded = { ...payload };
+  const requested = bounded.max_tokens ?? bounded.max_completion_tokens;
+  delete bounded.max_completion_tokens;
+  bounded.max_tokens = Math.min(requested ?? remainingOutputTokens, remainingOutputTokens);
+  return bounded;
+}
+
+export function applySamplingPolicy(payload) {
+  requireObject(payload, "provider payload");
+  const bounded = { ...payload };
+  delete bounded.top_p;
+  delete bounded.presence_penalty;
+  delete bounded.frequency_penalty;
+  if (bounded.thinking?.type === "disabled") {
+    bounded.temperature = 0;
+  } else {
+    // DeepSeek documents temperature as unsupported in thinking mode.
+    delete bounded.temperature;
+  }
+  return bounded;
+}
+
+export function remainingProviderOutput({
+  controlPolicy,
+  phase,
+  maxOutputTokens,
+  totalOutputTokens,
+  phaseOutputTokens,
+}) {
+  requireInteger(maxOutputTokens, "maxOutputTokens", 1, 10000);
+  requireInteger(totalOutputTokens, "totalOutputTokens", 0, Number.MAX_SAFE_INTEGER);
+  requireInteger(phaseOutputTokens, "phaseOutputTokens", 0, Number.MAX_SAFE_INTEGER);
+  if (!["bootstrap", "exploration", "compilation"].includes(phase)) {
+    throw new Error("phase must be bootstrap, exploration, or compilation");
+  }
+  const globalRemaining = Math.max(maxOutputTokens - totalOutputTokens, 0);
+  if (controlPolicy === "standard") return globalRemaining;
+  const allocation = answerReserveAllocation(controlPolicy);
+  const phaseLimit = allocation[phase] ?? 0;
+  return Math.min(globalRemaining, Math.max(phaseLimit - phaseOutputTokens, 0));
+}
+
+export function answerReserveAllocation(controlPolicy) {
+  if (["answer_reserve_v0", "answer_reserve_nonthinking_v0", "first_tool_deadline_v0"].includes(controlPolicy)) {
+    return {
+      exploration: ANSWER_RESERVE_EXPLORATION_TOKENS,
+      compilation: ANSWER_RESERVE_COMPILATION_TOKENS,
+    };
+  }
+  if (controlPolicy === "answer_reserve_v1") {
+    return {
+      exploration: ANSWER_RESERVE_V1_EXPLORATION_TOKENS,
+      compilation: ANSWER_RESERVE_V1_COMPILATION_TOKENS,
+    };
+  }
+  if (controlPolicy === "tool_bootstrap_v0") {
+    return {
+      bootstrap: TOOL_BOOTSTRAP_TOKENS,
+      exploration: TOOL_BOOTSTRAP_EXPLORATION_TOKENS,
+      compilation: ANSWER_RESERVE_COMPILATION_TOKENS,
+    };
+  }
+  if (["rare_anchor_portfolio_v0", "constraint_portfolio_v1"].includes(controlPolicy)) {
+    return {
+      bootstrap: controlPolicy === "constraint_portfolio_v1"
+        ? CONSTRAINT_PORTFOLIO_BOOTSTRAP_TOKENS
+        : RARE_ANCHOR_BOOTSTRAP_TOKENS,
+      exploration: controlPolicy === "constraint_portfolio_v1"
+        ? CONSTRAINT_PORTFOLIO_EXPLORATION_TOKENS
+        : RARE_ANCHOR_EXPLORATION_TOKENS,
+      compilation: ANSWER_RESERVE_COMPILATION_TOKENS,
+    };
+  }
+  throw new Error("unknown answer reserve policy");
+}
+
+export function hasRequiredAnswerSchema(answerText) {
+  if (typeof answerText !== "string") return false;
+  const explanation = /(?:^|\n)\s*Explanation\s*:\s*\S/i.test(answerText);
+  const answer = /(?:^|\n)\s*Exact Answer\s*:\s*\S/i.test(answerText);
+  const confidenceMatch = answerText.match(
+    /(?:^|\n)\s*Confidence\s*:\s*(\d+(?:\.\d+)?)\s*%?/i,
+  );
+  const confidence = confidenceMatch ? Number(confidenceMatch[1]) : Number.NaN;
+  return explanation && answer && Number.isFinite(confidence) && confidence >= 0 && confidence <= 100;
+}
+
+export function shouldInvokeAnswerCompiler({
+  controlPolicy,
+  answerText,
+  finalHasToolCall,
+  totalOutputTokens,
+  maxOutputTokens,
+  stopReason,
+}) {
+  if (controlPolicy === "standard" || stopReason) return false;
+  requireInteger(totalOutputTokens, "totalOutputTokens", 0, Number.MAX_SAFE_INTEGER);
+  requireInteger(maxOutputTokens, "maxOutputTokens", 1, 10000);
+  return (
+    totalOutputTokens < maxOutputTokens &&
+    (finalHasToolCall || !hasRequiredAnswerSchema(answerText))
+  );
+}
+
+export function classifyRunOutcome({
+  answerText,
+  finalHasToolCall,
+  finalStopReason,
+  budgetStop,
+  outputBudgetOvershootTokens,
+  failureReason,
+}) {
+  if (typeof answerText !== "string") throw new Error("answerText must be a string");
+  if (typeof finalHasToolCall !== "boolean") {
+    throw new Error("finalHasToolCall must be a boolean");
+  }
+  if (finalStopReason !== undefined && typeof finalStopReason !== "string") {
+    throw new Error("finalStopReason must be a string or undefined");
+  }
+  requireInteger(
+    outputBudgetOvershootTokens,
+    "outputBudgetOvershootTokens",
+    0,
+    Number.MAX_SAFE_INTEGER,
+  );
+  if (failureReason !== undefined && typeof failureReason !== "string") {
+    throw new Error("failureReason must be a string or undefined");
+  }
+  if (failureReason) {
+    return { status: "failed", stopReason: failureReason };
+  }
+  const hasTerminalAnswer =
+    answerText.trim().length > 0 &&
+    !finalHasToolCall &&
+    !["error", "aborted"].includes(finalStopReason);
+  if (hasTerminalAnswer) {
+    return {
+      status: "succeeded",
+      stopReason: outputBudgetOvershootTokens > 0
+        ? `completed_with_output_token_overshoot:${outputBudgetOvershootTokens}`
+        : "completed",
+    };
+  }
+  return budgetStop
+    ? { status: "budget_exhausted", stopReason: budgetStop }
+    : { status: "failed", stopReason: "no_final_answer" };
+}
+
+export function validateSearchResults(results, { allowEmpty = true, maxResults = 5 } = {}) {
+  requireInteger(maxResults, "maxResults", 1, 20);
+  if (!Array.isArray(results) || results.length > maxResults || (!allowEmpty && results.length === 0)) {
+    throw new Error(`search results must contain at most ${maxResults} items`);
+  }
+  for (const [index, result] of results.entries()) {
+    requireObject(result, `search.results[${index}]`);
+    rejectUnknownKeys(result, new Set(["docid", "score", "snippet"]), `search.results[${index}]`);
+    requireString(result.docid, `search.results[${index}].docid`);
+    requireString(result.snippet, `search.results[${index}].snippet`);
+    if (typeof result.score !== "number" || !Number.isFinite(result.score)) {
+      throw new Error(`search.results[${index}].score must be finite`);
+    }
+  }
+  return results;
+}
+
+export function validateDisclosureSearchResponse(value, { maxResults = 20 } = {}) {
+  requireObject(value, "disclosure search response");
+  rejectUnknownKeys(
+    value,
+    new Set(["results", "disclosure", "state", "latency_ms"]),
+    "disclosure search response",
+  );
+  validateSearchResults(value.results, { maxResults });
+  validateDisclosureTrace(value.disclosure);
+  validateDisclosureState(value.state);
+  requireInteger(value.latency_ms, "disclosure search latency_ms", 0, Number.MAX_SAFE_INTEGER);
+  return value;
+}
+
+export function validateOpenEvidenceResponse(value) {
+  requireObject(value, "open evidence response");
+  rejectUnknownKeys(
+    value,
+    new Set(["result", "state", "latency_ms"]),
+    "open evidence response",
+  );
+  requireObject(value.result, "open evidence result");
+  rejectUnknownKeys(
+    value.result,
+    new Set([
+      "docid",
+      "outcome",
+      "content",
+      "ingress_tokens",
+      "cumulative_ingress_tokens",
+      "remaining_ingress_tokens",
+      "remaining_search_ingress_tokens",
+      "remaining_open_ingress_tokens",
+    ]),
+    "open evidence result",
+  );
+  requireString(value.result.docid, "open evidence result.docid");
+  const outcomes = new Set([
+    "opened",
+    "already_opened",
+    "not_disclosed",
+    "open_limit_reached",
+    "ingress_budget_exhausted",
+    "missing_document",
+  ]);
+  if (!outcomes.has(value.result.outcome)) {
+    throw new Error("open evidence result.outcome is not registered");
+  }
+  requireInteger(value.result.ingress_tokens, "open evidence result.ingress_tokens", 0, Number.MAX_SAFE_INTEGER);
+  requireInteger(
+    value.result.cumulative_ingress_tokens,
+    "open evidence result.cumulative_ingress_tokens",
+    0,
+    Number.MAX_SAFE_INTEGER,
+  );
+  requireInteger(
+    value.result.remaining_ingress_tokens,
+    "open evidence result.remaining_ingress_tokens",
+    0,
+    Number.MAX_SAFE_INTEGER,
+  );
+  requireInteger(
+    value.result.remaining_search_ingress_tokens,
+    "open evidence result.remaining_search_ingress_tokens",
+    0,
+    Number.MAX_SAFE_INTEGER,
+  );
+  requireInteger(
+    value.result.remaining_open_ingress_tokens,
+    "open evidence result.remaining_open_ingress_tokens",
+    0,
+    Number.MAX_SAFE_INTEGER,
+  );
+  if (value.result.outcome === "opened") {
+    requireString(value.result.content, "open evidence result.content");
+    if (value.result.ingress_tokens === 0) {
+      throw new Error("opened evidence must ingest at least one token");
+    }
+  } else if (value.result.content !== null || value.result.ingress_tokens !== 0) {
+    throw new Error("non-open evidence outcome cannot return content or tokens");
+  }
+  validateDisclosureState(value.state);
+  requireInteger(value.latency_ms, "open evidence latency_ms", 0, Number.MAX_SAFE_INTEGER);
+  return value;
+}
+
+export function validateDisclosureStateResponse(value) {
+  requireObject(value, "disclosure state response");
+  rejectUnknownKeys(value, new Set(["state"]), "disclosure state response");
+  validateDisclosureState(value.state);
+  return value;
+}
+
+function validateDisclosureTrace(value) {
+  requireObject(value, "disclosure trace");
+  rejectUnknownKeys(
+    value,
+    new Set([
+      "search_index",
+      "anchors_returned",
+      "leads_returned",
+      "within_channel_duplicate_slots",
+      "prior_context_duplicate_slots",
+      "cross_channel_duplicate_slots",
+      "new_ingress_tokens",
+      "cumulative_ingress_tokens",
+      "remaining_ingress_tokens",
+      "remaining_search_ingress_tokens",
+      "remaining_open_ingress_tokens",
+      "ingress_budget_exhausted",
+    ]),
+    "disclosure trace",
+  );
+  requireInteger(value.search_index, "disclosure trace.search_index", 1, Number.MAX_SAFE_INTEGER);
+  for (const field of [
+    "anchors_returned",
+    "leads_returned",
+    "within_channel_duplicate_slots",
+    "prior_context_duplicate_slots",
+    "cross_channel_duplicate_slots",
+    "new_ingress_tokens",
+    "cumulative_ingress_tokens",
+    "remaining_ingress_tokens",
+    "remaining_search_ingress_tokens",
+    "remaining_open_ingress_tokens",
+  ]) {
+    requireInteger(value[field], `disclosure trace.${field}`, 0, Number.MAX_SAFE_INTEGER);
+  }
+  if (typeof value.ingress_budget_exhausted !== "boolean") {
+    throw new Error("disclosure trace.ingress_budget_exhausted must be boolean");
+  }
+}
+
+function validateDisclosureState(value) {
+  requireObject(value, "disclosure state");
+  rejectUnknownKeys(
+    value,
+    new Set([
+      "run_id",
+      "search_calls",
+      "open_attempts",
+      "successful_open_calls",
+      "seen_docids",
+      "eligible_open_docids",
+      "opened_docids",
+      "cumulative_ingress_tokens",
+      "search_ingress_tokens",
+      "open_ingress_tokens",
+      "remaining_ingress_tokens",
+      "remaining_search_ingress_tokens",
+      "remaining_open_ingress_tokens",
+    ]),
+    "disclosure state",
+  );
+  requireString(value.run_id, "disclosure state.run_id");
+  for (const field of [
+    "search_calls",
+    "open_attempts",
+    "successful_open_calls",
+    "cumulative_ingress_tokens",
+    "search_ingress_tokens",
+    "open_ingress_tokens",
+    "remaining_ingress_tokens",
+    "remaining_search_ingress_tokens",
+    "remaining_open_ingress_tokens",
+  ]) {
+    requireInteger(value[field], `disclosure state.${field}`, 0, Number.MAX_SAFE_INTEGER);
+  }
+  for (const field of ["seen_docids", "eligible_open_docids", "opened_docids"]) {
+    if (!Array.isArray(value[field])) {
+      throw new Error(`disclosure state.${field} must be an array`);
+    }
+    for (const [index, docid] of value[field].entries()) {
+      requireString(docid, `disclosure state.${field}[${index}]`);
+    }
+    if (new Set(value[field]).size !== value[field].length) {
+      throw new Error(`disclosure state.${field} must contain unique docids`);
+    }
+  }
+  if (value.successful_open_calls > value.open_attempts) {
+    throw new Error("successful open calls cannot exceed open attempts");
+  }
+}
+
+function validateSearch(search) {
+  requireObject(search, "search");
+  if (search.kind === "fixture") {
+    rejectUnknownKeys(search, new Set(["kind", "results", "max_results"]), "search");
+    const maxResults = search.max_results ?? 5;
+    requireInteger(maxResults, "search.max_results", 1, 20);
+    validateSearchResults(search.results, { allowEmpty: false, maxResults });
+    return;
+  }
+  if (search.kind === "http") {
+    rejectUnknownKeys(search, new Set(["kind", "url", "timeout_ms", "max_results"]), "search");
+    requireString(search.url, "search.url");
+    const url = new URL(search.url);
+    if (url.protocol !== "http:" || url.username || url.password) {
+      throw new Error("BM25 search URL must be unauthenticated HTTP");
+    }
+    if (!['127.0.0.1', 'localhost', '::1'].includes(url.hostname)) {
+      throw new Error("BM25 search URL must use a loopback host");
+    }
+    requireInteger(search.timeout_ms, "search.timeout_ms", 1, 120000);
+    requireInteger(search.max_results ?? 5, "search.max_results", 1, 20);
+    return;
+  }
+  throw new Error("search.kind must be fixture or http");
+}
+
+function rejectUnknownKeys(value, allowed, label) {
+  const unknown = Object.keys(value).filter((key) => !allowed.has(key));
+  if (unknown.length > 0) {
+    throw new Error(`${label} has unknown fields: ${unknown.sort().join(", ")}`);
+  }
+}
+
+function requireObject(value, label) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+}
+
+function requireString(value, label) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`${label} must be a non-empty string`);
+  }
+}
+
+function requireEqual(value, expected, label) {
+  if (value !== expected) {
+    throw new Error(`${label} must equal ${expected}`);
+  }
+}
+
+function requireInteger(value, label, minimum, maximum) {
+  if (!Number.isInteger(value) || value < minimum || value > maximum) {
+    throw new Error(`${label} must be an integer between ${minimum} and ${maximum}`);
+  }
+}

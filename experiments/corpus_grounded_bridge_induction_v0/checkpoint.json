@@ -1,0 +1,111 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "corpus-grounded-bridge-induction-v0",
+  "status": "closed",
+  "problem": "Closed-book bridge generation produced zero Flash hits and one Pro hit, while direct atomic clue retrieval produced zero hits but persisted 278 corpus snippets. The remaining causal question is whether near-miss corpus vocabulary can ground the missing bridge without expanding to a general multi-agent search graph.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/bridge-generator-model-gate-v0-20260815/probe-result.json",
+      "sha256": "fb883fcdec536f0543e81b23c54fd83f47fad550c793b7daf6e1fd9f861f2915"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/atomic-clue-frontier-v0-20260815/frontier-result.json",
+      "sha256": "3a681e252f2a6ba3ad09154630ad937c612b11adbc2cedb2b76e0beb12468ad7"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/contrastive-bridge-hypothesis-v0-20260815/oracle-replay.json",
+      "sha256": "42e03ba13527964a07bde91f82d9fedd56d11d344d9a4b50adcc00d39994c908"
+    }
+  ],
+  "simplest_baseline": "Use the rejected Pro Hypothesis Firewall result, which sees the question and unverified subject but no corpus snippets and retrieves gold on one of three cases.",
+  "hypothesis": "Adding a deterministic packet containing the top two 1,200-character snippets from every atomic clue search will let the same non-thinking Pro generator cite corpus pivots and produce three queries that retrieve gold on at least two cases, an improvement of at least one case over closed-book Pro.",
+  "changed_mechanisms": [
+    "corpus-grounded near-miss packets for bridge induction"
+  ],
+  "anti_claim": "This is a frozen-model retrieval-context intervention. It is not training and must not be represented as improving DeepSeek's underlying capability.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow 2.0",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "isolated research contexts",
+        "structured sub-agent results",
+        "lead-controlled synthesis"
+      ],
+      "current_gap": "The near-miss packet resembles a scoped sub-agent result, but it is produced deterministically by retrieval and must cite source docids. No free-form worker conversation or role expansion is added.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "iterative search and reflection",
+        "research compression",
+        "single research agent loop"
+      ],
+      "current_gap": "This loop implements one registered retrieval-to-reflection hop with explicit evidence provenance and a hard stop, rather than an open-ended research loop.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "research-question execution",
+        "crawler evidence collection",
+        "publisher synthesis"
+      ],
+      "current_gap": "The corpus packet is a narrow evidence collection stage. Bridge induction is evaluated before publisher or report generation, so retrieval causality remains observable.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "iterative search graph",
+        "multi-query WebSearchers",
+        "graph state aggregation"
+      ],
+      "current_gap": "This is a two-depth fixed graph: atomic clue frontier, then three cited bridge queries. Evidence Debt controls entry and the cumulative 23-search cap; no arbitrary graph growth is permitted.",
+      "disposition": "borrow_boundary"
+    }
+  ],
+  "frozen_controls": [
+    "deepseek-v4-pro with thinking disabled",
+    "same three outcome-selected open-debt development cases",
+    "same question, obligation, and unverified-subject fields as closed-book Pro",
+    "top two documents per frozen atomic clue query",
+    "1,200-character deterministic snippet cap",
+    "bridge outputs must cite packet docids",
+    "one provider attempt and three final top-20 searches per case",
+    "14 prior atomic searches plus 9 final searches equals a 23-search cumulative cap",
+    "same query-aware BM25-anchor plus Dense-lead retriever",
+    "no Writer or Judge during retrieval calibration"
+  ],
+  "budget": {
+    "maximum_development_queries": 3,
+    "maximum_provider_cost_usd": 0.05,
+    "maximum_search_calls_per_query": 8,
+    "maximum_output_tokens_per_query": 384,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/corpus-grounded-bridge-induction-v0-20260815/probe-result.json",
+    "sha256": "a8bb2905fef62fac77f8074567546b30fca652e8cc0267b3fa1dedda0246d710"
+  },
+  "decision": "reject",
+  "next_action": "Freeze the retrieval-query-generation branch after repeated registered rejections on the same three failures. Preserve all artifacts and pivot to evidence-present-but-wrong cases, where a Claim-Evidence Ledger or typed verification stage can be tested without changing retrieval.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge at http://127.0.0.1:18015/v1",
+    "query-aware progressive-disclosure retriever at http://127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "A pass supports one corpus-grounded bridge hop on three known development failures only. It cannot establish end-to-end effectiveness, unseen generalization, official accuracy, leaderboard rank, training, or model-capability improvement."
+}

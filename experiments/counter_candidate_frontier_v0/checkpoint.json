@@ -1,0 +1,103 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "counter-candidate-frontier-v0",
+  "status": "closed",
+  "problem": "The draft-blind B4 worker removed prior-answer anchoring but its self-selected query retrieved no gold. Two cases were rejected only because the selected bridge copied question vocabulary, while every raw completion still preserved three structurally parseable candidates. It is not yet known whether candidate generation or same-call self-selection is the immediate bottleneck.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/draft-blind-counter-hypothesis-v0-20260815/probe-result.json",
+      "sha256": "8651c1ffe3f01faf9a7773a9c3917b7c4674312c6c14ed35d7a14f2c3e5ed454"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/contrastive-bridge-hypothesis-v0-20260815/oracle-replay.json",
+      "sha256": "42e03ba13527964a07bde91f82d9fedd56d11d344d9a4b50adcc00d39994c908"
+    }
+  ],
+  "simplest_baseline": "Keep B4's already-paid raw BridgePackets and selected queries unchanged. Do not call another model or add an agent.",
+  "hypothesis": "Deterministically substituting each of the three preserved bridge candidates into the same compact query frame will reveal whether any unselected candidate retrieves gold. At least one unselected rescue indicates a selection bottleneck; zero rescues across all three cases indicates candidate-generation failure.",
+  "changed_mechanisms": [
+    "exhaustive local replay of already-generated bridge candidates"
+  ],
+  "anti_claim": "This is a post-generation bad-case diagnostic over outcome-selected development cases, not an effectiveness comparison, training result, or model-capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow 2.0",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "isolated sub-agent contexts",
+        "structured sub-agent results",
+        "delegation only when useful"
+      ],
+      "current_gap": "DeerFlow can branch execution, but this diagnostic first measures whether the already-generated branch set contains any useful alternative before paying for additional workers.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "current single research implementation",
+        "legacy lower-performing multi-agent implementation",
+        "stage-separated research and compression"
+      ],
+      "current_gap": "Its legacy result is a guardrail against treating branch count as quality. The current loop isolates selection from generation before changing orchestration.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "planner-generated research questions",
+        "parallel execution and crawling",
+        "publisher synthesis"
+      ],
+      "current_gap": "GPT Researcher spends execution on multiple questions. This loop spends no new model tokens and replays only preserved candidates to learn whether parallel execution would have any value.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "simultaneous multi-query search",
+        "asynchronous execution",
+        "search graph expansion"
+      ],
+      "current_gap": "The replay resembles a tiny fixed multi-query frontier only as a diagnostic. It does not claim MindSearch-style planning or concurrency and cannot enter the main harness without a later matched-budget gate.",
+      "disposition": "benchmark_later"
+    }
+  ],
+  "frozen_controls": [
+    "same three saved B4 raw BridgePackets",
+    "same query frame with only the bridge candidate substituted",
+    "same query-aware BM25-anchor plus Dense-lead retriever",
+    "top-20 results per replayed candidate",
+    "no provider, Writer, or Judge calls",
+    "all three candidates replayed exactly once"
+  ],
+  "budget": {
+    "maximum_development_queries": 3,
+    "maximum_provider_cost_usd": 0.000001,
+    "maximum_search_calls_per_query": 3,
+    "maximum_output_tokens_per_query": 1,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/counter-candidate-frontier-v0-20260815/replay-result.json",
+    "sha256": "844bb506790193e7c200a79d77d19d5e2dfad9ded5c0a7e111cac7a3d9c20789"
+  },
+  "decision": "reject",
+  "next_action": "Reject selection-only expansion. Open a bounded Hypothesis Firewall Slate loop that retains one explicitly unverified prior subject seed, requires two independent counter-hypotheses, searches all three, and never exposes the prior exact answer or gold IDs.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge at http://127.0.0.1:18015/v1",
+    "query-aware progressive-disclosure retriever at http://127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "This loop can only localize the immediate B4 failure on three known development cases. It cannot support end-to-end, unseen-slice, official accuracy, leaderboard, or model-capability claims."
+}

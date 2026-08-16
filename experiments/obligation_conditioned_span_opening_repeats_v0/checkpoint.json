@@ -1,0 +1,118 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "obligation-conditioned-span-opening-repeats-v0",
+  "status": "closed",
+  "problem": "One fresh25 trial produced a small net Judge gain but failed exact and recall gates; posthoc attribution found two answer-bearing-open improvements while both regressions occurred without any open, so one stochastic trial cannot distinguish a real mechanism effect from run variation.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/paired-decision.json",
+      "sha256": "4f5d949efa7c1643d3cce71caa0d48076e0f53bd00a0efadff80e89d26775740"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/bad-case-audit.json",
+      "sha256": "0f103d2dd34b0928d783693d56c170f95d8ab958a550a6e528db265d33c76727"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_repeats_v0.json",
+      "sha256": "d03fee4419cb999e69dd3014f9eeeb99a172954e23b7e9fa00b6de3a0a0f0c64"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_repeats_execution_audit_v0.json",
+      "sha256": "c7eb550c427e58078fa437d1d9fb78e29f585a0648b4fdbbcb00d0f1b84d4f02"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/execution-audit.json",
+      "sha256": "3f22902d85822109fb767787efbb51f48524ebe2dc111a35880bf78af3a4ec0a"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/valid-trials-resolution.json",
+      "sha256": "3f2019e8d8eed392753720e6d25ee041e8746dc5669cd66c3ddafbd32281ff1b"
+    }
+  ],
+  "simplest_baseline": "Repeat the unchanged v10 and v14 arms on the identical 25-question development slice; add no planner, critic, multi-agent role, retrieval change, prompt variant, or larger budget.",
+  "hypothesis": "If obligation-conditioned span opening is a stable harness effect rather than one-run variation, three alternating-order paired trials will yield at least three aggregate Judge-correct gains across 75 observations, be noninferior in at least two trials, and preserve aggregate exact, recall, Token, and cost gates.",
+  "changed_mechanisms": [
+    "no-change paired repetition protocol with alternating arm order"
+  ],
+  "anti_claim": "Repetition estimates development-run stability; it does not improve the model, create new benchmark examples, or license an official or leaderboard claim.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "dynamic sub-agents",
+        "isolated contexts",
+        "long-running checkpoints"
+      ],
+      "current_gap": "More isolated agents would add another stochastic factor before the smaller evidence-opening effect has reproduced.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "configurable research runtime",
+        "research compression",
+        "benchmark export"
+      ],
+      "current_gap": "Its configurable stack is useful later, but changing runtime structure now would prevent attribution of the existing paired signal.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "planner-crawler-publisher separation",
+        "parallel source collection"
+      ],
+      "current_gap": "Adding breadth may improve recall, but it is not a valid response to unresolved repeat variance in a fixed-model mechanism test.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "WebPlanner graph expansion",
+        "parallel WebSearcher nodes"
+      ],
+      "current_gap": "Search-graph expansion changes both breadth and latency; neither should be introduced before the current one-mechanism effect passes stability gates.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "same 25 BrowseComp-Plus development questions in all three trials",
+    "deepseek-v4-flash with high thinking and empty system prompt",
+    "v10 baseline and v14 obligation-span candidate adapters",
+    "same corpus and BM25-five plus Qwen-dense-fifteen retrieval",
+    "eight searches, eight opens, 33,280 evidence-ingress tokens, and 10,000 output tokens",
+    "alternating baseline-first, candidate-first, baseline-first execution order",
+    "same persistent qwen3-32b-bf16 development Judge",
+    "one provider attempt per new case and no failed-call retries",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 100,
+    "maximum_provider_cost_usd": 1.0,
+    "maximum_search_calls_per_query": 8,
+    "maximum_output_tokens_per_query": 10000,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/execution-audit.json",
+    "sha256": "3f22902d85822109fb767787efbb51f48524ebe2dc111a35880bf78af3a4ec0a"
+  },
+  "decision": "reject",
+  "next_action": "Freeze obligation-conditioned span opening: across the two complete paired trials it lost four Judge-correct cases, four normalized-exact cases, and 8.92 percentage points mean evidence recall despite lower Token and recorded cost. Start a zero-provider cross-trial stability audit of the v10 baseline before selecting a different causal layer.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "This loop ended in an execution-integrity rejection, not an effectiveness score. The trial-3 candidate arm made 200 failed search calls while the old runner reported 25 successes, so it was not sent to the Judge and must not be described as zero model accuracy. Across the project, two post-provider validation failures have unobservable cost. No result is official, leaderboard-facing, general-superiority evidence, or a frozen-model capability improvement."
+}

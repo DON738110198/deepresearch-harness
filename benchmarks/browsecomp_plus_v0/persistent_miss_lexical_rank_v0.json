@@ -1,0 +1,50 @@
+{
+  "schema_version": "persistent-miss-lexical-rank-registration-v0",
+  "status": "posthoc_registered_failure_cluster",
+  "registered_at": "2026-08-16T20:57:05.9253928+08:00",
+  "purpose": "Compare full-question and model-generated-query BM25 gold ranks for the complete seven-case persistent retrieval-miss cluster on the identical local index.",
+  "stability_audit": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/baseline-stability-audit.json",
+    "sha256": "0c2595a7078bfae6ad501710bb6358701a37fd51e4cc6a0f586ee1cbc1633d14"
+  },
+  "corpus_answerability": {
+    "path": "runs/browsecomp_plus_v0/persistent-miss-corpus-answerability-v0-20260816/audit.json",
+    "sha256": "7782d7e8aaa82c6aa82b849057c920d8a7599bb1530eb6dd485b3cfd43fc04f2"
+  },
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline.gold.json",
+    "sha256": "2ef96bc47f0f89d1fa60aaac082a3d7b087737f1041bec579b2dc21a29034fd2"
+  },
+  "baseline_run_root": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline",
+  "query_ids": [
+    "875",
+    "754",
+    "898",
+    "710",
+    "873",
+    "869",
+    "805"
+  ],
+  "document_index_path": "runs/_external/browsecomp-plus-indexes-direct/bm25",
+  "maximum_rank": 1000,
+  "frozen_artifacts": [
+    {
+      "path": "src/deepresearch_harness/lexical_rank_audit.py",
+      "sha256": "169f523fc6f1ea60d22c10763b1acc10ccdd5ceb313d1d810dc205f4c03f5073"
+    },
+    {
+      "path": "scripts/run_lexical_rank_audit.py",
+      "sha256": "ec89a3f4c3283837a9f49dcb09f1f7c35bde9bf1e48dfc89951876bd71502b2a"
+    },
+    {
+      "path": "tests/test_lexical_rank_audit.py",
+      "sha256": "8adc69b871ae175262a955acdc53609283df9296ecf6e0ecbcdcac0fe9ed4118"
+    }
+  ],
+  "acceptance": {
+    "minimum_raw_question_top5_cases": 2,
+    "minimum_generated_query_top100_cases_for_pool_diagnosis": 3
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "This is a posthoc gold-rank diagnostic over outcome-selected development failures. It runs local BM25 at depth 1000 but makes no provider, online search, or Judge call. Passing the raw-question gate only selects a candidate retrieval channel for a later paired test; it does not establish retrieval or end-to-end improvement."
+}

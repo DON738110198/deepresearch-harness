@@ -25,6 +25,12 @@ class ProgressiveDisclosurePolicy(StrictContract):
     maximum_open_calls: int = Field(default=8, ge=1, le=32)
     total_evidence_ingress_token_budget: int = Field(ge=512, le=100_000)
     open_evidence_ingress_token_budget: int = Field(default=0, ge=0, le=65_536)
+    anchor_open_policy: Literal["assume_full", "reopen_with_obligation"] = (
+        "assume_full"
+    )
+    open_content_policy: Literal["head_v0", "answer_obligation_window_v0"] = (
+        "head_v0"
+    )
 
     @model_validator(mode="after")
     def open_budget_is_funded_and_usable(self) -> "ProgressiveDisclosurePolicy":
@@ -37,6 +43,13 @@ class ProgressiveDisclosurePolicy(StrictContract):
             self.maximum_open_calls * self.open_token_cap
         ):
             raise ValueError("open evidence budget exceeds the maximum usable amount")
+        if (
+            self.anchor_open_policy == "reopen_with_obligation"
+            and self.open_content_policy != "answer_obligation_window_v0"
+        ):
+            raise ValueError(
+                "reopening anchor previews requires obligation-window opening"
+            )
         return self
 
 
@@ -129,6 +142,7 @@ class ProgressiveDisclosureSession:
         policy: ProgressiveDisclosurePolicy,
         tokenizer: EvidenceTokenizer,
         document_loader: Callable[[str], str | None],
+        obligation_document_loader: Callable[[str, str], str | None] | None = None,
     ) -> None:
         if not run_id.strip():
             raise ValueError("run_id must not be blank")
@@ -136,6 +150,14 @@ class ProgressiveDisclosureSession:
         self._policy = policy
         self._tokenizer = tokenizer
         self._document_loader = document_loader
+        self._obligation_document_loader = obligation_document_loader
+        if (
+            policy.open_content_policy == "answer_obligation_window_v0"
+            and obligation_document_loader is None
+        ):
+            raise ValueError(
+                "obligation-window opening requires an obligation document loader"
+            )
         self._seen_docids: set[str] = set()
         self._eligible_open_docids: set[str] = set()
         self._opened_docids: set[str] = set()
@@ -182,7 +204,10 @@ class ProgressiveDisclosureSession:
                 break
             disclosed.append(item)
             self._seen_docids.add(candidate.docid)
-            self._opened_docids.add(candidate.docid)
+            if self._policy.anchor_open_policy == "assume_full":
+                self._opened_docids.add(candidate.docid)
+            else:
+                self._eligible_open_docids.add(candidate.docid)
         for candidate in leads:
             item = self._disclose_candidate(
                 candidate, channel="dense_lead", token_cap=self._policy.lead_token_cap
@@ -210,9 +235,16 @@ class ProgressiveDisclosureSession:
             ingress_budget_exhausted=self.remaining_search_ingress_tokens == 0,
         )
 
-    def open_evidence(self, docid: str) -> OpenEvidenceResult:
+    def open_evidence(
+        self, docid: str, *, obligation_query: str | None = None
+    ) -> OpenEvidenceResult:
         if not docid.strip():
             raise ValueError("docid must not be blank")
+        if self._policy.open_content_policy == "answer_obligation_window_v0":
+            if obligation_query is None or not obligation_query.strip():
+                raise ValueError(
+                    "obligation_query is required for obligation-window opening"
+                )
         self._open_attempts += 1
         if docid in self._opened_docids:
             return self._open_result(docid, "already_opened")
@@ -222,7 +254,13 @@ class ProgressiveDisclosureSession:
             return self._open_result(docid, "open_limit_reached")
         if self.remaining_open_ingress_tokens == 0:
             return self._open_result(docid, "ingress_budget_exhausted")
-        text = self._document_loader(docid)
+        text = (
+            self._obligation_document_loader(docid, obligation_query.strip())
+            if self._policy.open_content_policy == "answer_obligation_window_v0"
+            and self._obligation_document_loader is not None
+            and obligation_query is not None
+            else self._document_loader(docid)
+        )
         if text is None or not text.strip():
             return self._open_result(docid, "missing_document")
         content, token_count = self._truncate(
@@ -360,6 +398,14 @@ def format_bm25_anchor(contents: str) -> str:
     return f"[BM25 anchor: full evidence]\n{contents}"
 
 
+def format_bm25_anchor_preview(docid: str, contents: str) -> str:
+    return (
+        "[BM25 anchor preview; content is truncated. Use open_evidence with "
+        f"docid={docid} and an answer-critical obligation before relying on it.]\n"
+        f"{contents}"
+    )
+
+
 def format_dense_lead(docid: str, contents: str) -> str:
     return (
         "[Dense lead: preview only. Use open_evidence with this "
@@ -369,3 +415,12 @@ def format_dense_lead(docid: str, contents: str) -> str:
 
 def format_opened_evidence(docid: str, contents: str) -> str:
     return f"[Opened dense evidence: docid={docid}]\n{contents}"
+
+
+def format_opened_obligation_span(
+    docid: str, contents: str, *, start_character: int, end_character: int
+) -> str:
+    return (
+        f"[Opened obligation span: docid={docid}; "
+        f"characters={start_character}:{end_character}]\n{contents}"
+    )

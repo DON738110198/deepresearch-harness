@@ -1,0 +1,46 @@
+{
+  "schema_version": "counter-candidate-replay-spec-v0",
+  "status": "registered_before_local_replay",
+  "registered_at": "2026-08-15T23:14:44.4048087+08:00",
+  "source_result": {
+    "path": "runs/browsecomp_plus_v0/draft-blind-counter-hypothesis-v0-20260815/probe-result.json",
+    "sha256": "8651c1ffe3f01faf9a7773a9c3917b7c4674312c6c14ed35d7a14f2c3e5ed454"
+  },
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13.gold.json",
+    "sha256": "4d020433cf5765aae7ae0613107c8dfcd6671733bacf1ee975333e1e5c132fc1"
+  },
+  "query_ids": [
+    "896",
+    "653",
+    "85"
+  ],
+  "search_url": "http://127.0.0.1:8768/search",
+  "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64",
+  "candidates_per_case": 3,
+  "max_search_results": 20,
+  "query_transformation": "replace_selected_bridge_in_preserved_query_v0",
+  "frozen_artifacts": [
+    {
+      "path": "src/deepresearch_harness/counter_candidate_replay.py",
+      "sha256": "4f356045c2a5a9cbc47dccb91220eba2cd8cbfd1a2ff0529e9b170a5324d7bae"
+    },
+    {
+      "path": "scripts/run_counter_candidate_replay.py",
+      "sha256": "9533cd04582a8639e937472ee194340565a2576f5a001ab0118f6d510ee2d328"
+    },
+    {
+      "path": "tests/test_counter_candidate_replay.py",
+      "sha256": "896051b72ba0826942fa171cf710f2f5fe8ec32f7f05df3075b3d3e88816aa76"
+    },
+    {
+      "path": "src/deepresearch_harness/counter_hypothesis_packet.py",
+      "sha256": "9183ae132ff2871ab4ffe487d33aa925c4a33ce333ef2baaba4dbda4e6686382"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+      "sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899"
+    }
+  ],
+  "claim_boundary": "This deterministic replay uses already-paid outputs from three outcome-selected development cases. It can distinguish an observed candidate-selection rescue from total candidate-generation failure under one fixed retriever, but it is not an effectiveness, official accuracy, unseen-slice, leaderboard, or model-capability result."
+}

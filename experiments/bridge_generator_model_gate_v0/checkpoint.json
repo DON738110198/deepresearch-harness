@@ -1,0 +1,109 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "bridge-generator-model-gate-v0",
+  "status": "closed",
+  "problem": "Three successive Flash mechanisms failed to generate corpus-grounded bridge vocabulary on saved retrieval misses, even when draft context, candidate selection, and seed retention were varied independently. Before adding orchestration, the project must determine whether the frozen generator choice is below the task's bridge-inference requirement.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/draft-blind-counter-hypothesis-v0-20260815/probe-result.json",
+      "sha256": "8651c1ffe3f01faf9a7773a9c3917b7c4674312c6c14ed35d7a14f2c3e5ed454"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/counter-candidate-frontier-v0-20260815/replay-result.json",
+      "sha256": "844bb506790193e7c200a79d77d19d5e2dfad9ded5c0a7e111cac7a3d9c20789"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/hypothesis-firewall-slate-v0-20260815/probe-result.json",
+      "sha256": "5397969100246b793a5a4986e95cbf82647f1d982be3ca0745e85bd939c796a1"
+    }
+  ],
+  "simplest_baseline": "Reuse the exact registered Hypothesis Firewall prompt, context fields, parser, three-query search slate, retriever, cases, and acceptance gates. Change only deepseek-v4-flash to deepseek-v4-pro with thinking still disabled.",
+  "hypothesis": "Under identical non-thinking inputs and retrieval execution, deepseek-v4-pro will generate bridge anchors that retrieve gold on at least two of the three saved failures. A failure means model substitution alone is insufficient; a pass only selects a viable generator for later fixed-topology experiments.",
+  "changed_mechanisms": [
+    "bridge generator substitution from deepseek-v4-flash to deepseek-v4-pro"
+  ],
+  "anti_claim": "This is a model-selection capability diagnostic, not a harness improvement. Any difference must be attributed to the generator substitution until a later comparison locks the same model topology on both arms.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow 2.0",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "configurable lead and sub-agent models",
+        "isolated sub-agent context",
+        "structured delegated results"
+      ],
+      "current_gap": "A configurable model layer is useful only after the generator meets the task floor. This gate tests that floor without adopting DeerFlow's broader sub-agent runtime.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "configurable research model",
+        "single research agent implementation",
+        "legacy multi-agent comparison"
+      ],
+      "current_gap": "Its configurable model boundary supports separating model choice from orchestration. This diagnostic changes the model only and makes no architecture claim.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "configurable smart and fast LLM roles",
+        "planner and execution separation",
+        "parallel research execution"
+      ],
+      "current_gap": "Model routing is common and therefore not the project's novelty. A later experiment must compare both harness arms under the same fixed routing and budget.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "planner-dependent search graph",
+        "multi-query execution",
+        "parallel WebSearchers"
+      ],
+      "current_gap": "A stronger planner may improve graph quality, but this gate keeps the graph fixed at three searches so model capability is not confused with graph expansion.",
+      "disposition": "benchmark_later"
+    }
+  ],
+  "frozen_controls": [
+    "same three saved open-debt development cases",
+    "same Hypothesis Firewall prompt builder and Pydantic schema",
+    "same question, obligation, and unverified-subject context fields",
+    "thinking disabled on both Flash and Pro",
+    "one provider attempt and exactly three top-20 searches per case",
+    "same query-aware BM25-anchor plus Dense-lead retriever",
+    "official DeepSeek USD rates captured in the tracked provider config",
+    "no Writer or Judge during capability calibration"
+  ],
+  "budget": {
+    "maximum_development_queries": 3,
+    "maximum_provider_cost_usd": 0.05,
+    "maximum_search_calls_per_query": 3,
+    "maximum_output_tokens_per_query": 320,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/bridge-generator-model-gate-v0-20260815/probe-result.json",
+    "sha256": "fb883fcdec536f0543e81b23c54fd83f47fad550c793b7daf6e1fd9f861f2915"
+  },
+  "decision": "reject",
+  "next_action": "Do not adopt model substitution as the fix. Open a retrieval-first clue-frontier loop that obtains corpus-grounded near-miss evidence from independently searchable clue groups before asking any model to synthesize bridge entities.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge at http://127.0.0.1:18015/v1",
+    "query-aware progressive-disclosure retriever at http://127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "This loop can select a generator for future experiments only. It cannot support a harness-effect, end-to-end, official accuracy, unseen generalization, leaderboard, training, or model-capability-improvement claim."
+}

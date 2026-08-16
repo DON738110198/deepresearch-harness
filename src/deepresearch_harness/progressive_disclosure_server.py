@@ -18,6 +18,7 @@ from .evidence_preview import (
     build_query_aware_lead_preview,
     format_query_aware_dense_lead,
 )
+from .evidence_span_oracle import select_answer_obligation_span
 from .progressive_disclosure import (
     DisclosureSearchResult,
     DisclosureStateSnapshot,
@@ -27,8 +28,10 @@ from .progressive_disclosure import (
     ProgressiveDisclosurePolicy,
     ProgressiveDisclosureSession,
     format_bm25_anchor,
+    format_bm25_anchor_preview,
     format_dense_lead,
     format_opened_evidence,
+    format_opened_obligation_span,
 )
 from .retrieval_replay import (
     QwenDenseReplaySearcher,
@@ -56,11 +59,12 @@ class DisclosureSearchRequest(StrictContract):
 class OpenEvidenceRequest(StrictContract):
     run_id: str = Field(min_length=1, max_length=512)
     docid: str = Field(min_length=1, max_length=512)
+    obligation_query: str | None = Field(default=None, min_length=1, max_length=10_000)
 
-    @field_validator("run_id", "docid")
+    @field_validator("run_id", "docid", "obligation_query")
     @classmethod
-    def values_are_not_blank(cls, value: str) -> str:
-        if not value.strip():
+    def values_are_not_blank(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
             raise ValueError("value must not be blank")
         return value
 
@@ -125,6 +129,7 @@ class ProgressiveDisclosureRuntime:
         bm25_search: Callable[[str], Sequence[EvidenceCandidate]],
         dense_search: Callable[[str], Sequence[EvidenceCandidate]],
         document_loader: Callable[[str], str | None],
+        obligation_document_loader: Callable[[str, str], str | None] | None = None,
         maximum_sessions: int = 1_000,
     ) -> None:
         if not retriever_id.strip():
@@ -137,6 +142,7 @@ class ProgressiveDisclosureRuntime:
         self._bm25_search = bm25_search
         self._dense_search = dense_search
         self._document_loader = document_loader
+        self._obligation_document_loader = obligation_document_loader
         self._maximum_sessions = maximum_sessions
         self._sessions: dict[str, ProgressiveDisclosureSession] = {}
         self._lock = threading.Lock()
@@ -160,11 +166,15 @@ class ProgressiveDisclosureRuntime:
             )
         return response
 
-    def open_evidence(self, *, run_id: str, docid: str) -> ProgressiveOpenResponse:
+    def open_evidence(
+        self, *, run_id: str, docid: str, obligation_query: str | None = None
+    ) -> ProgressiveOpenResponse:
         started = time.perf_counter()
         with self._lock:
             session = self._get_session(run_id)
-            result = session.open_evidence(docid)
+            result = session.open_evidence(
+                docid, obligation_query=obligation_query
+            )
             response = ProgressiveOpenResponse(
                 result=result,
                 state=session.snapshot(),
@@ -195,6 +205,7 @@ class ProgressiveDisclosureRuntime:
             policy=self._policy,
             tokenizer=self._tokenizer,
             document_loader=self._document_loader,
+            obligation_document_loader=self._obligation_document_loader,
         )
         self._sessions[run_id] = session
         return session
@@ -290,7 +301,11 @@ def build_browsecomp_runtime(
                 EvidenceCandidate(
                     docid=hit.docid,
                     score=hit.score,
-                    text=format_bm25_anchor(raw["contents"]),
+                    text=(
+                        format_bm25_anchor(raw["contents"])
+                        if policy.anchor_open_policy == "assume_full"
+                        else format_bm25_anchor_preview(hit.docid, raw["contents"])
+                    ),
                 )
             )
         return rows
@@ -324,17 +339,41 @@ def build_browsecomp_runtime(
             return None
         return format_opened_evidence(docid, contents)
 
-    return ProgressiveDisclosureRuntime(
-        retriever_id=(
+    def open_obligation_span(docid: str, obligation_query: str) -> str | None:
+        contents = load_document(docid)
+        if contents is None:
+            return None
+        selected = select_answer_obligation_span(
+            contents,
+            obligation_query,
+            maximum_span_characters=2_000,
+        )
+        return format_opened_obligation_span(
+            docid,
+            selected.content,
+            start_character=selected.start_character,
+            end_character=selected.end_character,
+        )
+
+    retriever_id = (
             f"bm25-anchor-{policy.anchor_count}+{candidate_id}-lead-"
             f"{policy.dense_lead_count}-{lead_preview_policy}-"
             f"{policy.lead_token_cap}"
-        ),
+    )
+    if policy.open_content_policy == "answer_obligation_window_v0":
+        retriever_id += "-anchor-reopen-answer_obligation_window_v0"
+    return ProgressiveDisclosureRuntime(
+        retriever_id=retriever_id,
         policy=policy,
         tokenizer=tokenizer,
         bm25_search=bm25_search,
         dense_search=dense_search,
         document_loader=open_document,
+        obligation_document_loader=(
+            open_obligation_span
+            if policy.open_content_policy == "answer_obligation_window_v0"
+            else None
+        ),
     )
 
 
@@ -361,7 +400,9 @@ def make_handler(runtime: ProgressiveDisclosureRuntime) -> type[BaseHTTPRequestH
                 elif self.path == "/open":
                     request = OpenEvidenceRequest.model_validate(payload)
                     response = runtime.open_evidence(
-                        run_id=request.run_id, docid=request.docid
+                        run_id=request.run_id,
+                        docid=request.docid,
+                        obligation_query=request.obligation_query,
                     )
                 elif self.path == "/state":
                     request = DisclosureStateRequest.model_validate(payload)
@@ -451,6 +492,16 @@ def main() -> int:
     parser.add_argument("--anchor-token-cap", type=int, default=512)
     parser.add_argument("--lead-token-cap", type=int, default=24)
     parser.add_argument("--open-token-cap", type=int, default=512)
+    parser.add_argument(
+        "--anchor-open-policy",
+        choices=("assume_full", "reopen_with_obligation"),
+        default="assume_full",
+    )
+    parser.add_argument(
+        "--open-content-policy",
+        choices=("head_v0", "answer_obligation_window_v0"),
+        default="head_v0",
+    )
     parser.add_argument("--maximum-open-calls", type=int, default=8)
     parser.add_argument("--total-evidence-ingress-token-budget", type=int, required=True)
     parser.add_argument("--open-evidence-ingress-token-budget", type=int, required=True)
@@ -472,6 +523,8 @@ def main() -> int:
         open_evidence_ingress_token_budget=(
             args.open_evidence_ingress_token_budget
         ),
+        anchor_open_policy=args.anchor_open_policy,
+        open_content_policy=args.open_content_policy,
     )
     runtime = build_browsecomp_runtime(
         manifest_path=args.manifest,

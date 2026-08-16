@@ -1,0 +1,94 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "evidence-span-availability-oracle-v0",
+  "status": "closed",
+  "problem": "The paired-25 candidate retrieved every gold document for five Judge-wrong cases, yet several exact answers may be hidden outside the truncated anchor preview and the current tool forbids reopening anchors.",
+  "observed_evidence": [
+    {
+      "path": "benchmarks/browsecomp_plus_v0/evidence_span_availability_oracle_v0.json",
+      "sha256": "700f0ece97cf88e5984824439d5e92b092a4df99c575d05815c0a633a744a074"
+    }
+  ],
+  "simplest_baseline": "Keep the existing 2,000-character document head and make no provider or search calls.",
+  "hypothesis": "A deterministic window selected by the answer-critical obligation exposes literal answer spans that the same-size document head hides.",
+  "changed_mechanisms": [
+    "posthoc deterministic answer-obligation span selection"
+  ],
+  "anti_claim": "This gold-aware oracle does not measure end-to-end accuracy, tool choice, synthesis quality, official benchmark performance, or model capability.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "lead-agent context management",
+        "isolated sub-agent outputs"
+      ],
+      "current_gap": "Adding isolated researchers does not reveal a distant span inside a document already retrieved by the single agent.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "research compression",
+        "configurable search APIs"
+      ],
+      "current_gap": "Generic compression can discard the answer-bearing tail; the local failure calls for an auditable obligation-to-span operation before compression.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "crawler agents",
+        "publisher separation"
+      ],
+      "current_gap": "More crawl breadth is not the minimal response when the correct source is already present but truncated.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "WebPlanner search graph",
+        "parallel WebSearcher nodes"
+      ],
+      "current_gap": "A wider search graph targets missing branches rather than answer-span availability inside a known document.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "five outcome-selected development failures",
+    "retrieved gold docids from saved run traces",
+    "2,000-character head and selected-span caps",
+    "deterministic selector",
+    "zero provider calls",
+    "zero search calls",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 5,
+    "maximum_provider_cost_usd": 0,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/evidence-span-availability-oracle-v0-20260815/oracle-result.json",
+    "sha256": "bd3e7699a379fe0a748eeb32ac0f296ab9bf0a4e82e6ec20cad35bd33a746348"
+  },
+  "decision": "accept",
+  "next_action": "Preregister a paid, outcome-selected calibration of obligation-conditioned span opening; require actual tool use and answer repair before any fresh-slice comparison.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64@127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "Four of five full gold documents literally contain all answer atoms; the deterministic selected span exposes four while the same-size head exposes one. Query 715 was spotchecked before registration, but three of the other four cases also pass. This supports only the mechanism's availability precondition."
+}

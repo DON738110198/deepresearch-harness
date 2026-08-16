@@ -1,0 +1,152 @@
+{
+  "schema_version": "obligation-span-repeat-registration-v0",
+  "status": "preregistered_before_trials_2_and_3",
+  "registered_at": "2026-08-16T01:41:20.3094294+08:00",
+  "purpose": "Estimate whether the fresh25 v14 signal is reproducible under unchanged controls before any new harness mechanism is permitted. Trial 1 is already observed; trials 2 and 3 are frozen here before generation with alternating execution order.",
+  "reference_fresh_registration": {
+    "path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_fresh25_recovery_v0.json",
+    "sha256": "fef6e8719c718b1a12e0a780c96bb8c64370c472c124e43a35c9022583ca53b6"
+  },
+  "first_trial_decision": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/paired-decision.json",
+    "sha256": "4f5d949efa7c1643d3cce71caa0d48076e0f53bd00a0efadff80e89d26775740"
+  },
+  "first_trial_bad_case_audit": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/bad-case-audit.json",
+    "sha256": "0f103d2dd34b0928d783693d56c170f95d8ab958a550a6e528db265d33c76727"
+  },
+  "query_ids": [
+    "772",
+    "769",
+    "875",
+    "579",
+    "754",
+    "985",
+    "790",
+    "898",
+    "710",
+    "79",
+    "552",
+    "621",
+    "873",
+    "583",
+    "6",
+    "784",
+    "591",
+    "796",
+    "869",
+    "679",
+    "962",
+    "577",
+    "598",
+    "805",
+    "558"
+  ],
+  "variants": [
+    {
+      "name": "baseline",
+      "adapter_version": "pi-browsecomp-v10",
+      "adapter_runner": {
+        "path": "integrations/pi-browsecomp/v10/runner.mjs",
+        "sha256": "3ad44005fea8c8c5a3f1dd0add1eccb50f09c869db453022e2dae1a443fde833"
+      },
+      "search_url": "http://127.0.0.1:8768/search",
+      "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64"
+    },
+    {
+      "name": "candidate",
+      "adapter_version": "pi-browsecomp-v14",
+      "adapter_runner": {
+        "path": "integrations/pi-browsecomp/v14/runner.mjs",
+        "sha256": "d34a3c2236eb488d04d035e5f00a023952bbafcd136757ca26e173fc492c38c3"
+      },
+      "search_url": "http://127.0.0.1:8769/search",
+      "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64-anchor-reopen-answer_obligation_window_v0"
+    }
+  ],
+  "trials": [
+    {
+      "trial_id": "trial-1",
+      "execution_order": "baseline_first",
+      "observed_before_registration": true,
+      "baseline": {
+        "run_root": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline",
+        "summary": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline/summary.json",
+        "diagnostic": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline.diagnostic.json",
+        "judge": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline-persistent-judge/evaluation/development_judge_result.json"
+      },
+      "candidate": {
+        "run_root": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/candidate",
+        "summary": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/candidate/summary.json",
+        "diagnostic": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/candidate.diagnostic.json",
+        "judge": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/candidate-persistent-judge/evaluation/development_judge_result.json"
+      }
+    },
+    {
+      "trial_id": "trial-2",
+      "execution_order": "candidate_first",
+      "observed_before_registration": false,
+      "baseline": {
+        "run_root": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-2-baseline",
+        "summary": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-2-baseline/summary.json",
+        "diagnostic": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-2-baseline.diagnostic.json",
+        "judge": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-2-baseline-persistent-judge/evaluation/development_judge_result.json"
+      },
+      "candidate": {
+        "run_root": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-2-candidate",
+        "summary": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-2-candidate/summary.json",
+        "diagnostic": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-2-candidate.diagnostic.json",
+        "judge": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-2-candidate-persistent-judge/evaluation/development_judge_result.json"
+      }
+    },
+    {
+      "trial_id": "trial-3",
+      "execution_order": "baseline_first",
+      "observed_before_registration": false,
+      "baseline": {
+        "run_root": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-3-baseline",
+        "summary": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-3-baseline/summary.json",
+        "diagnostic": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-3-baseline.diagnostic.json",
+        "judge": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-3-baseline-persistent-judge/evaluation/development_judge_result.json"
+      },
+      "candidate": {
+        "run_root": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-3-candidate",
+        "summary": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-3-candidate/summary.json",
+        "diagnostic": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-3-candidate.diagnostic.json",
+        "judge": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/trial-3-candidate-persistent-judge/evaluation/development_judge_result.json"
+      }
+    }
+  ],
+  "provider_attempts_per_new_case": 1,
+  "known_unobservable_provider_attempts": 1,
+  "maximum_new_provider_cases": 100,
+  "acceptance": {
+    "trial_count_must_equal": 3,
+    "total_generation_failures_must_equal": 0,
+    "total_judge_failures_must_equal": 0,
+    "minimum_candidate_minus_baseline_schema_complete": 0,
+    "minimum_aggregate_judge_correct_delta": 3,
+    "minimum_noninferior_judge_trials": 2,
+    "minimum_aggregate_normalized_exact_delta": 0,
+    "minimum_mean_evidence_recall_delta_pp": -1.0,
+    "maximum_total_token_ratio": 1.15,
+    "maximum_recorded_provider_cost_ratio": 1.25,
+    "maximum_new_recorded_provider_cost_usd": 1.0
+  },
+  "frozen_artifacts": [
+    {
+      "path": "src/deepresearch_harness/obligation_span_repeats.py",
+      "sha256": "36392d9ddcc6bd61d65e35d4b29b9380f2332d25fa91d18e902b41b560376a1b"
+    },
+    {
+      "path": "scripts/decide_obligation_span_repeats.py",
+      "sha256": "791b7a0a6ac5137a3a5e3de0b75583584eaf7dae22e3f1b7196839137df89754"
+    },
+    {
+      "path": "tests/test_obligation_span_repeats.py",
+      "sha256": "833266222a2a9b6878c957692ad879506edbf1600282c93dd989e31d50088d31"
+    }
+  ],
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "Trial 1 was observed before this repeat registration and is retained rather than selected away. Trials 2 and 3 make no harness changes and alternate arm order. Passing requires an aggregate gain of at least 3 Judge-correct observations across 75 paired development observations, noninferiority in at least two trials, no aggregate normalized-exact loss, no more than 1 percentage point mean evidence-recall loss, and matched resource gates. The persistent Qwen Judge is a calibrated development diagnostic, not the official evaluator. One trial-1 post-provider validation failure has unobservable cost, so recorded cost remains a lower bound. No result is an official, leaderboard, general-superiority, or model-capability claim."
+}

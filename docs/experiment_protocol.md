@@ -174,6 +174,16 @@ allowed only after replay clears its preregistered recall gate. Dense and BM25
 are separate retriever variants and must never be described as a same-retriever
 comparison.
 
+The next planned retrieval-representation gate operates offline on the complete
+corpus. Before index construction it freezes the corpus hash, tokenizer,
+passage length, overlap, passage-to-document mapping, and maximum returned
+documents. Its outcome-selected screening slice may diagnose whether
+passage-level BM25 moves relevant documents into the top-20 candidate pool, but
+cannot support an effectiveness claim. A passing screening gate only permits a
+new, preregistered fresh development comparison with the model, prompt, search
+provider, query-call cap, Token budget, cost budget, and Judge held fixed. All
+unrun accuracy, citation, latency, Token, and cost fields remain `planned`.
+
 The standard-loop adapter pins Pi 0.84.1 but clears Pi's system prompt and all
 ambient coding context. Pi is held fixed in harness ablations and is not an
 innovation variable. Matching the reference loop, tool calls already emitted

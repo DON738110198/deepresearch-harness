@@ -1,0 +1,22 @@
+{
+  "schema_version": "browsecomp-plus-registration-timing-erratum-v0",
+  "status": "post_generation_clerical_erratum",
+  "created_at": "2026-08-15T22:14:10.0000323+08:00",
+  "registration_path": "benchmarks/browsecomp_plus_v0/answer_first_live_calibration_v0.json",
+  "registration_sha256": "1bbea9f81f18688db910be18d1c3971e37d14f811d1fb9f809bef7673874c18a",
+  "incorrect_field": {
+    "name": "registered_at",
+    "recorded_value": "2026-08-15T22:18:00+08:00",
+    "cause": "manually entered minute typo"
+  },
+  "filesystem_observation": {
+    "registration_created_at": "2026-08-15T22:04:42.4254421+08:00",
+    "registration_last_written_at": "2026-08-15T22:05:04.6861334+08:00",
+    "first_request_created_at": "2026-08-15T22:05:36.5902672+08:00",
+    "first_request_path": "runs/browsecomp_plus_v0/answer-first-selective-repair-v0-20260815/known-outcome-v12/896/request.json",
+    "first_request_sha256": "8945638a3e6e836e7ba680579e47238f42244fd7315fed4607529f4b59986ef4"
+  },
+  "correction": "The registration file was finalized before the first provider request; only its human-readable registered_at value is incorrect.",
+  "scope": "No query selection, model, tool, budget, code hash, gate, result, or decision field is amended.",
+  "audit_rule": "Keep the original registration byte-for-byte and cite this erratum beside it."
+}

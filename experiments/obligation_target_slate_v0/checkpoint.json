@@ -1,0 +1,100 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "obligation-target-slate-v0",
+  "status": "closed",
+  "problem": "The section-aware span selector can expose all four literal answers only after a gold document is supplied. A deployable post-run repair cannot use gold labels and must decide which already-disclosed documents deserve the limited open budget.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/section-anchored-span-selector-v0-20260816/span-oracle.json",
+      "sha256": "05c56994e4afbf1d47d645a18a989ed6130d278b605593c7fe2749ab0eb84eac"
+    }
+  ],
+  "simplest_baseline": "Open globally high-ranked search results. This ignores which search call best addresses the unresolved answer obligation and lets the five BM25 anchors crowd out the first dense lead.",
+  "hypothesis": "A deterministic obligation-conditioned target slate that chooses the two recorded search calls with the greatest answer-obligation overlap, then takes one BM25 anchor and one dense lead from each, will include an answer-bearing gold document for all four diagnosed cases in at most four targets, without gold access inside the selector or any new search/provider/Judge call.",
+  "changed_mechanisms": [
+    "obligation-conditioned, channel-balanced document target slate over recorded search results"
+  ],
+  "anti_claim": "The selector is evaluated with gold labels on an outcome-selected development cluster. A pass establishes only target availability under a four-document slate; it is not end-to-end accuracy or frozen-model capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "lead-agent delegation",
+        "isolated sub-agent contexts"
+      ],
+      "current_gap": "Delegation decides who researches, but this measured failure needs a budgeted rule for which existing evidence to inspect. The target slate is a smaller deterministic boundary and can later feed either one agent or sub-agents.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "research graph",
+        "configurable search loop"
+      ],
+      "current_gap": "A broad research loop can gather more sources, while the target slate allocates a fixed open budget against a typed unresolved obligation using evidence already paid for.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "planner queries",
+        "crawler agents",
+        "publisher"
+      ],
+      "current_gap": "More crawler work is not the simplest response when the answer document already appeared in the trace; select and inspect before collecting again.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "WebPlanner search graph",
+        "parallel WebSearcher nodes"
+      ],
+      "current_gap": "Parallel search addresses missing branches. This cluster already has the answer document, so evidence-debt-conditioned inspection precedes graph expansion.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "same four outcome-selected baseline traces",
+    "same recorded search calls and result order",
+    "selector receives no gold document IDs or correct answers",
+    "maximum two obligation-aligned search calls",
+    "one BM25 anchor and one dense lead per selected call",
+    "maximum four unique target documents",
+    "zero new search calls",
+    "zero document opens",
+    "zero provider calls",
+    "zero Judge calls",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 4,
+    "maximum_provider_cost_usd": 0.0,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/obligation-target-slate-v0-20260816/target-oracle.json",
+    "sha256": "a16f12beddfc3ca4032b7a01d6606d0782c49d09f9db2f421bab040f8d739a4e"
+  },
+  "decision": "accept",
+  "next_action": "Wire the accepted target slate and section-aware span selector into a post-run development overlay that leaves exploration unchanged, opens at most four already-disclosed targets, and permits answer replacement only when the proposed short answer is literally present in the cited opened span. Calibrate first on these four cases before registering any fresh paired slice.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "A pass authorizes implementation of a bounded development-only post-run overlay. It does not authorize sealed holdout access or claims about official benchmark ranking."
+}

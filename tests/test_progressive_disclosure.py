@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+import pytest
+
 from deepresearch_harness.progressive_disclosure import (
     EvidenceCandidate,
     ProgressiveDisclosurePolicy,
@@ -137,3 +139,69 @@ def test_total_ingress_budget_stops_search_and_open() -> None:
     assert result.ingress_budget_exhausted is True
     assert session.open_evidence("c").outcome == "not_disclosed"
     assert session.snapshot().remaining_ingress_tokens == 0
+
+
+def test_obligation_policy_can_reopen_a_disclosed_anchor_preview() -> None:
+    calls: list[tuple[str, str]] = []
+
+    def load_span(docid: str, obligation_query: str) -> str:
+        calls.append((docid, obligation_query))
+        return "target answer from a far-away section"
+
+    session = ProgressiveDisclosureSession(
+        run_id="run-obligation",
+        policy=ProgressiveDisclosurePolicy(
+            anchor_count=1,
+            dense_lead_count=1,
+            anchor_token_cap=16,
+            lead_token_cap=4,
+            open_token_cap=16,
+            maximum_open_calls=1,
+            total_evidence_ingress_token_budget=512,
+            open_evidence_ingress_token_budget=16,
+            anchor_open_policy="reopen_with_obligation",
+            open_content_policy="answer_obligation_window_v0",
+        ),
+        tokenizer=WordTokenizer(),
+        document_loader=lambda _docid: "unused",
+        obligation_document_loader=load_span,
+    )
+    session.search(
+        bm25_candidates=[_candidate("anchor")],
+        dense_candidates=[_candidate("dense")],
+    )
+
+    assert session.snapshot().eligible_open_docids == ("anchor", "dense")
+    opened = session.open_evidence(
+        "anchor", obligation_query="grant code in acknowledgments"
+    )
+    assert opened.outcome == "opened"
+    assert "target answer" in (opened.content or "")
+    assert calls == [("anchor", "grant code in acknowledgments")]
+
+
+def test_obligation_policy_requires_a_nonblank_obligation() -> None:
+    session = ProgressiveDisclosureSession(
+        run_id="run-obligation",
+        policy=ProgressiveDisclosurePolicy(
+            anchor_count=1,
+            dense_lead_count=1,
+            anchor_token_cap=16,
+            lead_token_cap=4,
+            open_token_cap=16,
+            maximum_open_calls=1,
+            total_evidence_ingress_token_budget=512,
+            open_evidence_ingress_token_budget=16,
+            anchor_open_policy="reopen_with_obligation",
+            open_content_policy="answer_obligation_window_v0",
+        ),
+        tokenizer=WordTokenizer(),
+        document_loader=lambda _docid: "unused",
+        obligation_document_loader=lambda _docid, _query: "target",
+    )
+    session.search(
+        bm25_candidates=[_candidate("anchor")],
+        dense_candidates=[_candidate("dense")],
+    )
+    with pytest.raises(ValueError, match="obligation_query"):
+        session.open_evidence("anchor")

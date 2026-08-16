@@ -1,0 +1,54 @@
+{
+  "schema_version": "evidence-span-availability-oracle-registration-v0",
+  "status": "posthoc_registered_after_single_case_spotcheck",
+  "registered_at": "2026-08-15T23:56:00.7249816+08:00",
+  "purpose": "Posthoc availability diagnostic on five development failures where the candidate retrieved every gold document but the calibrated Judge marked the final answer wrong.",
+  "candidate_run_root": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate",
+  "diagnostic": {
+    "path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate.diagnostic.json",
+    "sha256": "7a8cad66bc4630b5c3dd68aa1c5c358845009c71ccd3baf885581e00371c9885"
+  },
+  "judge_summary": {
+    "path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate-persistent-judge/evaluation/development_judge_result.json",
+    "sha256": "f6cbb04807074164514a1f69dfb19ef4d3aa4416c1e8e1a1c4bd792f7c2326d8"
+  },
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate.gold.json",
+    "sha256": "ca43a6455ad0f8d80e890b9f1eccf4159447b4d6309d3e0ef2bf2ca10708884f"
+  },
+  "query_ids": [
+    "715",
+    "569",
+    "942",
+    "701",
+    "58"
+  ],
+  "previously_spotchecked_query_ids": [
+    "715"
+  ],
+  "document_index_path": "runs/_external/browsecomp-plus-indexes-direct/bm25",
+  "selector_id": "answer_obligation_window_v0",
+  "maximum_span_characters": 2000,
+  "frozen_artifacts": [
+    {
+      "path": "src/deepresearch_harness/evidence_span_oracle.py",
+      "sha256": "df3f9d97bb2b81c238bec438a560b1180d9cadd1374f34a19ce7e8a9def07b97"
+    },
+    {
+      "path": "scripts/run_evidence_span_oracle.py",
+      "sha256": "54a99562bfaad983616b1cdf81a9cd49959ec18b0afe02d4a4ca793504645ba3"
+    },
+    {
+      "path": "tests/test_evidence_span_oracle.py",
+      "sha256": "0991bd556f59c2a4efc02378b0eb11cadc6733962f7113a0a0db374e51584c47"
+    }
+  ],
+  "acceptance": {
+    "minimum_selected_span_hit_cases": 3,
+    "minimum_uninspected_selected_span_hit_cases": 2,
+    "minimum_selected_over_head_delta": 2,
+    "missing_documents_must_equal": 0
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "This is a gold-aware, outcome-selected development diagnostic and not an effectiveness comparison. Query 715 was manually spotchecked before registration, so the gate also requires two hits among the other four cases. The correct answer is used only after deterministic span selection to score literal availability. A pass supports implementing and freshly evaluating an obligation-conditioned opening boundary; it does not show that a model will choose the right document, call the tool, synthesize the answer, improve official accuracy, or gain capability. Provider and search calls are both fixed at zero."
+}

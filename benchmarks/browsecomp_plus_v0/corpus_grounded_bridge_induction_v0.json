@@ -1,0 +1,130 @@
+{
+  "schema_version": "corpus-grounded-bridge-registration-v0",
+  "status": "registered_pre_provider",
+  "registered_at": "2026-08-15T23:38:04.8601417+08:00",
+  "purpose": "Prediction-bound calibration of one corpus-grounded bridge hop against the closed-book Pro firewall on three saved open-debt development cases.",
+  "frontier_source": {
+    "path": "runs/browsecomp_plus_v0/atomic-clue-frontier-v0-20260815/frontier-result.json",
+    "sha256": "3a681e252f2a6ba3ad09154630ad937c612b11adbc2cedb2b76e0beb12468ad7"
+  },
+  "baseline_probe": {
+    "path": "runs/browsecomp_plus_v0/bridge-generator-model-gate-v0-20260815/probe-result.json",
+    "sha256": "fb883fcdec536f0543e81b23c54fd83f47fad550c793b7daf6e1fd9f861f2915"
+  },
+  "case_sources": [
+    {
+      "query_id": "896",
+      "request": {
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/896/request.json",
+        "sha256": "ed37d54e0fd62a1159f28e62a6b13b76a3cd3ede32f0a57d4459d336caa87a5e"
+      },
+      "run": {
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/896/run.json",
+        "sha256": "d4541f9ea5356b3067eed70965298de17657c5ee39342b8298845d1095b2c36c"
+      }
+    },
+    {
+      "query_id": "653",
+      "request": {
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/653/request.json",
+        "sha256": "b0b13c3e62d366dda34479845f8960715576df1cd4c75423fbdab341518feaf7"
+      },
+      "run": {
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/653/run.json",
+        "sha256": "5adf0b47eb1a50ef973991197afb4a11bb49f207e7d61a8a1b9f09e1af37d9cd"
+      }
+    },
+    {
+      "query_id": "85",
+      "request": {
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/85/request.json",
+        "sha256": "a6eba474faf5078ae2353fa8d2d1b34fcad31db42cddc1a86151a6b890169b97"
+      },
+      "run": {
+        "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13/85/run.json",
+        "sha256": "612830f12f3f0368ab77d832b984146513bb45c93b91d8d5a496b2b3b4314c6b"
+      }
+    }
+  ],
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/late-draft-last-mile-repair-v0-20260815/known-outcome-v13.gold.json",
+    "sha256": "4d020433cf5765aae7ae0613107c8dfcd6671733bacf1ee975333e1e5c132fc1"
+  },
+  "query_ids": [
+    "896",
+    "653",
+    "85"
+  ],
+  "fixed_contract": {
+    "model": "deepseek-v4-pro",
+    "thinking_mode": "disabled",
+    "system_prompt_policy": "OpenAICompatibleProvider fixed unsupported-facts guard",
+    "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64",
+    "search_url": "http://127.0.0.1:8768/search",
+    "context_fields": [
+      "question",
+      "unresolved_obligation",
+      "unverified_prior_subject",
+      "near_miss_packet"
+    ],
+    "forbidden_context_fields": [
+      "draft_answer",
+      "prior_exact_answer",
+      "prior_query",
+      "gold_docids"
+    ],
+    "documents_per_clue": 2,
+    "snippet_character_cap": 1200,
+    "bridges_per_case": 3,
+    "prior_search_calls": 14,
+    "final_search_calls_per_case": 3,
+    "maximum_cumulative_search_calls": 23,
+    "max_search_results": 20,
+    "max_planner_output_tokens": 384,
+    "provider_attempts_per_case": 1,
+    "sealed_holdout_access": "forbidden"
+  },
+  "frozen_artifacts": [
+    {
+      "path": "src/deepresearch_harness/corpus_bridge_induction.py",
+      "sha256": "752b3dfedd5018a5966070666ef36240ef3b047a560c235439f04fae671354a6"
+    },
+    {
+      "path": "scripts/run_corpus_grounded_bridge_probe.py",
+      "sha256": "4484ebd0332c7d1a92c1096f48946ec88ce42b889d18116f08c4f054368b1a99"
+    },
+    {
+      "path": "tests/test_corpus_bridge_induction.py",
+      "sha256": "e735db521f9581c634b28f60122f0adb386c01002e8f254980546a834568b65c"
+    },
+    {
+      "path": "src/deepresearch_harness/providers.py",
+      "sha256": "7153e209ed6443f65e50d432536a609182abd1e4c0380e9e24467cc0f7e01b31"
+    },
+    {
+      "path": "src/deepresearch_harness/atomic_clue_frontier.py",
+      "sha256": "13e968d26a5e66f35cbdaeb1338e1d5c3cb9e2d54c176231dacd80f40b8ca879"
+    },
+    {
+      "path": "src/deepresearch_harness/hypothesis_firewall.py",
+      "sha256": "0d6ca45e812fd5a0f91d8278940c47285c2456e0c7ee5e7447d57647baecbc27"
+    },
+    {
+      "path": "config.deepseek-v4-pro.example.json",
+      "sha256": "2aa1934b9e4cade24bff7e485b2c25b9e9ef86b71640d08a62eb2e6dda176db5"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+      "sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899"
+    }
+  ],
+  "acceptance": {
+    "minimum_candidate_gold_hit_cases": 2,
+    "minimum_gold_hit_case_delta": 1,
+    "parse_failures_must_equal": 0,
+    "provider_request_failures_must_equal": 0,
+    "search_failures_must_equal": 0,
+    "maximum_provider_cost_usd": 0.05
+  },
+  "claim_boundary": "The three cases, closed-book Pro result, atomic frontier, and oracle diagnostic were known before registration. The packet selection is deterministic and gold-blind: top two documents per clue and first 1,200 characters. Prompts exclude full drafts, prior exact answers, prior queries, and gold IDs. A pass supports only one corpus-grounded bridge hop on saved failures, not end-to-end effectiveness, unseen generalization, official accuracy, leaderboard rank, or model-capability improvement."
+}

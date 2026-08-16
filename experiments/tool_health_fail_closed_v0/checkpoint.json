@@ -1,0 +1,102 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "tool-health-fail-closed-v0",
+  "status": "closed",
+  "problem": "A candidate retrieval service died before a paid 25-question arm, yet the old runner treated 200 failed search transports plus terminal prose as 25 successful research runs. This both invalidated the comparison and spent provider budget on evidence-free executions.",
+  "observed_evidence": [
+    {
+      "path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_repeats_execution_audit_v0.json",
+      "sha256": "c7eb550c427e58078fa437d1d9fb78e29f585a0648b4fdbbcb00d0f1b84d4f02"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/execution-audit.json",
+      "sha256": "3f22902d85822109fb767787efbb51f48524ebe2dc111a35880bf78af3a4ec0a"
+    },
+    {
+      "path": "runs/services/obligation-span-opening-v0-20260816-restart1/process.json",
+      "sha256": "4d4d1b093a6bac2296f4426a289970206570ac3f2f5dd4516f32739c97da5369"
+    }
+  ],
+  "simplest_baseline": "Before each provider subprocess, require a healthy search endpoint with the exact frozen retriever identity; if a transport failure occurs mid-run, mark that run failed and abort the remaining batch instead of adding retries, agents, or a workflow framework.",
+  "hypothesis": "A fail-closed tool boundary will prevent provider launch when retrieval is unavailable or identity-drifted, mark any mid-run search/open transport error as a failed execution, and leave both retrievers usable after a zero-provider live smoke.",
+  "changed_mechanisms": [
+    "fail-closed search-service identity preflight, terminal tool-error status, and batch abort"
+  ],
+  "anti_claim": "This is an execution-integrity repair. It does not improve the frozen model, retrieval quality, answer accuracy, or benchmark standing.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "long-running checkpoints",
+        "isolated sub-agent contexts"
+      ],
+      "current_gap": "Checkpointing is useful only after dependency health is explicit; more isolated workers would multiply calls against the same dead retriever.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "configurable research runtime",
+        "benchmark export"
+      ],
+      "current_gap": "Runtime configurability does not by itself prevent a terminal answer from being accepted after every evidence tool failed; the smaller missing boundary is fail-closed dependency validation.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "crawler execution",
+        "parallel source collection"
+      ],
+      "current_gap": "Crawler breadth cannot make an evidence-free run valid when the tool transport is unavailable; health and failure semantics must precede concurrency.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "WebPlanner graph expansion",
+        "parallel WebSearcher nodes"
+      ],
+      "current_gap": "Graph fan-out would amplify a shared search outage, so dependency identity and batch-stop semantics are the prerequisite rather than another search node.",
+      "disposition": "borrow_boundary"
+    }
+  ],
+  "frozen_controls": [
+    "no LLM provider call",
+    "no Judge call",
+    "sealed holdout forbidden",
+    "same 8768 baseline and 8769 candidate retriever identities",
+    "same v10 and v14 research budgets",
+    "only execution-status and preflight behavior may change"
+  ],
+  "budget": {
+    "maximum_development_queries": 1,
+    "maximum_provider_cost_usd": 0.0,
+    "maximum_search_calls_per_query": 1,
+    "maximum_output_tokens_per_query": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": {
+    "path": "runs/reliability/tool-health-fail-closed-v0/validation.json",
+    "sha256": "a88d6f82937553d56aff93c9451c02c0ac35367d1e3d20d171a55c9d9fec90b4"
+  },
+  "decision": "accept",
+  "next_action": "Keep the invalid repeat grid closed, preserve the restored named services, and preregister a new clean effectiveness experiment whose runner and retriever hashes include the accepted fail-closed boundary.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "Passing this loop means only that dependency identity, tool-error status, batch abort, and local search/open availability are verified without paid calls. It does not restore, score, or reinterpret the invalid trial-3 candidate arm."
+}

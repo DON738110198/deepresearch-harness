@@ -302,6 +302,14 @@ export function classifyRunOutcome({
     : { status: "failed", stopReason: "no_final_answer" };
 }
 
+
+export function toolFailureReason(searchCalls, evidenceOpenCalls) {
+  const searchFailures = searchCalls.filter((call) => call.outcome === "error").length;
+  const openFailures = evidenceOpenCalls.filter((call) => call.outcome === "error").length;
+  if (searchFailures === 0 && openFailures === 0) return undefined;
+  return `tool_call_failures:search=${searchFailures}:open=${openFailures}`;
+}
+
 export function validateSearchResults(results, { allowEmpty = true, maxResults = 5 } = {}) {
   requireInteger(maxResults, "maxResults", 1, 20);
   if (!Array.isArray(results) || results.length > maxResults || (!allowEmpty && results.length === 0)) {
@@ -403,6 +411,29 @@ export function validateOpenEvidenceResponse(value) {
   validateDisclosureState(value.state);
   requireInteger(value.latency_ms, "open evidence latency_ms", 0, Number.MAX_SAFE_INTEGER);
   return value;
+}
+
+
+export function selectLatestDisclosureState(current, candidate) {
+  if (candidate === null || candidate === undefined) return current;
+  if (current === null || current === undefined) return candidate;
+  if (current.run_id !== candidate.run_id) {
+    throw new Error("disclosure states belong to different runs");
+  }
+  const candidateDominates =
+    candidate.search_calls >= current.search_calls &&
+    candidate.open_attempts >= current.open_attempts;
+  const currentDominates =
+    current.search_calls >= candidate.search_calls &&
+    current.open_attempts >= candidate.open_attempts;
+  if (candidateDominates && !currentDominates) return candidate;
+  if (currentDominates && !candidateDominates) return current;
+  if (!candidateDominates && !currentDominates) {
+    throw new Error("disclosure state counters are not monotonic");
+  }
+  return candidate.cumulative_ingress_tokens >= current.cumulative_ingress_tokens
+    ? candidate
+    : current;
 }
 
 export function validateDisclosureStateResponse(value) {

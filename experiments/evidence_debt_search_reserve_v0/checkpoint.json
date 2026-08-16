@@ -1,0 +1,104 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "evidence-debt-search-reserve-v0",
+  "status": "closed",
+  "problem": "The candidate reduced zero-recall failures, but 13 of its 20 Judge-wrong answers had some relevant evidence and two paired regressions finalized unsupported identity or year claims.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-decision.json",
+      "sha256": "4951c6eae999caf2f670e44ec59a16bcef5050bd94a40f89a50e554cb8c4bf26"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/evidence-debt-search-reserve-v0-20260815/offline-audit-calibration.json",
+      "sha256": "c25a35f0cd52943a42bddc8bbf35e43a712dc206eb4f95d296d4a2ac17fa8ebc"
+    }
+  ],
+  "simplest_baseline": "Pi v10 with Query-Aware Progressive Disclosure, an eight-search cap, and no answer-verification checkpoint.",
+  "hypothesis": "A typed evidence-debt checkpoint can reserve at most two of the existing eight searches for unsupported answer-critical claims and reduce premature finalization without adding agents or increasing the 10k output budget.",
+  "changed_mechanisms": [
+    "typed evidence-debt repair_search checkpoint"
+  ],
+  "anti_claim": "Any measured difference is a harness control-policy effect under a frozen model, not a model capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow 2.0",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "dynamic sub-agents with scoped context",
+        "termination conditions and attributed token usage",
+        "checkpointed long-horizon runtime"
+      ],
+      "current_gap": "Its delegation boundary is valuable for branch isolation, but the observed failures are unsupported final claims rather than missing parallel branches.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "research supervisor",
+        "research compression",
+        "separate final report model",
+        "Deep Research Bench export"
+      ],
+      "current_gap": "The repository labels its older supervisor-researcher multi-agent implementation as less performant, so role count alone is not evidence for this failure.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "planner and execution agents",
+        "parallel crawling",
+        "publisher aggregation",
+        "recursive breadth and depth"
+      ],
+      "current_gap": "Parallel breadth can increase coverage but does not make direct support for the final requested attribute a typed stopping condition.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "WebPlanner dynamic graph",
+        "multiple WebSearchers",
+        "hierarchical retrieval"
+      ],
+      "current_gap": "Dynamic decomposition is useful when independent branches are omitted; the current paired regressions instead expose answer-level verification debt.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "deepseek-v4-flash with high thinking",
+    "empty system prompt",
+    "query-aware BM25-anchor plus Dense-lead retriever",
+    "eight total search calls",
+    "10000 output tokens",
+    "calibrated qwen3-32b-bf16 Judge"
+  ],
+  "budget": {
+    "maximum_development_queries": 15,
+    "maximum_provider_cost_usd": 1.0,
+    "maximum_search_calls_per_query": 8,
+    "maximum_output_tokens_per_query": 10000,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/evidence-debt-search-reserve-v0-20260815/known-outcome-live-calibration-decision.json",
+    "sha256": "60cc16ce67cb45db0324c6a50664fa9f583b72773827c11e4d3c60bee5738e3e"
+  },
+  "decision": "reject",
+  "next_action": "Open a new loop for answer-first deterministic gating; do not run Pi v11 on a fresh development slice because its known-outcome calibration failed selectivity, correction, and preservation gates.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge at http://127.0.0.1:18015/v1"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "The current loop is outcome-selected development calibration. Sealed holdout, official evaluator, leaderboard, and model-capability claims are forbidden."
+}

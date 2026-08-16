@@ -1,0 +1,43 @@
+{
+  "schema_version": "persistent-miss-corpus-answerability-registration-v0",
+  "status": "posthoc_registered_failure_cluster",
+  "registered_at": "2026-08-16T20:52:34.2096564+08:00",
+  "purpose": "Determine whether the seven complete three-run persistent retrieval misses have answer-bearing gold documents present in the frozen local index before selecting another retrieval or corpus mechanism.",
+  "stability_audit": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-repeats-v0-20260816/baseline-stability-audit.json",
+    "sha256": "0c2595a7078bfae6ad501710bb6358701a37fd51e4cc6a0f586ee1cbc1633d14"
+  },
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline.gold.json",
+    "sha256": "2ef96bc47f0f89d1fa60aaac082a3d7b087737f1041bec579b2dc21a29034fd2"
+  },
+  "query_ids": [
+    "875",
+    "754",
+    "898",
+    "710",
+    "873",
+    "869",
+    "805"
+  ],
+  "document_index_path": "runs/_external/browsecomp-plus-indexes-direct/bm25",
+  "frozen_artifacts": [
+    {
+      "path": "src/deepresearch_harness/corpus_answerability.py",
+      "sha256": "89b37318562029728eb1f2a368e01d1ad3fb95217a3b5acfb084a3b8ad8aea1f"
+    },
+    {
+      "path": "scripts/run_corpus_answerability_audit.py",
+      "sha256": "fd20f88c9f9495d44c9dbc83c529876e07f633299e4993335170af6e1fa08e71"
+    },
+    {
+      "path": "tests/test_corpus_answerability.py",
+      "sha256": "9c7e8d40e44fac1274e9ce70b9117f461ceaf634663b1211208f01399c9f9e04"
+    }
+  ],
+  "acceptance": {
+    "minimum_answerable_cases": 5
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "This audit uses gold document IDs and answers from an outcome-selected development failure cluster. Passing means only that indexed answer-bearing documents exist for a majority of these cases, selecting retrieval rank/index representation as the next diagnostic layer. It is not a retrieval improvement, end-to-end accuracy result, official benchmark result, or model capability improvement."
+}

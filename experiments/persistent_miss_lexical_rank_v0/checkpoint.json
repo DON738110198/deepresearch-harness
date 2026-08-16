@@ -1,0 +1,84 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "persistent-miss-lexical-rank-v0",
+  "status": "closed",
+  "problem": "All seven persistent retrieval misses have indexed gold documents containing the literal answer, yet none was retrieved in three valid hybrid runs. It remains unknown whether the simplest deterministic raw-question BM25 channel would recover them, whether generated queries place them just beyond the current top-5 BM25 cutoff, or whether lexical representation fails more deeply.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/persistent-miss-corpus-answerability-v0-20260816/audit.json",
+      "sha256": "7782d7e8aaa82c6aa82b849057c920d8a7599bb1530eb6dd485b3cfd43fc04f2"
+    }
+  ],
+  "simplest_baseline": "Use only the model-generated search queries and return five BM25 anchors per call, as in the frozen v10 retriever.",
+  "hypothesis": "Direct BM25 over the untouched full question places a gold document in the top five for at least two of the seven cases. If it does, a zero-LLM raw-question anchor is simpler than reopening query generation or adding agents.",
+  "changed_mechanisms": [
+    "offline gold-rank audit for raw question versus recorded generated queries"
+  ],
+  "anti_claim": "This gold-aware rank audit is diagnostic and performs no end-to-end run. It does not establish retrieval or answer improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["lead-agent query decomposition"],
+      "current_gap": "Before adding decomposition capacity, compare it against the cheapest untouched query that every framework already has: the user's full question.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["configurable search loop"],
+      "current_gap": "Configurability is useful after identifying whether query transformation or candidate cutoff is causal; this audit isolates that choice first.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["planner-generated search queries"],
+      "current_gap": "Generated queries can discard rare clue combinations. A raw-question anchor supplies a deterministic complementary channel at zero provider cost if the rank audit supports it.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["WebPlanner query graph"],
+      "current_gap": "A query graph is unnecessary when the original compound question itself ranks the target; measure that before increasing graph breadth.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "same seven persistent misses and same gold labels",
+    "same local BM25 index",
+    "same trial-1 recorded generated queries",
+    "rank depth 1000",
+    "no LLM provider calls",
+    "no online search calls",
+    "no Judge calls",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 7,
+    "maximum_provider_cost_usd": 0.0,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/persistent-miss-lexical-rank-v0-20260816/audit.json",
+    "sha256": "a44fcb04825ecf5930f239d5a6a99fb7b557c12d1bdcb110dca6c06cec1ef7f5"
+  },
+  "decision": "reject",
+  "next_action": "Do not add a raw-question channel or merely raise top-5 to a small pool. Diagnose passage-level/index representation on the same corpus: gold ranks are 47, 96, 102, 119, 413, and 736 for six cases, with one absent at depth 1000. Pre-register an offline passage-index gate before any new end-to-end run.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "A raw-question gate pass authorizes only an offline retrieval candidate and later paired test. If it fails, the branch is not tuned on these ranks; move to index representation or cutoff diagnosis."
+}

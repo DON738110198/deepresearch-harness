@@ -1,0 +1,106 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "draft-blind-counter-hypothesis-v0",
+  "status": "closed",
+  "problem": "The single-context bridge planner remained anchored to the unsupported draft answer: its only valid case selected Sir Peter Lampl, while two verbose three-hypothesis responses hit the 256-token boundary. Meanwhile, post-hoc bridge terms made the fixed retriever hit gold in all three cases, establishing repeated independent-hypothesis omission rather than an absolute retrieval failure.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/contrastive-bridge-hypothesis-v0-20260815/probe-result.json",
+      "sha256": "3acf27f1dfa75d699a67640eb9740d15a030c203809e8c873cf22aa66ded3f06"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/contrastive-bridge-hypothesis-v0-20260815/oracle-replay.json",
+      "sha256": "42e03ba13527964a07bde91f82d9fedd56d11d344d9a4b50adcc00d39994c908"
+    }
+  ],
+  "simplest_baseline": "B2 is the rejected single-context planner that sees the question, audited draft, unsupported exact answer, and failed query before proposing three bridge hypotheses.",
+  "hypothesis": "A single dynamically triggered, draft-blind Counter-Hypothesis context that sees only the original question and unresolved obligation, and returns a compact BridgePacket without rationale prose, will reduce answer anchoring and retrieve gold evidence on at least two of the three saved cases without increasing search calls.",
+  "changed_mechanisms": [
+    "Evidence-Debt-triggered draft-blind Counter-Hypothesis packet"
+  ],
+  "anti_claim": "This is a frozen-model context-isolation and budget-routing experiment, not training and not a model-capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow 2.0",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "sub-agents only when delegation has net benefit",
+        "isolated scoped context",
+        "structured results and termination conditions"
+      ],
+      "current_gap": "The proposed worker adopts DeerFlow's isolation boundary but is narrower: it is spawned only by typed answer-level debt, cannot search, and returns one compact packet to the shared ledger.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "current single research implementation",
+        "lower-performing legacy supervisor-researcher implementation",
+        "separate compression boundary"
+      ],
+      "current_gap": "Its legacy comparison warns against role-count expansion. This loop adds only one isolated hypothesis packet after a measured anchoring failure, not a standing supervisor hierarchy.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "planner and execution agents",
+        "crawler per research question",
+        "publisher synthesis"
+      ],
+      "current_gap": "B3 would resemble fixed execution agents and spend more queries. B4 instead isolates only counter-hypothesis generation and leaves retrieval and synthesis centralized.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-15",
+      "relevant_mechanisms": [
+        "simultaneous multi-query search",
+        "asynchronous agent execution",
+        "multi-agent search framing"
+      ],
+      "current_gap": "MindSearch executes multiple branches. B4 must first show that context isolation can discover the missing bridge while Lead still spends one registered search, avoiding duplicated zero-recall branches.",
+      "disposition": "benchmark_later"
+    }
+  ],
+  "frozen_controls": [
+    "deepseek-v4-flash with thinking disabled",
+    "same three outcome-selected open-debt cases",
+    "query-aware BM25-anchor plus Dense-lead retriever",
+    "one top-20 search per case",
+    "one Counter-Hypothesis provider attempt per open debt",
+    "no Writer or Judge during retrieval calibration"
+  ],
+  "budget": {
+    "maximum_development_queries": 3,
+    "maximum_provider_cost_usd": 0.05,
+    "maximum_search_calls_per_query": 1,
+    "maximum_output_tokens_per_query": 192,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "eligible",
+  "multi_agent_failure_triggers": [
+    "independent_branch_omission",
+    "single_context_interference"
+  ],
+  "multi_agent_comparison_contract": "B2 = current single-context Evidence-Debt planner; B3 = fixed three parallel Researchers, recorded but not implemented; B4 = one Evidence-Debt-triggered draft-blind Counter-Hypothesis packet. Lock DeepSeek model, retriever, corpus, one query call, planner token cap, total Token and USD accounting. B4 must beat B2 gold-hit cases on saved calibration before any end-to-end or unseen-slice run.",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/draft-blind-counter-hypothesis-v0-20260815/probe-result.json",
+    "sha256": "8651c1ffe3f01faf9a7773a9c3917b7c4674312c6c14ed35d7a14f2c3e5ed454"
+  },
+  "decision": "reject",
+  "next_action": "Do not integrate B4. Open a bounded candidate-generation versus candidate-selection diagnostic: require answer-linked latent anchors, preserve all candidates, and test them without letting the same generation call self-select the only search.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge at http://127.0.0.1:18015/v1",
+    "query-aware progressive-disclosure retriever at http://127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "This is the first loop where multi-agent context isolation is eligible, based on repeated saved failures. B3 remains planned, B4 remains unproven, and no effectiveness claim is permitted before a passed calibration and unseen paired comparison."
+}

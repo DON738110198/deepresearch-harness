@@ -534,6 +534,8 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `docs/experiment_protocol.md`: fair-comparison and bad-case evaluation protocol.
 - `docs/browsecomp_plus_layered_results_2026-08-13.zh-CN.md`: Chinese experiment results, failed controls, hashes, and next gates.
 - `docs/query_aware_progressive_disclosure_results_2026-08-15.zh-CN.md`: Progressive Disclosure, governor, preview, paired-25 decision, and bad-case route.
+- `docs/continuous_research_loop.zh-CN.md`: controlled failure-driven loop, anti-thrashing boundary, and multi-Agent entry gate.
+- `docs/evidence_debt_loop_results_2026-08-16.zh-CN.md`: execution audit, rejected repair branches, span/target calibration, overlay negatives, and retrieval-rank diagnosis.
 - `docs/b1_b2_token_v1.md`: retained negative B2 v1 result and causal follow-up.
 - `docs/b1_b2_token_v2.md`: retained B2 v2 tie and search-layer diagnosis.
 - `docs/b1_b2_v3_results.md`: token/cost automatic results and current claim boundary.

@@ -1,0 +1,68 @@
+{
+  "schema_version": "browsecomp-plus-evidence-debt-audit-calibration-registration-v0",
+  "status": "registered_before_calibration_execution",
+  "registered_at": "2026-08-15T21:15:39.7640605+08:00",
+  "purpose": "Test whether a deterministic, zero-provider-call audit can identify the two observed answer-verification regressions without triggering repair on the three paired Judge improvements.",
+  "problem": "The query-aware harness reduced zero-evidence errors, but two paired regressions either admitted that critical clues were unconfirmed or cited evidence that did not support the requested year.",
+  "simpler_baseline": "Conservatively trigger repair only when answer-critical citation support is absent and the saved answer explicitly admits unresolved evidence or reports confidence at or below 50 percent.",
+  "hypothesis": "The deterministic audit will trigger both saved regressions, trigger none of the three saved improvements, emit no more than two repair queries, and make zero provider or search calls.",
+  "selection": {
+    "status": "outcome_selected_bad_case_calibration",
+    "source_decision_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-decision.json",
+    "source_decision_sha256": "4951c6eae999caf2f670e44ec59a16bcef5050bd94a40f89a50e554cb8c4bf26",
+    "claim_use": "mechanism calibration only; forbidden as benchmark effectiveness evidence"
+  },
+  "implementation": {
+    "audit_module_path": "src/deepresearch_harness/evidence_debt_audit.py",
+    "audit_module_sha256": "f5196458adcf25143d5900e456aede0017c92d1cbfa65514768701eeab8d3920",
+    "maximum_repair_queries": 2,
+    "provider_calls_must_equal": 0,
+    "search_calls_must_equal": 0
+  },
+  "cases": [
+    {
+      "query_id": "896",
+      "paired_outcome": "candidate_regression",
+      "expected_repair_trigger": true,
+      "run_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate/896/run.json",
+      "run_sha256": "47c0bf5b0283a140087043b176fd4d88d0036b4fb4454973dc14440b78e27461"
+    },
+    {
+      "query_id": "653",
+      "paired_outcome": "candidate_regression",
+      "expected_repair_trigger": true,
+      "run_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate/653/run.json",
+      "run_sha256": "bc2e2a04b2a5072c27557b882317be603ad6ca40ff26aa7ca8ddbfc2cc04c8df"
+    },
+    {
+      "query_id": "85",
+      "paired_outcome": "candidate_improvement",
+      "expected_repair_trigger": false,
+      "run_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate/85/run.json",
+      "run_sha256": "7c78355a4b15a0babce0abe18f2d453d1203e845b67e03b2badb80cab4358986"
+    },
+    {
+      "query_id": "78",
+      "paired_outcome": "candidate_improvement",
+      "expected_repair_trigger": false,
+      "run_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate/78/run.json",
+      "run_sha256": "8ecf170b823aebb701a601a50da03557a074310f2580ae046620866e58489f06"
+    },
+    {
+      "query_id": "987",
+      "paired_outcome": "candidate_improvement",
+      "expected_repair_trigger": false,
+      "run_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate/987/run.json",
+      "run_sha256": "d01d2f9b6b9f332660e6787ca4f2dd633eabdaa254c746df90013ca22192811e"
+    }
+  ],
+  "acceptance": {
+    "regression_trigger_recall_must_equal": 1.0,
+    "improvement_false_trigger_count_must_equal": 0,
+    "provider_calls_must_equal": 0,
+    "search_calls_must_equal": 0,
+    "maximum_repair_queries_per_open_case": 2
+  },
+  "routing_rule": "Pass permits implementation of the typed single-Agent repair_search checkpoint in Pi v11. Failure requires changing or abandoning the deterministic trigger before any live provider calls.",
+  "claim_boundary": "This five-case set was selected using paired outcomes. Passing it demonstrates only that the trigger matches known failure shapes; it does not estimate effectiveness."
+}

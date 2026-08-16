@@ -1,0 +1,113 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "obligation-conditioned-span-opening-fresh25-v0",
+  "status": "closed",
+  "problem": "The frozen retriever often finds the right document, but its fixed head preview can omit the exact answer field and pi-browsecomp-v10 cannot reopen BM25 anchors around the unresolved answer obligation.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/evidence-span-availability-oracle-v0-20260815/oracle-result.json",
+      "sha256": "bd3e7699a379fe0a748eeb32ac0f296ab9bf0a4e82e6ec20cad35bd33a746348"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/obligation-span-opening-v0-20260816/known5-calibration-decision.json",
+      "sha256": "1919bdbdf92750d7f2a82086f4c952d553c5f421433ed0f7294249f71e312229"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_fresh25_v0.json",
+      "sha256": "e3ab92b1f7b8df3f3beb23dff967487626dc0fb9abaee99988921e04315ff246"
+    },
+    {
+      "path": "benchmarks/browsecomp_plus_v0/obligation_span_opening_fresh25_recovery_v0.json",
+      "sha256": "fef6e8719c718b1a12e0a780c96bb8c64370c472c124e43a35c9022583ca53b6"
+    }
+  ],
+  "simplest_baseline": "Pi v10 with the same frozen DeepSeek Flash model, BM25-five plus Dense-fifteen retriever, eight-search cap, evidence-ingress limits, 10,000 output tokens, and head-only previews.",
+  "hypothesis": "On 25 previously unused development questions, letting the agent open one deterministic 512-token window from any already disclosed document using a typed answer obligation will gain at least one net Qwen-Judge-correct answer without losing normalized exact match or exceeding matched resource gates.",
+  "changed_mechanisms": [
+    "answer-obligation-conditioned span opening for previously disclosed anchors and leads"
+  ],
+  "anti_claim": "Any difference is a harness evidence-disclosure effect under a frozen API model, not a model capability improvement, official BrowseComp score, or general superiority claim.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "dynamic sub-agents",
+        "isolated sub-agent context",
+        "structured sub-agent returns"
+      ],
+      "current_gap": "Delegating the same truncated evidence cannot recover a field hidden outside the exposed span; the smaller intervention is a constrained evidence-opening contract.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "research compression",
+        "configurable research tools",
+        "Deep Research Bench export"
+      ],
+      "current_gap": "Generic compression is downstream of the observed loss; the answer-bearing span must be exposed before synthesis or compression can preserve it.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "planner and crawler agents",
+        "parallel source collection",
+        "publisher aggregation"
+      ],
+      "current_gap": "More crawler breadth adds cost when the relevant source is already in the ledger but its requested field is outside the fixed preview.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": [
+        "WebPlanner search graph",
+        "parallel WebSearcher nodes",
+        "hierarchical retrieval"
+      ],
+      "current_gap": "The current calibrated failure is evidence truncation inside retrieved documents, not repeated omission of independent research branches.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "25 previously unused BrowseComp-Plus development questions",
+    "deepseek-v4-flash with high thinking and empty system prompt",
+    "BM25 five anchors plus Qwen dense fifteen leads",
+    "eight search calls and eight evidence-open calls maximum",
+    "33,280 total evidence-ingress tokens and 4,096 open-evidence tokens",
+    "10,000 output-token allowance",
+    "answer_reserve_nonthinking_v0 control policy",
+    "persistent qwen3-32b-bf16 development Judge",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 25,
+    "maximum_provider_cost_usd": 1.0,
+    "maximum_search_calls_per_query": 8,
+    "maximum_output_tokens_per_query": 10000,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/paired-decision.json",
+    "sha256": "4f5d949efa7c1643d3cce71caa0d48076e0f53bd00a0efadff80e89d26775740"
+  },
+  "decision": "reject",
+  "next_action": "Freeze new span-opening variants and run a zero-provider bad-case audit over the three paired improvements, two paired regressions, and all 13 successful-open cases. Separate open-versus-search substitution, wrong-document opening, answer-bearing-span availability, and synthesis loss before proposing one new mechanism.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "The preregistered fresh-development gate rejected v14. The persistent diagnostic Judge moved from 11/25 to 12/25 with three paired improvements and two regressions, but normalized exact fell from 7/25 to 6/25, evidence recall fell from 59.17% to 55.83%, and baseline schema completeness was 24/25. Candidate search calls fell from 180 to 158 while it attempted 44 opens, so the next causal question is whether opening displaced useful breadth. Recorded provider cost was $0.34271815 across both arms; one failed post-provider trace-validation attempt has unobservable cost, so this is a lower bound. These are development harness results, not official accuracy, leaderboard standing, general framework superiority, or model-capability improvement."
+}

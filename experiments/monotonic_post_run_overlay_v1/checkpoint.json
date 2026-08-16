@@ -1,0 +1,87 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "monotonic-post-run-overlay-v1",
+  "status": "closed",
+  "problem": "Overlay v0 repaired q579 and q552 exactly but DeepSeek returned keep for q772 and q679 even though the frozen prepared spans explicitly contain the requested answers. Both failed prompts also included a long baseline response asserting uncertainty or a competing answer, so the terminal verifier may be anchored by draft text rather than evidence visibility.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/monotonic-post-run-overlay-v0-20260816/summary.json",
+      "sha256": "d53f48b61d06f83eeb74422b3c97ef8aa7e345a577756d8fb418f54210158d5e"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/monotonic-post-run-overlay-v0-20260816/prepared.json",
+      "sha256": "f62ca5639d695e52de2ec7cec54608cf1be5a51eb2b31340c547014ba51a4d9c"
+    }
+  ],
+  "simplest_baseline": "Overlay v0 shows the question, long baseline response, and evidence spans to a verifier. It accepts only a literal cited replacement and otherwise keeps the baseline.",
+  "hypothesis": "Removing only the baseline response from the verifier prompt, while retaining the same question, target slate, spans, model, JSON contract, literal-support gate, and four cases, will yield at least three literal-supported strict-exact and Judge-correct answers with no unsupported replacement.",
+  "changed_mechanisms": [
+    "draft-blind evidence-only terminal verifier context"
+  ],
+  "anti_claim": "This is a second outcome-selected prompt calibration on the same known four failures. It cannot estimate fresh accuracy or be described as frozen-model capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["isolated sub-agent context"],
+      "current_gap": "DeerFlow isolates worker context broadly. This test borrows only the causal boundary justified by the failures: hide the prior draft from one terminal evidence verifier, without adding a standing role or changing exploration.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["separate final answer synthesis"],
+      "current_gap": "A general synthesis stage rewrites the report; this verifier receives only the unresolved question and opened evidence, and its output is still constrained by the literal gate.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["publisher boundary"],
+      "current_gap": "The publisher boundary is useful, but here the measured variable is prior-draft visibility rather than another planner or crawler.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["isolated WebSearcher nodes"],
+      "current_gap": "Independent search nodes target exploration. This evidence-only context is invoked after search and tests anchoring at synthesis, not branch coverage.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "same four v0 prepared cases and exact spans",
+    "same target selector, span selector, and literal-support gate",
+    "same DeepSeek model, JSON schema, maximum 400 output tokens, and cost cap",
+    "same persistent Qwen3-32B development Judge",
+    "same zero new-search boundary",
+    "only baseline_response visibility changes",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 4,
+    "maximum_provider_cost_usd": 0.01,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 400,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/monotonic-post-run-overlay-v1-20260816/summary.json",
+    "sha256": "6cc7038ebfc6ac6e9c6f4a458d0872ac1013c8b3870ba8e36f88c5b381128de4"
+  },
+  "decision": "reject",
+  "next_action": "Freeze terminal verifier prompt tuning after two registered rejections. Preserve v0's two supported repairs as exploratory evidence only. Return to the seven persistent retrieval-miss cases and run a zero-provider corpus-answerability audit before selecting another mechanism layer.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "A pass only authorizes one fresh paired development test with separately registered Token- and cost-matched gates. A second rejection freezes this prompt branch rather than adding more verifier roles."
+}

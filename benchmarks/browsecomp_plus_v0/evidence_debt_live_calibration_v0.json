@@ -1,0 +1,76 @@
+{
+  "schema_version": "browsecomp-plus-evidence-debt-live-calibration-registration-v0",
+  "status": "registered_before_live_generation",
+  "registered_at": "2026-08-15T21:37:30.4876907+08:00",
+  "purpose": "Outcome-selected live calibration of the Pi v11 typed Evidence-Debt checkpoint before any fresh-slice effectiveness comparison.",
+  "problem": "Two Pi v10 paired regressions finalized an unsupported identity or requested year, while three paired improvements provide a preservation control.",
+  "simplest_baseline": "Reuse the frozen Pi v10 outcomes and add only one typed audit-and-repair checkpoint; do not add agents, retrieval changes, or a larger budget.",
+  "hypothesis": "Pi v11 will use a typed repair search on at least one known regression, correct at least one repaired regression, preserve all three known improvements, and remain inside the frozen eight-search and 10000-output-token totals.",
+  "selection": {
+    "status": "outcome_selected_bad_case_calibration",
+    "queries_path": "runs/browsecomp_plus_v0/evidence-debt-search-reserve-v0-20260815/known_outcome_queries_5.json",
+    "queries_sha256": "a92a39360ce79e6fbc91e94fbd71d689d42e4c5ae87b8bf013527d605358e232",
+    "query_ids": ["896", "653", "85", "78", "987"],
+    "prior_judge_result_path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/paired25-candidate-persistent-judge/evaluation/development_judge_result.json",
+    "prior_judge_result_sha256": "f6cbb04807074164514a1f69dfb19ef4d3aa4416c1e8e1a1c4bd792f7c2326d8",
+    "cases": [
+      {"query_id": "896", "prior_outcome": "candidate_regression", "prior_judge_correct": false},
+      {"query_id": "653", "prior_outcome": "candidate_regression", "prior_judge_correct": false},
+      {"query_id": "85", "prior_outcome": "candidate_improvement", "prior_judge_correct": true},
+      {"query_id": "78", "prior_outcome": "candidate_improvement", "prior_judge_correct": true},
+      {"query_id": "987", "prior_outcome": "candidate_improvement", "prior_judge_correct": true}
+    ],
+    "claim_use": "mechanism calibration only; forbidden as benchmark effectiveness evidence"
+  },
+  "fixed_contract": {
+    "model": "deepseek-v4-flash",
+    "thinking_level": "high for exploration; disabled for audit and compilation",
+    "model_parameters": "frozen_provider_model",
+    "system_prompt_policy": "empty",
+    "adapter_version": "pi-browsecomp-v11",
+    "control_policy": "answer_reserve_nonthinking_v0",
+    "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64",
+    "max_search_results": 20,
+    "maximum_search_calls": 8,
+    "maximum_exploration_search_calls": 6,
+    "maximum_repair_search_calls": 2,
+    "maximum_output_tokens": 10000,
+    "exploration_output_tokens": 8000,
+    "audit_output_tokens": 512,
+    "compilation_output_tokens": 1488,
+    "provider_key_source": "DEEPSEEK_API_KEY environment variable only",
+    "failed_only_resume_limit": 1,
+    "budget_exhausted_retry": "forbidden",
+    "sealed_holdout_access": "forbidden"
+  },
+  "frozen_artifacts": [
+    {"path": "integrations/pi-browsecomp/v11/contract.mjs", "sha256": "4af5fbe2beb622cfb59da0f6b2d3d914b803f78f2abda594d318e2f867b60ed6"},
+    {"path": "integrations/pi-browsecomp/v11/runner.mjs", "sha256": "bc922f8d0b8f88da198004f8ae0fb2ee34c5f968b464d97ec84f39b57c9fc338"},
+    {"path": "src/deepresearch_harness/browsecomp_plus.py", "sha256": "6b9e7c501a2fdd02a18bac33c7d243f96e17e2dc35b957cc54feec8cca471cc3"},
+    {"path": "src/deepresearch_harness/evidence_debt_experiment.py", "sha256": "035b2e6350b469660d0fc0e94664368041c0fc839324e3347e8db1d2b2d81fc1"},
+    {"path": "src/deepresearch_harness/progressive_disclosure_server.py", "sha256": "21d420244d5d33d164c66106c91066648fc295c155e9982ab5e4dcc3f9cfdff9"},
+    {"path": "src/deepresearch_harness/evidence_preview.py", "sha256": "6b0052f90d766e1195091affe102369d0abddbcbea4d8e73ca9dc1fc9441b0cd"},
+    {"path": "benchmarks/browsecomp_plus_v0/retriever_candidates.json", "sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899"}
+  ],
+  "judge": {
+    "model": "Qwen/Qwen3-32B",
+    "served_model_name": "qwen3-32b-bf16-judge",
+    "base_url": "http://127.0.0.1:18015/v1",
+    "manifest_sha256": "7d27f8e9739dc60ced49ee72cfe3191f36ef485403a4fd24539c932ceaf7277f",
+    "calibration_sha256": "ad68bf0cfcf2081e31135f75f3e7909117e59828c76553dc3cf8cf21b67c5be3",
+    "service_registration_sha256": "20056f365b94edb16bce532dec90c2f78ac3dd6d5af82b38654894c9bcc722f8",
+    "metric_status": "calibrated_development_diagnostic_not_official"
+  },
+  "acceptance": {
+    "maximum_search_calls_per_query": 8,
+    "minimum_repair_triggered_regressions": 1,
+    "maximum_repair_triggered_improvements": 0,
+    "minimum_repaired_regression_corrections": 1,
+    "preserved_improvements_must_equal": 3,
+    "judge_parse_failures_must_equal": 0,
+    "judge_request_failures_must_equal": 0,
+    "maximum_generation_cost_usd": 0.25
+  },
+  "routing_rule": "Pass permits a separately preregistered paired v10-versus-v11 comparison on a previously unseen development slice. Reject preserves every trace and routes to diagnosis without threshold tuning or multi-agent expansion.",
+  "claim_boundary": "This set was selected using prior outcomes. It can debug the mechanism but cannot estimate effectiveness, official accuracy, leaderboard position, or model capability."
+}
