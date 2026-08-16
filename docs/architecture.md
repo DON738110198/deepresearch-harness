@@ -237,10 +237,13 @@ For persistent retrieval misses, `corpus_answerability.py` separates corpus
 absence from retrieval failure, and `lexical_rank_audit.py` measures where gold
 documents appear under the frozen full-document BM25 representation. These are
 diagnostic or calibration tools, not additional Agent roles and not evidence of
-model improvement. The next planned boundary is a gold-independent,
-passage-level candidate index with frozen tokenizer, passage size, overlap,
-corpus hash, and candidate cap. It must clear its registered offline recall gate
-before any paid fresh-slice comparison is allowed.
+model improvement. The frozen passage-index screen represented all 100,195
+source documents as 2,715,518 overlapping passages, but recovered only two of
+seven diagnosed misses at collapsed document Recall@20 against a registered
+four-case threshold. That branch is frozen. The next planned boundary is a
+zero-provider dense-rank audit over the identical recorded queries; no paid
+fresh-slice comparison is allowed until a retrieval candidate clears its own
+offline gate.
 
 ## Contracts and audit boundary
 

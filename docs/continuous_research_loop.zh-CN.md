@@ -77,12 +77,16 @@
 - 7 个 persistent retrieval miss 的 18 个 gold 文档全部在索引中，且 7/7 全文
   含 literal answer。raw full question 的 BM25 top-5 为 0/7；模型生成查询最好也
   只有 0/7 top-20、2/7 top-100、6/7 top-1000。
+- 完整 passage index 将 100,195 个源文档确定性切成 2,715,518 个段落，源文档与
+  25 题的 57 个 gold 文档覆盖均为 100%；但相同 48 条生成查询只把 2/7 拉入
+  collapsed document top-20，未达到预注册 4/7，passage 分支冻结。
 
 因此当前差异点不再表述为泛化的 `repair_search`，而是 **Evidence Debt 驱动的
 检索表示诊断**：先证明 obligation、目标文档、答案 span 分别在哪一层丢失，再
-决定是否改变 passage index、candidate pool 或验证器。下一候选是离线
-passage-level/index-representation gate；多 Agent、fresh paired run、sealed holdout、
-official Judge 和 leaderboard submission 都保持 `planned`。
+决定是否改变 index、candidate pool 或验证器。passage-level gate 已以负结果关闭；
+下一候选是相同 48 条查询的离线 dense gold-rank 审计，用来区分词法表示失败和
+语义候选深度失败。多 Agent、fresh paired run、sealed holdout、official Judge 和
+leaderboard submission 都保持 `planned`。
 
 ## 操作命令
 

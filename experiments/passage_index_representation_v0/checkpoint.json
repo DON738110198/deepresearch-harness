@@ -1,7 +1,7 @@
 {
   "schema_version": "deepresearch-research-loop-checkpoint-v0",
   "loop_id": "passage-index-representation-v0",
-  "status": "implementing",
+  "status": "closed",
   "problem": "Seven persistent retrieval misses have answer-bearing gold documents in the frozen corpus, but identical generated queries place no gold document in the full-document BM25 top-20 and only two cases in the top-100.",
   "observed_evidence": [
     {
@@ -68,9 +68,12 @@
     "sealed_holdout_access": "forbidden"
   },
   "multi_agent_status": "deferred",
-  "measured_result": null,
-  "decision": null,
-  "next_action": "Implement and unit-test the frozen passage export and collapsed-document retrieval contract, build the complete local index, then apply the registered Recall@20 and index-completeness gates without changing parameters.",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/passage-index-representation-v0-20260816/audit.json",
+    "sha256": "38a214707d926b59e5a4c2720d027fe0315bac32a93f41c813b883b33c7d2f92"
+  },
+  "decision": "reject",
+  "next_action": "Freeze passage size, overlap, and candidate-cap tuning on this outcome-selected cluster. Before any new end-to-end run, preregister a zero-provider dense-rank audit over the identical 48 recorded queries to separate lexical representation failure from semantic candidate-depth failure.",
   "active_paid_calls": 0,
   "retained_services": [
     "qwen3-32b-bf16-judge@127.0.0.1:18015",
@@ -78,5 +81,5 @@
     "obligation-span-opening@127.0.0.1:8769"
   ],
   "task_owned_processes": "named_and_retained",
-  "claim_boundary": "The seven cases are posthoc and gold-aware. Passing only authorizes a fresh development comparison under fixed model, search calls, Token budget, cost budget, and Judge; failure freezes the passage branch."
+  "claim_boundary": "The complete index covered 100195 of 100195 source documents and all 57 development gold documents, but passage BM25 recovered only 2 of 7 diagnosed cases at collapsed Recall@20 against the registered 4-of-7 gate. This rejects and freezes this passage branch; it is not an end-to-end or model-capability result."
 }

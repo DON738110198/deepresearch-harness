@@ -143,11 +143,14 @@ replacement、0 new search。不能为了追阳性继续改 verifier wording。
 
 ## 下一阶段
 
-1. `planned`：为完整语料构建与 gold 无关的 passage-level BM25 candidate index。
-   在构建前冻结 tokenizer、passage size、overlap、语料 hash 和最大 candidate 数。
-2. `planned` acceptance：在这 7 个 outcome-selected screening case 上至少 4/7 达到
-   gold-doc Recall@20，且 25 题全量索引完整性不下降；否则冻结 passage branch。
-3. `planned`：通过后才注册 fresh paired development test。锁定 DeepSeek 模型、
+1. `completed/reject`：完整语料 passage-level BM25 将 100,195 个源文档切为
+   2,715,518 个段落；相同查询的 collapsed gold-doc Recall@20 仅为 2/7，低于
+   预注册 4/7。源文档和 25 题的 57 个 gold 文档均 100% 覆盖，因此 passage
+   branch 按规则冻结，不再调 chunk size、overlap 或 top-k。
+2. `planned`：固定相同 48 条生成查询，审计 dense gold-document rank，区分 lexical
+   representation failure 与 semantic candidate-depth failure；provider、在线搜索和
+   Judge call 均保持 0。
+3. `planned`：只有新的检索候选通过离线门槛后才注册 fresh paired development test。锁定 DeepSeek 模型、
    prompt、语料、8 个 search call、总 Token，并分别报告 Token-matched 和
    cost-matched 结果。
 4. `planned` metrics：Judge accuracy、strict exact、gold-doc recall、citation support、
