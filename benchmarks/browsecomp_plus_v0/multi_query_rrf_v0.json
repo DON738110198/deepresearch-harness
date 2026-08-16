@@ -1,0 +1,57 @@
+{
+  "schema_version": "multi-query-rrf-registration-v0",
+  "status": "posthoc_registered_failure_cluster",
+  "registered_at": "2026-08-16T22:54:07.9587511+08:00",
+  "purpose": "Test the zero-provider lower bound of fusing every frozen generated-query BM25 ranking before introducing an LLM entity linker, reranker, or additional Agent role.",
+  "prerequisites": {
+    "lexical_rank_result": {
+      "path": "runs/browsecomp_plus_v0/persistent-miss-lexical-rank-v0-20260816/audit.json",
+      "sha256": "a44fcb04825ecf5930f239d5a6a99fb7b557c12d1bdcb110dca6c06cec1ef7f5"
+    },
+    "rejected_pivot_selector": {
+      "path": "runs/browsecomp_plus_v0/gold-blind-visible-pivot-slate-v0-20260816/audit.json",
+      "sha256": "80950baaab11784a138b76d5b44e8df263ba2b92e131e47062edccf4478cad88"
+    },
+    "gold_slice": {
+      "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline.gold.json",
+      "sha256": "2ef96bc47f0f89d1fa60aaac082a3d7b087737f1041bec579b2dc21a29034fd2"
+    },
+    "source_index_registration": {
+      "path": "benchmarks/browsecomp_plus_v0/passage_index_representation_v0.json",
+      "sha256": "15ac2dc707eaae1755cac14698a122246a3be7e536b66d607b0e41cc8b561c92"
+    }
+  },
+  "baseline_run_root": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline",
+  "query_ids": ["875", "754", "898", "710", "873", "869", "805"],
+  "query_source": "trial1_recorded_successful_search_calls",
+  "retrieval": {
+    "document_index_path": "runs/_external/browsecomp-plus-indexes-direct/bm25",
+    "analyzer_id": "pyserini_default_english_v1.2.0",
+    "bm25_k1": 0.9,
+    "bm25_b": 0.4,
+    "maximum_rank_per_query": 1000
+  },
+  "fusion": {
+    "method": "reciprocal_rank_fusion_v0",
+    "rrf_k": 60,
+    "query_weighting": "uniform",
+    "duplicate_query_policy": "reject",
+    "candidate_score": "sum_1_over_rrf_k_plus_one_based_rank",
+    "tie_break": "best_individual_rank_then_occurrence_count_desc_then_docid_ascending",
+    "evaluation_depths": [20, 100]
+  },
+  "acceptance": {
+    "minimum_fused_gold_doc_recall_at20_cases": 4,
+    "minimum_fused_gold_doc_recall_at100_cases_for_typed_reranker": 4
+  },
+  "budgets": {
+    "expected_frozen_queries": 48,
+    "maximum_offline_bm25_queries": 48,
+    "maximum_provider_calls": 0,
+    "maximum_online_search_calls": 0,
+    "maximum_judge_calls": 0,
+    "gpu_allowed": false
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "This is a gold-scored rank-fusion calibration on seven already observed retrieval failures. A pass can only select a candidate aggregation boundary for a separately preregistered unseen development comparison; it cannot establish end-to-end improvement, official accuracy, leaderboard rank, or model-capability improvement."
+}

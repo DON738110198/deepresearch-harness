@@ -1,0 +1,89 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "multi-query-rrf-v0",
+  "status": "preregistering",
+  "problem": "Seven persistent retrieval misses have gold documents in the corpus, and frozen generated queries place gold within BM25 top-1000 on six cases, but no case reaches any single-query top-20. Passage, dense, visible-pivot oracle transfer, and rarity-first pivot selection did not meet their gates. The project has not yet tested whether deterministic aggregation of the existing query rankings is a sufficient lower bound.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/persistent-miss-lexical-rank-v0-20260816/audit.json",
+      "sha256": "a44fcb04825ecf5930f239d5a6a99fb7b557c12d1bdcb110dca6c06cec1ef7f5"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/gold-blind-visible-pivot-slate-v0-20260816/audit.json",
+      "sha256": "80950baaab11784a138b76d5b44e8df263ba2b92e131e47062edccf4478cad88"
+    }
+  ],
+  "simplest_baseline": "Apply uniform Reciprocal Rank Fusion with k=60 to the complete frozen generated-query BM25 top-1000 lists for each case. Do not generate a query, inspect gold during fusion, call an LLM, add a reranker, or add an Agent.",
+  "hypothesis": "Cross-query rank agreement will move a gold document into the fused top-20 for at least four of seven persistent misses. If top-20 fails but fused top-100 reaches four cases, only then may a separately registered typed reranker be considered.",
+  "changed_mechanisms": [
+    "uniform reciprocal-rank fusion across frozen generated-query rankings"
+  ],
+  "anti_claim": "This is deterministic frozen-query harness retrieval aggregation on outcome-selected development failures, not training and not a model-capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["Lead Agent synthesis", "parallel isolated Sub-Agents", "structured sub-agent results"],
+      "current_gap": "Before paying for parallel research contexts, fuse the retrieval lists already produced by the single frozen trajectory and measure whether candidate visibility is the actual bottleneck.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["iterative search", "research compression", "legacy multi-agent comparison"],
+      "current_gap": "RRF is a cheaper tool-layer aggregation baseline than another reflection or compression call and preserves a direct causal link from each query rank to the fused slate.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["planner-generated research questions", "crawler execution", "publisher synthesis"],
+      "current_gap": "The existing run already paid for multiple research questions. Fusing their candidates tests whether more crawling is necessary before increasing search breadth or adding a publisher-stage intervention.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["WebPlanner graph", "multiple WebSearchers", "graph state aggregation"],
+      "current_gap": "RRF is the non-agent aggregation lower bound for multiple search branches; a search graph is unjustified if its fixed branch outputs cannot produce a viable shared candidate slate.",
+      "disposition": "benchmark_later"
+    }
+  ],
+  "frozen_controls": [
+    "same seven outcome-selected persistent retrieval misses",
+    "same trial-1 order and exact SHA256 of 48 successful generated queries",
+    "same 100,195-document full-document BM25 index and byte digests",
+    "Pyserini 1.2.0 default English analyzer with BM25 k1 0.9 and b 0.4",
+    "top-1000 retrieval per query",
+    "uniform Reciprocal Rank Fusion with k=60",
+    "deterministic tie break by best rank, occurrence count, and docid",
+    "evaluation only at fused depths 20 and 100",
+    "zero provider, online search, Judge, and GPU use",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 7,
+    "maximum_provider_cost_usd": 0.0,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": null,
+  "decision": null,
+  "next_action": "Commit the registration before implementation, then implement and run the deterministic RRF audit exactly once. Accept only the preregistered top-20 gate; use the top-100 gate solely to decide whether a new typed-reranker question is admissible.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "This calibration can establish only whether fixed-query rank fusion exposes gold candidates on saved failures. A later unseen paired run must lock model, retriever, query count, Token, cost, and Agent count before any effectiveness claim."
+}
