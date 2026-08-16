@@ -1,0 +1,82 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "passage-index-representation-v0",
+  "status": "implementing",
+  "problem": "Seven persistent retrieval misses have answer-bearing gold documents in the frozen corpus, but identical generated queries place no gold document in the full-document BM25 top-20 and only two cases in the top-100.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/persistent-miss-lexical-rank-v0-20260816/audit.json",
+      "sha256": "a44fcb04825ecf5930f239d5a6a99fb7b557c12d1bdcb110dca6c06cec1ef7f5"
+    }
+  ],
+  "simplest_baseline": "Keep one Lucene BM25 record per complete source document and the exact recorded trial-1 generated queries; do not add query calls, reranking, or agents.",
+  "hypothesis": "Splitting every source document into deterministic 256-token passages with 64-token overlap and repeated bounded frontmatter will place a gold parent document in the collapsed top-20 for at least four of the seven diagnosed cases under the identical queries.",
+  "changed_mechanisms": [
+    "full-document BM25 representation replaced by deterministic overlapping passage BM25 representation"
+  ],
+  "anti_claim": "This outcome-selected offline screen cannot establish end-to-end accuracy, general retrieval improvement, official benchmark performance, or model capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["Lead Agent decomposition", "isolated Sub-Agent context"],
+      "current_gap": "Delegating the same low-recall index repeats the retrieval miss; passage representation is the smaller causal intervention.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["configurable search APIs", "research compression"],
+      "current_gap": "Changing orchestration or compression cannot help before the answer-bearing source enters the candidate pool.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["planner queries", "crawler agents", "publisher"],
+      "current_gap": "The frozen queries already rank six gold documents only at depth 47 to 736; another crawler role is less direct than testing document granularity.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["WebPlanner graph", "parallel WebSearcher nodes"],
+      "current_gap": "Search-graph fan-out is justified by omitted independent branches, not by a measured full-document ranking representation failure.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "same seven outcome-selected persistent retrieval misses",
+    "same trial-1 recorded successful generated queries",
+    "same 100195 source documents and byte-frozen Lucene index",
+    "256 whitespace tokens per passage with 64-token overlap",
+    "bounded repeated frontmatter",
+    "BM25 k1 0.9 and b 0.4",
+    "200 internal passage hits collapsed to at most 20 unique source documents",
+    "zero provider, online search, and Judge calls",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 7,
+    "maximum_provider_cost_usd": 0.0,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": null,
+  "decision": null,
+  "next_action": "Implement and unit-test the frozen passage export and collapsed-document retrieval contract, build the complete local index, then apply the registered Recall@20 and index-completeness gates without changing parameters.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "The seven cases are posthoc and gold-aware. Passing only authorizes a fresh development comparison under fixed model, search calls, Token budget, cost budget, and Judge; failure freezes the passage branch."
+}
