@@ -22,7 +22,7 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        from pyserini.index.lucene import IndexReader
+        from pyserini.index.lucene import LuceneIndexReader
         from pyserini.search.lucene import LuceneSearcher
     except ImportError as error:
         raise RuntimeError("install the BrowseComp-Plus dependencies") from error
@@ -35,7 +35,7 @@ def main() -> int:
     searcher.set_bm25(registration.retrieval.bm25_k1, registration.retrieval.bm25_b)
     if searcher.num_docs != registration.document_count:
         raise ValueError("visible-pivot Lucene document count changed")
-    reader = IndexReader(str(index_path))
+    reader = LuceneIndexReader(str(index_path))
 
     def load_document(docid: str) -> str:
         document = searcher.doc(docid)
