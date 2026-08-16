@@ -55,7 +55,9 @@ def main() -> int:
             registration_path=registration_path,
             output_path=slate_path,
             analyze=reader.analyze,
-            document_frequency=lambda term: int(reader.get_term_counts(term)[0]),
+            document_frequency=lambda term: int(
+                reader.get_term_counts(term, analyzer=None)[0]
+            ),
         )
 
     searcher = LuceneSearcher(str(index_path))
