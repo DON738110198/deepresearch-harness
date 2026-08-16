@@ -330,6 +330,7 @@ class QwenDenseReplaySearcher:
         model_dir: Path,
         index_root: Path,
         batch_size: int = 8,
+        search_depth: int | None = None,
     ) -> None:
         started = time.perf_counter()
         try:
@@ -347,6 +348,8 @@ class QwenDenseReplaySearcher:
 
         if batch_size < 1:
             raise ValueError("batch_size must be positive")
+        if search_depth is not None and not 1 <= search_depth <= 1000:
+            raise ValueError("dense search depth must be between 1 and 1000")
         model_dir = model_dir.resolve()
         index_dir = (index_root / candidate.index.subdirectory).resolve()
         model_file = model_dir / candidate.model.model_file
@@ -379,6 +382,9 @@ class QwenDenseReplaySearcher:
 
         if index is None or not lookup:
             raise ValueError("dense index is empty")
+        resolved_search_depth = search_depth or candidate.top_k
+        if resolved_search_depth > len(lookup):
+            raise ValueError("dense search depth exceeds the indexed document count")
         device = "cuda" if torch.cuda.is_available() else "cpu"
         dtype = torch.float16 if device == "cuda" else torch.float32
         tokenizer = AutoTokenizer.from_pretrained(
@@ -402,6 +408,7 @@ class QwenDenseReplaySearcher:
 
         self._candidate = candidate
         self._batch_size = batch_size
+        self._search_depth = resolved_search_depth
         self._device = device
         self._faiss_index = index
         self._lookup = lookup
@@ -446,7 +453,7 @@ class QwenDenseReplaySearcher:
             query_vectors = representations.detach().float().cpu().numpy()
             query_vectors = self._np.asarray(query_vectors, dtype="float32")
             scores, indices = self._faiss_index.search(
-                query_vectors, self._candidate.top_k
+                query_vectors, self._search_depth
             )
             for query, query_scores, query_indices in zip(
                 query_batch, scores, indices, strict=True
