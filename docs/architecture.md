@@ -248,7 +248,11 @@ boundary was a gold-aware, one-hop Visible-Pivot oracle over already visible
 documents. It passed exactly 4/7, but one selected token was frontmatter format
 metadata rather than a semantic bridge. The next boundary must therefore be a
 gold-blind, body-only, provenance-bound pivot slate with a fixed search budget;
-no paid fresh-slice comparison is allowed until that selector clears its own
+that selector persisted its slate before opening gold and had zero leakage, but
+recovered 0/7 and retained 0/4 oracle rescues. The rarity-first selector is
+frozen. A future loop must change candidate representation, for example to a
+typed entity/relation link, while holding the retriever and Agent count fixed.
+No paid fresh-slice comparison is allowed until that candidate clears its own
 offline gate.
 
 ## Contracts and audit boundary

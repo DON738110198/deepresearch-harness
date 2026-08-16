@@ -69,9 +69,10 @@ gold 文档中都来自 YAML 坐标字段，例如 `coordinates: ... inline`。�
 
 ## 下一步
 
-`planned`：gold-blind Visible Pivot Slate。它必须删除 wrapper 和 frontmatter，只从
-可见正文提取 capitalized entity/acronym 候选；每个候选记录 snippet docid、source
-query 和正文位置；不读取 gold 文档或 answer；冻结 slate 大小、实际 pivot query
-数、总 search calls 和 Token/费用。只有该 selector 先通过离线 gate，才允许注册
-新的 fixed-budget development run。未运行的 selector recall、Judge accuracy、
-citation support、Token、费用和多 Agent 指标全部保持 `planned`。
+该 gold-blind Visible Pivot Slate 已按上述边界完成，但结果为 `0/7`，oracle rescue
+retention 为 `0/4`，因此被拒绝。它确实做到了先落盘 slate、后打开 gold，且 answer、
+gold docid、frontmatter leakage 都为 0；失败来自 rarity-first selector 选择了语义无关
+的 df=2 长尾实体。完整结果见
+`docs/gold_blind_visible_pivot_slate_results_2026-08-16.zh-CN.md`。不得在同一 7 题上
+扩大 slate 或改排序追阳性。Judge accuracy、citation support、Token、费用和多 Agent
+指标仍保持 `planned`。

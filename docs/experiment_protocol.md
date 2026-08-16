@@ -200,6 +200,15 @@ wrappers and frontmatter before candidate extraction, receive neither gold
 documents nor answers, preserve the candidate snippet and source-query
 provenance, and freeze both slate size and actual pivot-search calls.
 
+That gold-blind selector was then run with two body candidates per case. The
+slate was persisted before the evaluator opened gold; exact-answer, gold-docid,
+and frontmatter-only leakage were all zero. Nevertheless, its 14 fixed pivot
+queries recovered 0/7 cases and retained 0/4 oracle rescues. This registered
+negative freezes rarity-first ordering and slate expansion on the observed
+cluster. A future candidate-representation experiment must keep the retriever,
+Agent count, and query budget fixed, and all fresh/official metrics remain
+`planned` until it passes.
+
 The standard-loop adapter pins Pi 0.84.1 but clears Pi's system prompt and all
 ambient coding context. Pi is held fixed in harness ablations and is not an
 innovation variable. Matching the reference loop, tool calls already emitted

@@ -167,12 +167,16 @@ top-20 不仅没有补回 passage 的两题，反而为 `0/7`；因此 dense can
 3. `completed/accept with caveat`：Visible-Pivot oracle 以 `4/7` 刚好通过，执行
    1,088/3,120 个离线 BM25 query。但 q875 的成功 token `inlin` 是 frontmatter
    坐标格式词 `inline`；该 pass 只证明 lexical sufficiency，不证明 semantic selector。
-4. `planned`：注册 gold-blind、body-only、provenance-bound 的小 pivot slate selector；
-   不向 selector 暴露 gold 文档或 answer，并冻结真实 pivot search 预算。
-5. `planned`：只有新的检索候选通过离线门槛后才注册 fresh paired development test。锁定 DeepSeek 模型、
+4. `completed/reject`：gold-blind body-only selector 每题成功选出两个 pivot，无
+   answer/gold/frontmatter leakage，但 14 个 provenance query 为 `0/7`，oracle
+   retention 为 `0/4`。rarity-first selector 冻结，不在同一 7 题改排序或扩 slate。
+5. `planned`：把下一问题限定为 candidate representation，而不是 Agent 数量；例如
+   typed entity/relation linking 必须在独立注册下优于固定 `0/7` selector，且不能同时
+   更换 retriever。
+6. `planned`：只有新的检索候选通过离线门槛后才注册 fresh paired development test。锁定 DeepSeek 模型、
    prompt、语料、8 个 search call、总 Token，并分别报告 Token-matched 和
    cost-matched 结果。
-6. `planned` metrics：Judge accuracy、strict exact、gold-doc recall、citation support、
+7. `planned` metrics：Judge accuracy、strict exact、gold-doc recall、citation support、
    latency、Token、美元及人民币费用。未运行前不填数字。
-7. 多 Agent 继续 `planned`。只有 retrieval 稳定后反复出现独立分支遗漏、
+8. 多 Agent 继续 `planned`。只有 retrieval 稳定后反复出现独立分支遗漏、
    上下文互扰、矛盾证据未核验或串行延迟，才比较 B2/B3/B4。

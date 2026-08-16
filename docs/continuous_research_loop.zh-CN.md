@@ -87,14 +87,18 @@
   question/query/answer vocabulary，再追加一个 token；它以 `4/7` 刚好过线，
   但 q875 的 `inlin` 来自坐标 frontmatter 的 `inline` 格式词。该结果只证明一跳
   lexical sufficiency，不能当作 semantic selector 效果。
+- gold-blind body-only selector 先独立落盘两个 pivot/case，再打开 gold 评分；它无
+  answer、gold docid 或 frontmatter leakage，但 14 次 provenance-bound search 为
+  `0/7`，oracle retention `0/4`。被选 pivot 全是 df=2 长尾词，说明纯 rarity 不能
+  把可见实体转成有效研究边。
 
 因此当前差异点不再表述为泛化的 `repair_search`，而是 **Evidence Debt 驱动的
 检索表示诊断**：先证明 obligation、目标文档、答案 span 分别在哪一层丢失，再
 决定是否改变 index、candidate pool 或验证器。passage 与 dense gate 均已以负结果
 关闭；Visible-Pivot Bridge Sufficiency oracle 已过最小存在性门槛。下一候选不是
-再扩 oracle，而是 gold-blind、body-only、provenance-bound 的小 pivot slate：删除
-wrapper/frontmatter，只从真实可见正文提取候选，固定选择数和 pivot search 预算，
-且不读取 gold 文档或 answer。oracle 本身仍不是可部署 selector。
+再扩 oracle。gold-blind 小 pivot slate 也已被拒绝并冻结；下一问题必须改变候选表示，
+例如从孤立 rare token 转向 typed entity/relation linking，同时固定 retriever、查询
+预算和 Agent 数，不能在同一结果上只改排序追阳性。oracle 本身仍不是可部署 selector。
 多 Agent、fresh paired run、sealed holdout、official Judge 和 leaderboard submission
 都保持 `planned`。
 

@@ -1,7 +1,7 @@
 {
   "schema_version": "deepresearch-research-loop-checkpoint-v0",
   "loop_id": "gold-blind-visible-pivot-slate-v0",
-  "status": "preregistering",
+  "status": "closed",
   "problem": "The gold-aware Visible-Pivot oracle passed exactly 4/7, but one rescue used frontmatter formatting metadata and the oracle enumerated up to 64 gold-overlap terms across every frozen query. It does not show that a runtime harness can choose a semantic pivot under a realistic search budget.",
   "observed_evidence": [
     {
@@ -73,9 +73,12 @@
     "sealed_holdout_access": "forbidden"
   },
   "multi_agent_status": "deferred",
-  "measured_result": null,
-  "decision": null,
-  "next_action": "Commit this gold-blind selection contract before implementation. Persist the selector slate before opening gold labels, verify the slate artifact contains no answers or gold docids, then score exactly one provenance query per selected pivot under the 14-query cap and fixed 2/7 plus 2/4 gates.",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/gold-blind-visible-pivot-slate-v0-20260816/audit.json",
+    "sha256": "80950baaab11784a138b76d5b44e8df263ba2b92e131e47062edccf4478cad88"
+  },
+  "decision": "reject",
+  "next_action": "Freeze this rarity-first capitalized-token selector: it selected two body candidates for every case with zero gold/answer/frontmatter leakage, but recovered 0/7 and retained 0/4 oracle rescues. Do not increase slate size or reorder the same candidates on these observed cases. Before another end-to-end run, open a separately registered candidate-representation question, such as typed entity/relation linking from visible evidence, and require it to beat this fixed 0/7 selector without adding Agent roles or changing the retriever simultaneously.",
   "active_paid_calls": 0,
   "retained_services": [
     "qwen3-32b-bf16-judge@127.0.0.1:18015",

@@ -539,6 +539,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `docs/passage_index_representation_results_2026-08-16.zh-CN.md`: preregistered full-corpus passage-index build, transport recovery, negative Recall@20 gate, and frozen next boundary.
 - `docs/persistent_miss_dense_rank_results_2026-08-16.zh-CN.md`: CPU-only dense top-20/100/1000 rank audit, retained local crash, negative gates, and the next query-bridge boundary.
 - `docs/visible_pivot_bridge_results_2026-08-16.zh-CN.md`: gold-aware one-hop bridge sufficiency, exact 4/7 gate, metadata-artifact caveat, and the gold-blind selector boundary.
+- `docs/gold_blind_visible_pivot_slate_results_2026-08-16.zh-CN.md`: no-gold two-pivot slate, persisted selection boundary, 0/7 negative result, and frozen rarity-first selector.
 - `docs/b1_b2_token_v1.md`: retained negative B2 v1 result and causal follow-up.
 - `docs/b1_b2_token_v2.md`: retained B2 v2 tie and search-layer diagnosis.
 - `docs/b1_b2_v3_results.md`: token/cost automatic results and current claim boundary.
@@ -553,4 +554,4 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 4. **Completed with retained negatives:** structured Evidence Debt, selective repair, span opening, and fail-closed execution loops.
 5. **Completed with retained negatives:** full-corpus passage BM25 and fixed-query dense rank gates; neither cleared 4/7, so candidate-depth and reranker tuning are frozen on this cluster.
 6. **Completed with a strict claim boundary:** zero-provider Visible-Pivot sufficiency reached 4/7, but one rescue was frontmatter metadata; it is an oracle, not a selector result.
-7. Build a gold-blind, body-only, provenance-bound pivot slate under a fixed search budget. Permit a fresh development slice only after that offline gate passes. Keep B3/B4 multi-Agent, sealed holdout, official execution, and leaderboard submission `planned` until their entry conditions are met.
+7. **Completed with a retained negative:** the gold-blind two-pivot slate had zero leakage but recovered 0/7; freeze rarity-first token selection. Test a separately registered typed entity/relation representation before any fresh run. Keep B3/B4 multi-Agent, sealed holdout, official execution, and leaderboard submission `planned` until their entry conditions are met.
