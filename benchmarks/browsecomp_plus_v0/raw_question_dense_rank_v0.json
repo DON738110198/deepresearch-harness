@@ -1,0 +1,54 @@
+{
+  "schema_version": "raw-question-dense-rank-registration-v0",
+  "status": "posthoc_registered_failure_cluster",
+  "registered_at": "2026-08-16T23:49:46.8416788+08:00",
+  "purpose": "Test whether the frozen original full question preserves query-document constraints that were lost by the Agent's 48 generated search queries, using the identical pinned Qwen3 dense index and seven persistent misses.",
+  "prerequisites": {
+    "dense_document_visibility_result": {
+      "path": "runs/browsecomp_plus_v0/dense-document-visibility-v0-20260816/audit.json",
+      "sha256": "18aa7a7e7d6913517affbc1db9b3b0df5203fc377fd9a59363f9e25c1a8ed8d2"
+    },
+    "generated_query_dense_rank_result": {
+      "path": "runs/browsecomp_plus_v0/persistent-miss-dense-rank-v0-20260816/audit.json",
+      "sha256": "0ceeddf7fb1e54fb94c90f4920e577ae71917ed7007d02cd1681c7c226a97bb6"
+    },
+    "gold_slice": {
+      "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline.gold.json",
+      "sha256": "2ef96bc47f0f89d1fa60aaac082a3d7b087737f1041bec579b2dc21a29034fd2"
+    }
+  },
+  "question_artifact": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/dev_queries_25.json",
+    "sha256": "18fbaaed14512f88d83f7b105c8a912463be742ceaa687296372fbe038b9bf45"
+  },
+  "query_ids": ["875", "754", "898", "710", "873", "869", "805"],
+  "retriever_manifest": {
+    "path": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+    "normalized_sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899"
+  },
+  "candidate_id": "qwen3-embedding-0.6b",
+  "model_directory": "runs/_external/models/Qwen3-Embedding-0.6B",
+  "index_root": "runs/_external/browsecomp-plus-indexes-direct",
+  "query_source": "frozen_pre_generation_question_artifact",
+  "depths": [20, 100, 1000],
+  "batch_size": 7,
+  "comparison": {
+    "baseline": "best rank across the same case's frozen successful Agent-generated queries",
+    "rank_win_policy": "raw rank is lower than generated best rank; an observed raw rank beats a missing generated rank; two missing ranks are a tie",
+    "tie_policy": "equal ranks are ties"
+  },
+  "acceptance": {
+    "minimum_raw_question_top20_cases": 4,
+    "minimum_raw_question_top100_cases_for_pool_diagnosis": 4,
+    "minimum_raw_question_rank_wins_for_alignment_signal": 4
+  },
+  "budgets": {
+    "expected_dense_query_encodes": 7,
+    "maximum_provider_calls": 0,
+    "maximum_online_search_calls": 0,
+    "maximum_judge_calls": 0,
+    "gpu_allowed": false
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "This is a posthoc, gold-aware retrieval-rank diagnostic on an outcome-selected failure cluster. The gold-blind builder may read only the frozen question artifact and must persist all top-1000 rankings before the scorer opens gold or prior outcomes. A pass can select a separately registered raw-question anchor or candidate-pool experiment; it cannot establish end-to-end effectiveness, official accuracy, leaderboard performance, or model capability improvement."
+}

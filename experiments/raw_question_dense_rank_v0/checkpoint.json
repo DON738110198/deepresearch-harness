@@ -1,0 +1,87 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "raw-question-dense-rank-v0",
+  "status": "preregistering",
+  "problem": "All seven failure cases retain an answer-bearing gold-document input under the official 4096-token recipe, yet 48 Agent-generated queries recover 0/7 gold documents at dense top-20 and only 1/7 at top-100. The smallest remaining ambiguity is whether query decomposition discarded the original question's joint constraints.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/dense-document-visibility-v0-20260816/audit.json",
+      "sha256": "18aa7a7e7d6913517affbc1db9b3b0df5203fc377fd9a59363f9e25c1a8ed8d2"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/persistent-miss-dense-rank-v0-20260816/audit.json",
+      "sha256": "0ceeddf7fb1e54fb94c90f4920e577ae71917ed7007d02cd1681c7c226a97bb6"
+    }
+  ],
+  "simplest_baseline": "Encode exactly one already frozen original question per case and search the identical dense index to depth 1000. Persist all rankings before opening gold, then compare each raw-question rank against the best of the already frozen generated-query ranks.",
+  "hypothesis": "The raw full question will place a gold document in top-20 for at least four of seven cases, or at minimum beat the generated-query best rank on at least four cases. A top-20 pass admits a raw-question anchor candidate; a rank-win-only pass localizes query decomposition harm but does not admit a live mechanism.",
+  "changed_mechanisms": [
+    "replace Agent-generated dense queries with the frozen raw full question"
+  ],
+  "anti_claim": "This changes only the query representation sent to a frozen retriever. It is not training and must not be described as model capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["Lead Agent decomposition", "scoped Sub-Agent tasks"],
+      "current_gap": "Before adding research workers, measure whether decomposing the original question already removed the conjunction of clues needed for retrieval.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["iterative query generation", "research compression"],
+      "current_gap": "Iterative query generation needs a raw-question anchor baseline; otherwise more rounds can repeatedly optimize locally plausible but constraint-poor queries.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["planner-generated research questions", "crawler execution"],
+      "current_gap": "Planner questions are useful for breadth, but the original question is the zero-generation control for testing whether planning loses cross-clue constraints.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["WebPlanner graph", "WebSearcher nodes"],
+      "current_gap": "A graph can improve branch coverage while still weakening global conjunctions at each node. Raw-question dense rank is the simpler constraint-preservation control.",
+      "disposition": "benchmark_later"
+    }
+  ],
+  "frozen_controls": [
+    "same seven outcome-selected persistent misses",
+    "same pre-generation question-only artifact and exact SHA256",
+    "same Qwen3-Embedding-0.6B model revision, tokenizer, query prefix, and 512-token query limit",
+    "same four byte-pinned dense index shards and search depths 20, 100, 1000",
+    "same generated-query dense-rank artifact as the comparison baseline",
+    "builder persists complete top-1000 rankings before scorer opens gold or prior outcomes",
+    "one dense query encode per case, zero provider, online search, Judge, and GPU use",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 7,
+    "maximum_provider_cost_usd": 0.0,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": null,
+  "decision": null,
+  "next_action": "Implement the two-phase gold-blind raw-question dense-rank builder and gold-aware scorer, run exactly seven CPU query encodes, and apply the frozen top-20, top-100, and rank-win gates without tuning on the result.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "This loop can establish only a rank-level query-representation diagnosis on saved development failures. Any harness candidate must still pass a separate fixed-budget fresh comparison before answer-quality claims."
+}
