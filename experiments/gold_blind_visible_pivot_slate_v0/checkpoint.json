@@ -1,0 +1,87 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "gold-blind-visible-pivot-slate-v0",
+  "status": "preregistering",
+  "problem": "The gold-aware Visible-Pivot oracle passed exactly 4/7, but one rescue used frontmatter formatting metadata and the oracle enumerated up to 64 gold-overlap terms across every frozen query. It does not show that a runtime harness can choose a semantic pivot under a realistic search budget.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/visible-pivot-bridge-v0-20260816/audit.json",
+      "sha256": "bbf01d457b45001fd15409349bd0c59a4767446274cd317dd19b85f2b9279a05"
+    }
+  ],
+  "simplest_baseline": "Choose no pivot and reuse the frozen queries; full-document BM25 top-20 remains 0/7.",
+  "hypothesis": "After removing wrappers and YAML frontmatter, the two rarest provenance-bound capitalized body terms per case, selected without gold documents or answers, retain gold-document top-20 retrieval on at least two of the four oracle-rescued cases and at least two of seven cases overall.",
+  "changed_mechanisms": [
+    "gold-blind two-item body-only visible-pivot slate"
+  ],
+  "anti_claim": "This selector is calibrated on outcome-selected failures with frozen model parameters. Any hit is a harness retrieval-selection result, not a model-capability improvement or unseen effectiveness result.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["Lead Agent decomposition", "isolated Sub-Agent research"],
+      "current_gap": "A deterministic two-pivot slate tests whether another research branch has a viable evidence-derived target before paying for a new isolated context.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["configurable search backend", "research compression"],
+      "current_gap": "The selector keeps the backend fixed and adds a provenance-preserving transition from compressed visible evidence to one bounded follow-up query.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["planner-generated research questions", "crawler execution agents"],
+      "current_gap": "The fixed two-query slate is a cheaper falsification than adding crawler breadth after an oracle that still contained a metadata artifact.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["WebPlanner search graph", "parallel WebSearcher nodes"],
+      "current_gap": "This is a fixed one-edge selector with explicit source provenance; graph expansion remains unjustified unless the edge survives without gold labels.",
+      "disposition": "benchmark_later"
+    }
+  ],
+  "frozen_controls": [
+    "same seven outcome-selected persistent retrieval misses",
+    "same saved trial-1 request, successful query order, and result snippets",
+    "selector receives request question plus saved queries and snippets only",
+    "selector receives no gold documents and no gold answer",
+    "leading wrapper and YAML frontmatter removed before candidate extraction",
+    "ASCII capitalized surface token yielding exactly one default-analyzer term",
+    "question and recorded-query terms excluded",
+    "document frequency at most 10,000",
+    "rank by document frequency, distinct visible support, then first occurrence",
+    "two candidates per case and first supporting query as provenance base",
+    "same full-document BM25 with k1 0.9, b 0.4, and top-k 20",
+    "at most two offline pivot queries per case and 14 total",
+    "zero provider, online search, and Judge calls",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 7,
+    "maximum_provider_cost_usd": 0.0,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": null,
+  "decision": null,
+  "next_action": "Commit this gold-blind selection contract before implementation. Persist the selector slate before opening gold labels, verify the slate artifact contains no answers or gold docids, then score exactly one provenance query per selected pivot under the 14-query cap and fixed 2/7 plus 2/4 gates.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "This is a no-gold selector calibration on already observed failures. Only a later fixed-budget unseen development run can support an effectiveness claim."
+}

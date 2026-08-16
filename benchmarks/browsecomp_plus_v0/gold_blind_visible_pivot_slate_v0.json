@@ -1,0 +1,61 @@
+{
+  "schema_version": "gold-blind-visible-pivot-slate-registration-v0",
+  "status": "posthoc_registered_after_oracle",
+  "registered_at": "2026-08-16T22:33:41.8291356+08:00",
+  "purpose": "Test whether a deterministic selector with no gold documents or answers can retain at least half of the four Visible-Pivot oracle rescues using a two-pivot body-only slate and one provenance-bound BM25 query per pivot.",
+  "source_registration": {
+    "path": "benchmarks/browsecomp_plus_v0/visible_pivot_bridge_v0.json",
+    "sha256": "aacb8cf3c546b4007d55ebe2d288ed244c983df67f49a054d59df183412be9fd"
+  },
+  "oracle_result": {
+    "path": "runs/browsecomp_plus_v0/visible-pivot-bridge-v0-20260816/audit.json",
+    "sha256": "bbf01d457b45001fd15409349bd0c59a4767446274cd317dd19b85f2b9279a05"
+  },
+  "baseline_run_root": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline",
+  "query_ids": ["875", "754", "898", "710", "873", "869", "805"],
+  "selector_input": {
+    "question_source": "saved_request_json",
+    "query_and_evidence_source": "saved_successful_run_search_calls",
+    "gold_documents_available_to_selector": false,
+    "gold_answer_available_to_selector": false
+  },
+  "body_extraction": {
+    "strip_leading_bracket_wrapper": true,
+    "strip_yaml_frontmatter": true,
+    "frontmatter_only_candidates_must_equal": 0
+  },
+  "candidate_policy": {
+    "surface_pattern_id": "ascii_capitalized_token_v0",
+    "analyzer_id": "pyserini_default_english_v1.2.0",
+    "minimum_surface_characters": 3,
+    "maximum_surface_characters": 40,
+    "require_single_analyzed_term": true,
+    "maximum_document_frequency": 10000,
+    "exclude_question_and_recorded_query_terms": true,
+    "candidate_order": "document_frequency_ascending_then_support_descending_then_first_seen",
+    "slate_size_per_case": 2,
+    "source_query_policy": "first_supporting_query"
+  },
+  "retrieval": {
+    "composition": "append_surface_form_to_provenance_query_v0",
+    "analyzer_id": "pyserini_default_english_v1.2.0",
+    "bm25_k1": 0.9,
+    "bm25_b": 0.4,
+    "top_k": 20,
+    "maximum_pivot_queries_per_case": 2
+  },
+  "acceptance": {
+    "minimum_selector_gold_doc_recall_at20_cases": 2,
+    "minimum_retained_oracle_rescue_cases": 2,
+    "required_selection_failures": 0,
+    "required_frontmatter_only_selected_candidates": 0
+  },
+  "budgets": {
+    "maximum_offline_bm25_queries": 14,
+    "maximum_provider_calls": 0,
+    "maximum_online_search_calls": 0,
+    "maximum_judge_calls": 0
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "Selection is gold-blind but evaluated on the same outcome-selected development failures used by the oracle. A pass may justify a separately preregistered fixed-budget unseen development run; it cannot establish end-to-end improvement, official accuracy, leaderboard performance, or model capability improvement."
+}
