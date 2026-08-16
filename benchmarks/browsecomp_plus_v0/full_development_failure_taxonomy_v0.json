@@ -1,0 +1,24 @@
+{
+  "schema_version": "browsecomp-plus-development-failure-taxonomy-registration-v0",
+  "status": "registered_before_gold_scoring",
+  "registered_at": "2026-08-17T00:43:00+08:00",
+  "profile_registration": {
+    "path": "benchmarks/browsecomp_plus_v0/full_development_profile_v0.json",
+    "sha256": "de66b62da71e9f3a3173104a328773bf4094aded703e0d64376974fa29a02118"
+  },
+  "query_count": 175,
+  "classification_precedence": [
+    "answer_contract_failure",
+    "judge_correct",
+    "reference_document_not_retrieved",
+    "reference_document_retrieved_answer_wrong"
+  ],
+  "routing": {
+    "minimum_scored_wrong_cases": 30,
+    "answer_contract_failure_share_all_percent": 10.0,
+    "reference_document_not_retrieved_share_wrong_percent": 60.0,
+    "reference_document_retrieved_answer_wrong_share_wrong_percent": 60.0
+  },
+  "multi_agent_status": "deferred",
+  "claim_boundary": "This taxonomy localizes development failures from frozen traces, reference-document recall, answer-contract checks, and the calibrated development Judge. A retrieved reference document does not prove that the answer-bearing span was visible or used, so that category cannot distinguish evidence selection from opening or synthesis. This profile alone cannot trigger a multi-Agent implementation or establish official accuracy, leaderboard rank, framework superiority, or model-capability improvement."
+}
