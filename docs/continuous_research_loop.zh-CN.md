@@ -107,8 +107,16 @@ metadata。因此在投入 typed linking 或 passage-dense build 前，先验证
 document recipe 是否实际看得到 answer span，并把 provenance 缺口单独记录。oracle
 本身仍不是可部署 selector。该预注册诊断现已完成：case visibility 为 `7/7`，
 document visibility 为 `17/18`，所以 `4096-token` head truncation 不是主要解释，
-passage-dense 不获准。下一轮只测试 raw full question 的 dense rank 是否优于已冻结
-generated-query best rank，用最小实验分离 query semantic alignment。
+passage-dense 不获准。随后 raw full question 的 dense rank 为 top-20 `1/7`、
+top-100 `1/7`、top-1000 `2/7`，对比 frozen generated-query 的 `0/7`、`1/7`、
+`5/7`；逐题 rank 也只赢 `1/7`，三个预注册 `4/7` gate 全部失败。raw-question
+general anchor 因此冻结，不能在同一 7 题调 prefix、depth 或 query 混合。下一轮先
+审计仓库中已有 bridge/hypothesis probe。审计发现另一组 3 个已知失败上已经连续拒绝
+obligation rewrite、typed contrastive bridge、draft-blind counter-hypothesis、
+hypothesis firewall、Pro generator substitution 和 corpus-grounded induction。
+因此不再把 prompt-only typed bridge 换名后重跑；当前 7 题进入 regression-only，
+下一轮改为冻结 v10 在完整 175 题 development 上做一次规模化错误分布采集，再由新
+bad-case 主类选择机制。
 多 Agent、fresh paired run、sealed holdout、official Judge 和 leaderboard submission
 都保持 `planned`。
 

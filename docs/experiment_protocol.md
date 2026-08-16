@@ -224,9 +224,20 @@ limitation explicit. The registered audit retained an answer-bearing input for
 7/7 cases and 17/18 gold documents, so 4096-token head truncation is rejected as
 the dominant explanation and passage-dense is not admitted on this evidence.
 The result remains a gold-aware tokenizer diagnosis; it cannot be promoted into
-an effectiveness metric. Raw-question dense rank is the next planned alignment
-diagnostic. All unrun typed-linking, fresh, Judge, official, Token, cost, and
-leaderboard fields remain `planned`.
+an effectiveness metric. The subsequent two-phase raw-question audit persisted
+seven top-1000 slates before opening gold or prior outcomes. Raw-question search
+reached 1/7 at top-20, 1/7 at top-100, and 2/7 at top-1000, compared with 0/7,
+1/7, and 5/7 for the frozen generated-query baseline. It won only one of seven
+per-case rank comparisons, so every registered 4/7 gate failed. A general
+raw-question anchor is therefore frozen on this cluster. Existing bridge and
+hypothesis probes were then audited: six prompt-only variants had already been
+rejected on another saved three-case cluster, including typed contrastive,
+draft-blind, firewall, Pro-substitution, and corpus-grounded generation. Those
+mechanisms must not be renamed and repeated on the seven current cases. The
+current cluster becomes regression-only, and the next registered action is a
+single frozen-policy profile over all 175 development questions to acquire a
+broader failure distribution. It is not a fresh confirmation. All unrun new
+mechanisms, sealed-holdout, official, and leaderboard fields remain `planned`.
 
 The standard-loop adapter pins Pi 0.84.1 but clears Pi's system prompt and all
 ambient coding context. Pi is held fixed in harness ablations and is not an

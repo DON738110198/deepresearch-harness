@@ -177,12 +177,19 @@ top-20 不仅没有补回 passage 的两题，反而为 `0/7`；因此 dense can
    document `4096`；`4096-token` 输入下 case visibility 为 `7/7`、document
    visibility 为 `17/18`。因此 head truncation 不是主要解释，passage-dense 不获准。
    预构建 index 未绑定 preprocessing metadata 的 provenance 限制继续保留。
-7. `planned`：比较 raw full question 与 frozen generated queries 的 dense rank；只改变
-   query representation，不加 reranker、Agent、provider 或 Judge。
-8. `planned`：只有新的检索候选通过离线门槛后才注册 fresh paired development test。锁定 DeepSeek 模型、
+7. `completed/reject`：raw full question 的 dense rank 为 top-20 `1/7`、top-100
+   `1/7`、top-1000 `2/7`，对比 generated queries 的 `0/7`、`1/7`、`5/7`；raw
+   逐题 rank 只赢 `1/7`。三个 `4/7` gate 全部失败，general raw anchor 冻结。
+8. `completed/route away`：仓库已有六个 prompt-only bridge/hypothesis 负实验，
+   覆盖 obligation rewrite、contrastive typing、draft blindness、firewall、Pro substitution
+   和 corpus grounding。它们来自另一组 3 个已知失败，但已足以阻止换名重复。当前 7 题
+   只保留为 regression replay，不再用于选择检索机制。
+9. `planned`：冻结 v10，在完整 175 题 development 上采集一次规模化 baseline 与错误
+   分布；这是 development profiling，不是 fresh confirmation、sealed holdout 或 leaderboard。
+10. `planned`：只有新的检索候选通过离线门槛后才注册 fresh paired development test。锁定 DeepSeek 模型、
    prompt、语料、8 个 search call、总 Token，并分别报告 Token-matched 和
    cost-matched 结果。
-9. `planned` metrics：Judge accuracy、strict exact、gold-doc recall、citation support、
+11. `planned` metrics：Judge accuracy、strict exact、gold-doc recall、citation support、
    latency、Token、美元及人民币费用。未运行前不填数字。
-10. 多 Agent 继续 `planned`。只有 retrieval 稳定后反复出现独立分支遗漏、
+12. 多 Agent 继续 `planned`。只有 retrieval 稳定后反复出现独立分支遗漏、
    上下文互扰、矛盾证据未核验或串行延迟，才比较 B2/B3/B4。

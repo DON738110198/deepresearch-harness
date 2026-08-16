@@ -263,10 +263,24 @@ frozen. A still simpler multi-query baseline then persisted all 48 BM25
 top-1000 rankings before gold access and applied uniform RRF. It recovered 0/7
 at both fused top-20 and top-100, while the best-single-query top-100 baseline
 was 2/7. RRF tuning and a reranker over the empty-coverage fused top-100 are
-frozen. Before a future typed entity/relation link or passage-dense build, the
-next zero-provider diagnostic must test whether the exact 512-token dense
-document head contains the answer span. No paid fresh-slice comparison is
-allowed until a candidate clears its own offline gate.
+frozen. Source verification corrected the dense input contract to 512 query
+tokens and 4096 document tokens. A tokenizer replay retained an answer-bearing
+input for 7/7 cases and 17/18 gold documents, rejecting head truncation as the
+dominant cause. Raw full-question dense search then reached only 1/7 at top-20,
+1/7 at top-100, and 2/7 at top-1000, with one per-case rank win over generated
+queries; all three registered 4/7 gates failed.
+
+The repository also contains six closed prompt-only bridge or hypothesis loops
+on a separate three-case cluster (`896`, `653`, `85`). Obligation rewrites,
+typed contrastive bridges, a draft-blind counter-hypothesis, a hypothesis
+firewall, a Pro generator substitution, and corpus-grounded bridge induction
+all failed their registered gates. Repeating one of those mechanisms on the
+seven current cases would not be a new causal test. This failure cluster is
+therefore exhausted for mechanism selection: preserve it for regression replay,
+freeze raw-anchor, fusion, rarity-pivot, passage-BM25, and prompt-only bridge
+tuning, and acquire a broader frozen development profile before selecting the
+next intervention. No sealed-holdout or leaderboard claim is allowed during
+that profiling step.
 
 ## Contracts and audit boundary
 

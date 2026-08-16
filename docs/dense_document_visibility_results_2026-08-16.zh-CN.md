@@ -53,6 +53,11 @@ passage-dense index。更小的下一问题是：48 条 Agent 生成查询是否
 question 的 dense rank 与已冻结 generated-query best rank；仍不加 Agent、reranker、
 provider 或 Judge。
 
+该后续实验已于 2026-08-17 完成：raw question 仅达到 top-20 `1/7`、top-100
+`1/7`、top-1000 `2/7`，逐题 rank 只赢 `1/7`，所有 `4/7` gate 失败。因此 raw
+full-question general anchor 同样冻结，详见
+`docs/raw_question_dense_rank_results_2026-08-17.zh-CN.md`。
+
 这个结果不是 retrieval improvement、端到端准确率、官方 benchmark 或模型能力提升。
 
 ## 产物

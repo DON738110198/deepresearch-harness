@@ -1,7 +1,7 @@
 {
   "schema_version": "deepresearch-research-loop-checkpoint-v0",
   "loop_id": "raw-question-dense-rank-v0",
-  "status": "preregistering",
+  "status": "closed",
   "problem": "All seven failure cases retain an answer-bearing gold-document input under the official 4096-token recipe, yet 48 Agent-generated queries recover 0/7 gold documents at dense top-20 and only 1/7 at top-100. The smallest remaining ambiguity is whether query decomposition discarded the original question's joint constraints.",
   "observed_evidence": [
     {
@@ -73,9 +73,12 @@
   "multi_agent_status": "deferred",
   "multi_agent_failure_triggers": [],
   "multi_agent_comparison_contract": null,
-  "measured_result": null,
-  "decision": null,
-  "next_action": "Implement the two-phase gold-blind raw-question dense-rank builder and gold-aware scorer, run exactly seven CPU query encodes, and apply the frozen top-20, top-100, and rank-win gates without tuning on the result.",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/raw-question-dense-rank-v0-20260817/audit.json",
+    "sha256": "c1472ff7b281447b67195123754f3f364bdfc11ea5f8d545cbebba8b83f7a001"
+  },
+  "decision": "reject",
+  "next_action": "Raw full-question dense search reached 1/7 at top-20, 1/7 at top-100, and 2/7 at top-1000, with only one rank win against the frozen generated-query baseline. All three 4/7 gates failed. The follow-up audit found six already rejected prompt-only bridge or hypothesis variants on another saved cluster. Freeze this seven-case cluster for regression replay, do not rename another micro-intervention, and preregister one frozen-v10 profile over all 175 development questions to acquire a broader failure distribution.",
   "active_paid_calls": 0,
   "retained_services": [
     "qwen3-32b-bf16-judge@127.0.0.1:18015",
