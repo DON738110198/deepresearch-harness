@@ -1,0 +1,49 @@
+{
+  "schema_version": "persistent-miss-dense-rank-registration-v0",
+  "status": "posthoc_registered_failure_cluster",
+  "registered_at": "2026-08-16T21:46:01.0208868+08:00",
+  "purpose": "Measure gold-document rank for the identical 48 recorded generated queries under the already pinned Qwen3 dense retriever after full-document and passage BM25 both failed the bounded top-20 gate.",
+  "lexical_rank_result": {
+    "path": "runs/browsecomp_plus_v0/persistent-miss-lexical-rank-v0-20260816/audit.json",
+    "sha256": "a44fcb04825ecf5930f239d5a6a99fb7b557c12d1bdcb110dca6c06cec1ef7f5"
+  },
+  "passage_index_result": {
+    "path": "runs/browsecomp_plus_v0/passage-index-representation-v0-20260816/audit.json",
+    "sha256": "38a214707d926b59e5a4c2720d027fe0315bac32a93f41c813b883b33c7d2f92"
+  },
+  "gold_slice": {
+    "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline.gold.json",
+    "sha256": "2ef96bc47f0f89d1fa60aaac082a3d7b087737f1041bec579b2dc21a29034fd2"
+  },
+  "baseline_run_root": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline",
+  "query_ids": [
+    "875",
+    "754",
+    "898",
+    "710",
+    "873",
+    "869",
+    "805"
+  ],
+  "retriever_manifest": {
+    "path": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+    "normalized_sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899"
+  },
+  "candidate_id": "qwen3-embedding-0.6b",
+  "model_directory": "runs/_external/models/Qwen3-Embedding-0.6B",
+  "index_root": "runs/_external/browsecomp-plus-indexes-direct",
+  "query_source": "trial1_recorded_successful_search_calls",
+  "depths": [20, 100, 1000],
+  "batch_size": 8,
+  "acceptance": {
+    "minimum_dense_top20_cases": 4,
+    "minimum_dense_top100_cases_for_pool_diagnosis": 4
+  },
+  "budgets": {
+    "maximum_provider_calls": 0,
+    "maximum_online_search_calls": 0,
+    "maximum_judge_calls": 0
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "This is an outcome-selected, gold-aware, CPU-only rank diagnostic. It may select a dense candidate-depth or reranking question for another offline gate, but cannot establish end-to-end retrieval improvement, official accuracy, leaderboard performance, or model capability improvement."
+}

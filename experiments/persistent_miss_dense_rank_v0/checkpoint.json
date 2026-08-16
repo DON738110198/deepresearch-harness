@@ -1,0 +1,83 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "persistent-miss-dense-rank-v0",
+  "status": "implementing",
+  "problem": "The complete full-document BM25 index retrieved zero of seven persistent misses at generated-query top-20, and the preregistered passage BM25 representation recovered only two of seven against a four-case gate despite complete source and gold-document coverage.",
+  "observed_evidence": [
+    {
+      "path": "runs/browsecomp_plus_v0/passage-index-representation-v0-20260816/audit.json",
+      "sha256": "38a214707d926b59e5a4c2720d027fe0315bac32a93f41c813b883b33c7d2f92"
+    }
+  ],
+  "simplest_baseline": "Keep the identical 48 recorded successful queries and inspect the already pinned Qwen3-Embedding-0.6B index at fixed depths; do not generate queries, add a reranker, add agents, or run an end-to-end arm.",
+  "hypothesis": "The fixed dense retriever places a gold document within top-100 for at least four of the seven persistent misses even if top-20 remains insufficient, which would localize the next problem to bounded candidate selection rather than query generation or corpus absence.",
+  "changed_mechanisms": [
+    "offline retrieval scoring changed from frozen lexical ranks to the existing pinned dense semantic index"
+  ],
+  "anti_claim": "A dense gold-rank result on outcome-selected failures is diagnostic only and cannot be reported as a harness accuracy gain or model capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["Lead Agent decomposition", "isolated Sub-Agent research"],
+      "current_gap": "More workers cannot repair a shared candidate generator whose relevant documents remain below every worker's visible depth.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["configurable search backend", "research compression"],
+      "current_gap": "A configurable backend is useful only after the rank audit identifies whether the existing semantic backend has a viable candidate pool.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["planner queries", "crawler agents"],
+      "current_gap": "The cheapest remaining uncertainty is candidate depth for already generated queries, not another paid planning or crawling call.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-16",
+      "relevant_mechanisms": ["WebPlanner search graph", "parallel WebSearcher nodes"],
+      "current_gap": "Graph expansion targets branch omission; this audit first tests semantic rank under each existing branch query.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "same seven outcome-selected persistent retrieval misses",
+    "same trial-1 set and order of 48 successful generated queries",
+    "Qwen/Qwen3-Embedding-0.6B revision 97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "model.safetensors sha256 0437e45c94563b09e13cb7a64478fc406947a93cb34a7e05870fc8dcd48e23fd",
+    "four byte-verified Tevatron dense index shards",
+    "query prefix, EOS pooling, normalization, and max length 512 from the pinned retriever manifest",
+    "rank depths 20, 100, and 1000",
+    "CPU execution and batch size 8",
+    "zero provider, online search, and Judge calls",
+    "sealed holdout forbidden"
+  ],
+  "budget": {
+    "maximum_development_queries": 7,
+    "maximum_provider_cost_usd": 0.0,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "measured_result": null,
+  "decision": null,
+  "next_action": "Implement the frozen dense-rank contract, reproduce the same 48 query hashes, and report per-case best gold ranks plus top-20, top-100, and top-1000 gates without changing the model or candidate depth after observation.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "The dense audit is CPU-only and gold-aware. A top-20 pass selects a retrieval candidate; a top-100-only pass selects another bounded offline reranking question; neither authorizes a fresh or official effectiveness claim by itself."
+}
