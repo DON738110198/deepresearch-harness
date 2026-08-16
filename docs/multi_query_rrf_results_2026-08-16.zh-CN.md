@@ -82,7 +82,9 @@ RRF 不仅没有把 gold 推入 top-20，在 top-100 还比 single-query oracle 
 冻结 uniform RRF，不在相同 7 题调 `k`、tie-break 或融合权重，也不允许对一个
 gold coverage 为 `0/7` 的 fused top-100 追加 reranker。typed entity/relation 仍是
 候选方向，但在投入该机制或构建大规模 passage-dense index 前，先做更便宜的
-**dense-head answer visibility** 诊断：检查 pinned 512-token 文档输入是否实际包含
-18 个 gold 文档中的 literal answer span。该诊断只定位 full-document dense 的
-截断边界，不能产生准确率或模型能力结论。fresh paired run、Judge、official 和
-leaderboard 指标继续标为 `planned`。
+**dense-document answer visibility** 诊断。后续源码核对发现，官方 BrowseComp-Plus
+复现命令对 query 使用 `512` tokens、对 document 使用 `4096` tokens；此前把前者当成
+document limit 是错误前提。下一诊断检查官方 `4096-token` 文档输入是否实际包含
+18 个 gold 文档中的 literal answer span，并单独记录预构建向量仓库没有绑定历史
+preprocessing metadata。该诊断只定位输入表示边界，不能产生准确率或模型能力结论。
+fresh paired run、Judge、official 和 leaderboard 指标继续标为 `planned`。

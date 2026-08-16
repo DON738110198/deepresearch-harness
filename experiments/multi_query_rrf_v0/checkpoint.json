@@ -80,7 +80,7 @@
     "sha256": "205892ab67eb815657e3e3b369ab0c9201cff179cda7e812159afcbd6c952ff7"
   },
   "decision": "reject",
-  "next_action": "Freeze uniform RRF on this failure cluster. It recovered 0/7 at fused top-20 and 0/7 at fused top-100, versus the fixed single-query baselines of 0/7 and 2/7. Do not tune k or tie breaks on these cases and do not admit a reranker over a top-100 slate containing no gold documents. Before building an expensive passage-dense index or typed entity linker, separately register a zero-provider dense-head visibility audit that tests whether the pinned 512-token document representation can even contain the literal answer spans in the 18 gold documents.",
+  "next_action": "Freeze uniform RRF on this failure cluster. It recovered 0/7 at fused top-20 and 0/7 at fused top-100, versus the fixed single-query baselines of 0/7 and 2/7. Do not tune k or tie breaks on these cases and do not admit a reranker over a top-100 slate containing no gold documents. Source verification corrected the former symmetric-limit assumption: the official recipe uses query_max_len 512 and passage_max_len 4096. Register a zero-provider visibility audit under that 4096-token document recipe and preserve the fact that the prebuilt vector repository does not bind its historical preprocessing metadata.",
   "active_paid_calls": 0,
   "retained_services": [
     "qwen3-32b-bf16-judge@127.0.0.1:18015",

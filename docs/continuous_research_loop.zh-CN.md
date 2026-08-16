@@ -101,9 +101,11 @@
 关闭；Visible-Pivot Bridge Sufficiency oracle 已过最小存在性门槛。下一候选不是
 再扩 oracle。gold-blind 小 pivot slate 与 uniform RRF 均已被拒绝并冻结；不能在
 同一结果上改 rarity order、RRF `k`、tie-break 或扩大 slate 追阳性。typed
-entity/relation linking 仍是候选，但在投入它或 passage-dense build 前，先验证 pinned
-512-token dense document head 是否实际看得到 answer span。oracle 本身仍不是可部署
-selector。
+entity/relation linking 仍是候选，但源码核对纠正了此前的输入假设：官方复现命令是
+query `512`、document `4096`，预构建向量仓库本身却没有绑定历史 preprocessing
+metadata。因此在投入 typed linking 或 passage-dense build 前，先验证官方 `4096-token`
+document recipe 是否实际看得到 answer span，并把 provenance 缺口单独记录。oracle
+本身仍不是可部署 selector。
 多 Agent、fresh paired run、sealed holdout、official Judge 和 leaderboard submission
 都保持 `planned`。
 

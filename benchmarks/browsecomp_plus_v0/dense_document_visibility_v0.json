@@ -1,0 +1,73 @@
+{
+  "schema_version": "dense-document-visibility-registration-v0",
+  "status": "posthoc_registered_failure_cluster",
+  "registered_at": "2026-08-16T23:26:46.6692586+08:00",
+  "purpose": "Test whether literal answer spans are visible inside the official 4096-token Qwen3 document-encoding reproduction window for the 18 gold documents behind seven persistent dense retrieval misses, while separately recording that the downloaded prebuilt index does not bind its build recipe.",
+  "prerequisites": {
+    "corpus_answerability_result": {
+      "path": "runs/browsecomp_plus_v0/persistent-miss-corpus-answerability-v0-20260816/audit.json",
+      "sha256": "7782d7e8aaa82c6aa82b849057c920d8a7599bb1530eb6dd485b3cfd43fc04f2"
+    },
+    "dense_rank_result": {
+      "path": "runs/browsecomp_plus_v0/persistent-miss-dense-rank-v0-20260816/audit.json",
+      "sha256": "0ceeddf7fb1e54fb94c90f4920e577ae71917ed7007d02cd1681c7c226a97bb6"
+    },
+    "gold_slice": {
+      "path": "runs/browsecomp_plus_v0/obligation-span-fresh25-v0-20260816/baseline.gold.json",
+      "sha256": "2ef96bc47f0f89d1fa60aaac082a3d7b087737f1041bec579b2dc21a29034fd2"
+    },
+    "source_index_registration": {
+      "path": "benchmarks/browsecomp_plus_v0/passage_index_representation_v0.json",
+      "sha256": "15ac2dc707eaae1755cac14698a122246a3be7e536b66d607b0e41cc8b561c92"
+    }
+  },
+  "query_ids": ["875", "754", "898", "710", "873", "869", "805"],
+  "document_index_path": "runs/_external/browsecomp-plus-indexes-direct/bm25",
+  "retriever_manifest": {
+    "path": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+    "normalized_sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899"
+  },
+  "candidate_id": "qwen3-embedding-0.6b",
+  "model_directory": "runs/_external/models/Qwen3-Embedding-0.6B",
+  "tokenizer_files_sha256": {
+    "config.json": "b5bf1f51fc45be473a54718cef92448d90a1be001bf9b9a44b8c7f10a19feaa9",
+    "tokenizer.json": "def76fb086971c7867b829c23a26261e38d9d74e02139253b38aeb9df8b4b50a",
+    "tokenizer_config.json": "253153d0738ceb4c668d2eff957714dd2bea0b56de772a9fdccd96cbf517e6a0"
+  },
+  "index_build_provenance": {
+    "prebuilt_index_repository_url": "https://huggingface.co/datasets/Tevatron/browsecomp-plus-indexes",
+    "prebuilt_index_revision": "b3f37f70c33829eb09d04784a54277a31871fd63",
+    "prebuilt_metadata_binding": "absent",
+    "reproduction_recipe_repository_url": "https://github.com/texttron/BrowseComp-Plus",
+    "reproduction_recipe_commit": "046949032b0328319cc9a02663a759ec601d9402",
+    "reproduction_recipe_path": "scripts_build_index/qwen3-embed.md",
+    "reproduction_recipe_sha256": "a312d7170ae3f0f3ddb24d483e3082132a57cb7bd0d4e10ca9aaa3bb81aa58b2",
+    "tevatron_commit": "67eb67604c0e7d1753fefe3b232ddfb84795f5ea",
+    "tevatron_collator_sha256": "df1631a0dd33edc106dcaa4c91c98415bd1a08f10f7f409e787760833f486184",
+    "tevatron_dataset_sha256": "f97213d231439b1029cb13e15e527dc0043e17e10c9f2f3f6e3be36896b47be2",
+    "query_max_length": 512,
+    "passage_max_length": 4096,
+    "passage_prefix": "",
+    "append_eos_token": false,
+    "add_special_tokens": true,
+    "truncation_side": "right",
+    "content_policy": "text.strip()"
+  },
+  "diagnostic": {
+    "answer_match_policy": "normalized_literal_atoms_v0",
+    "document_visible_policy": "all answer atoms survive tokenizer encode-decode inside the registered 4096-token right-truncated input",
+    "case_visible_policy": "at least one gold document is document-visible",
+    "maximum_tokens": 4096
+  },
+  "acceptance": {
+    "minimum_visible_cases_to_reject_head_truncation_hypothesis": 4
+  },
+  "budgets": {
+    "maximum_provider_calls": 0,
+    "maximum_online_search_calls": 0,
+    "maximum_judge_calls": 0,
+    "maximum_gpu_calls": 0
+  },
+  "sealed_holdout_access": "forbidden",
+  "claim_boundary": "This is a gold-aware, outcome-selected tokenizer visibility diagnostic under the official 4096-token reproduction recipe. Because the prebuilt index repository does not bind preprocessing metadata, it cannot prove the exact historical inputs used to create those vectors. It cannot establish retrieval improvement, end-to-end accuracy, leaderboard performance, or model capability improvement."
+}

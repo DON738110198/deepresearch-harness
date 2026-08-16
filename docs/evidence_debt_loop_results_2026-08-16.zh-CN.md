@@ -173,8 +173,10 @@ top-20 不仅没有补回 passage 的两题，反而为 `0/7`；因此 dense can
 5. `completed/reject`：uniform RRF 先持久化 48 条 frozen-query top-1000，再开 gold
    评分；fused top-20/top-100 均为 `0/7`，而 best-single-query 为 `0/7`、`2/7`。
    RRF tuning 与 fused top-100 reranker 冻结。
-6. `planned`：先做 dense-head answer visibility，判断 pinned 512-token full-document
-   representation 是否在输入层丢失 answer span；这是 gold-aware diagnosis，不是效果。
+6. `planned`：先做 dense-document answer visibility。官方复现命令已经核对为 query
+   `512`、document `4096`；诊断判断 `4096-token` document representation 是否仍在
+   输入层丢失 answer span，并显式保留预构建 index 未绑定 preprocessing metadata 的
+   provenance 限制。这是 gold-aware diagnosis，不是效果。
 7. `planned`：只有新的检索候选通过离线门槛后才注册 fresh paired development test。锁定 DeepSeek 模型、
    prompt、语料、8 个 search call、总 Token，并分别报告 Token-matched 和
    cost-matched 结果。

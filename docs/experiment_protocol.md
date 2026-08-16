@@ -214,11 +214,15 @@ bound. Its builder persisted all 48 frozen BM25 top-1000 rankings and fused
 top-100 slates before the scorer opened gold. With `k=60`, fused Recall@20 and
 Recall@100 were both 0/7, versus best-single-query 0/7 and 2/7. The registered
 4/7 gates failed, so fusion weights, `k`, tie breaks, and a reranker over that
-zero-coverage top-100 are frozen. The next diagnostic is limited to answer-span
-visibility inside the pinned 512-token dense document input. It remains a
-gold-aware truncation diagnosis; it cannot be promoted into an effectiveness
-metric. All unrun passage-dense, typed-linking, fresh, Judge, official, Token,
-cost, and leaderboard fields remain `planned`.
+zero-coverage top-100 are frozen. Source verification then corrected an
+input-contract error: the official BrowseComp-Plus reproduction recipe uses a
+512-token query input and a 4096-token document input. The prebuilt-index
+repository contains vector shards and hashes but does not bind its historical
+preprocessing metadata. The next diagnostic is therefore limited to answer-span
+visibility under the documented 4096-token recipe, with that provenance
+limitation explicit. It remains a gold-aware tokenizer diagnosis; it cannot be
+promoted into an effectiveness metric. All unrun passage-dense, typed-linking,
+fresh, Judge, official, Token, cost, and leaderboard fields remain `planned`.
 
 The standard-loop adapter pins Pi 0.84.1 but clears Pi's system prompt and all
 ambient coding context. Pi is held fixed in harness ablations and is not an
