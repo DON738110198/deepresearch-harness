@@ -173,14 +173,16 @@ top-20 不仅没有补回 passage 的两题，反而为 `0/7`；因此 dense can
 5. `completed/reject`：uniform RRF 先持久化 48 条 frozen-query top-1000，再开 gold
    评分；fused top-20/top-100 均为 `0/7`，而 best-single-query 为 `0/7`、`2/7`。
    RRF tuning 与 fused top-100 reranker 冻结。
-6. `planned`：先做 dense-document answer visibility。官方复现命令已经核对为 query
-   `512`、document `4096`；诊断判断 `4096-token` document representation 是否仍在
-   输入层丢失 answer span，并显式保留预构建 index 未绑定 preprocessing metadata 的
-   provenance 限制。这是 gold-aware diagnosis，不是效果。
-7. `planned`：只有新的检索候选通过离线门槛后才注册 fresh paired development test。锁定 DeepSeek 模型、
+6. `completed/reject truncation hypothesis`：官方复现命令核对为 query `512`、
+   document `4096`；`4096-token` 输入下 case visibility 为 `7/7`、document
+   visibility 为 `17/18`。因此 head truncation 不是主要解释，passage-dense 不获准。
+   预构建 index 未绑定 preprocessing metadata 的 provenance 限制继续保留。
+7. `planned`：比较 raw full question 与 frozen generated queries 的 dense rank；只改变
+   query representation，不加 reranker、Agent、provider 或 Judge。
+8. `planned`：只有新的检索候选通过离线门槛后才注册 fresh paired development test。锁定 DeepSeek 模型、
    prompt、语料、8 个 search call、总 Token，并分别报告 Token-matched 和
    cost-matched 结果。
-8. `planned` metrics：Judge accuracy、strict exact、gold-doc recall、citation support、
+9. `planned` metrics：Judge accuracy、strict exact、gold-doc recall、citation support、
    latency、Token、美元及人民币费用。未运行前不填数字。
-9. 多 Agent 继续 `planned`。只有 retrieval 稳定后反复出现独立分支遗漏、
+10. 多 Agent 继续 `planned`。只有 retrieval 稳定后反复出现独立分支遗漏、
    上下文互扰、矛盾证据未核验或串行延迟，才比较 B2/B3/B4。

@@ -220,9 +220,13 @@ input-contract error: the official BrowseComp-Plus reproduction recipe uses a
 repository contains vector shards and hashes but does not bind its historical
 preprocessing metadata. The next diagnostic is therefore limited to answer-span
 visibility under the documented 4096-token recipe, with that provenance
-limitation explicit. It remains a gold-aware tokenizer diagnosis; it cannot be
-promoted into an effectiveness metric. All unrun passage-dense, typed-linking,
-fresh, Judge, official, Token, cost, and leaderboard fields remain `planned`.
+limitation explicit. The registered audit retained an answer-bearing input for
+7/7 cases and 17/18 gold documents, so 4096-token head truncation is rejected as
+the dominant explanation and passage-dense is not admitted on this evidence.
+The result remains a gold-aware tokenizer diagnosis; it cannot be promoted into
+an effectiveness metric. Raw-question dense rank is the next planned alignment
+diagnostic. All unrun typed-linking, fresh, Judge, official, Token, cost, and
+leaderboard fields remain `planned`.
 
 The standard-loop adapter pins Pi 0.84.1 but clears Pi's system prompt and all
 ambient coding context. Pi is held fixed in harness ablations and is not an

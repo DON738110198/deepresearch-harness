@@ -1,7 +1,7 @@
 {
   "schema_version": "deepresearch-research-loop-checkpoint-v0",
   "loop_id": "dense-document-visibility-v0",
-  "status": "preregistering",
+  "status": "closed",
   "problem": "The previous loop incorrectly treated the retriever manifest's 512-token query limit as a symmetric document limit. The official BrowseComp-Plus reproduction recipe instead encodes documents at 4096 tokens, while the downloaded prebuilt-index repository publishes vector shards and hashes but no preprocessing metadata that binds the historical vectors to that recipe.",
   "observed_evidence": [
     {
@@ -73,9 +73,12 @@
   "multi_agent_status": "deferred",
   "multi_agent_failure_triggers": [],
   "multi_agent_comparison_contract": null,
-  "measured_result": null,
-  "decision": null,
-  "next_action": "Implement and run the zero-provider 4096-token document visibility audit. If at least 4/7 cases are visible, reject truncation as the dominant explanation and preregister the simplest query/document semantic-alignment diagnostic before typed linking or passage-dense indexing.",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/dense-document-visibility-v0-20260816/audit.json",
+    "sha256": "18aa7a7e7d6913517affbc1db9b3b0df5203fc377fd9a59363f9e25c1a8ed8d2"
+  },
+  "decision": "reject",
+  "next_action": "The official 4096-token recipe retained the literal answer in at least one gold document for 7/7 cases and in 17/18 gold documents overall. Reject head truncation as the dominant explanation and do not build passage-dense on this evidence. Preregister a CPU-only comparison of raw-question dense rank against the frozen generated-query best ranks before typed linking, reranking, or multi-Agent work.",
   "active_paid_calls": 0,
   "retained_services": [
     "qwen3-32b-bf16-judge@127.0.0.1:18015",

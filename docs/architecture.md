@@ -40,6 +40,15 @@ queries through a pinned dense index, compares BM25/dense/RRF docids, and opens
 development docid labels only after prediction hashes exist. This separates a
 retriever effect from a query-policy or provider effect before another paid run.
 
+The replay boundary now also carries a **Retrieval Input Provenance Contract**.
+Query and document token limits are separate fields; tokenizer files, external
+recipe source, Tevatron preprocessing source, truncation direction, prefix, and
+EOS policy are hash-pinned. A prebuilt vector index whose repository does not
+bind those fields is explicitly labeled `prebuilt_metadata_binding=absent`.
+This prevents a query-side `max_length` from being silently treated as a
+document-side limit and keeps reproduction evidence separate from claims about
+the exact historical vector build.
+
 `browsecomp_repeats.py` is the reliability boundary around nondeterministic
 provider runs. A repeat experiment normally writes its manifest before the first
 generation, alternates baseline/candidate execution order, and uses a distinct

@@ -105,7 +105,10 @@ entity/relation linking 仍是候选，但源码核对纠正了此前的输入�
 query `512`、document `4096`，预构建向量仓库本身却没有绑定历史 preprocessing
 metadata。因此在投入 typed linking 或 passage-dense build 前，先验证官方 `4096-token`
 document recipe 是否实际看得到 answer span，并把 provenance 缺口单独记录。oracle
-本身仍不是可部署 selector。
+本身仍不是可部署 selector。该预注册诊断现已完成：case visibility 为 `7/7`，
+document visibility 为 `17/18`，所以 `4096-token` head truncation 不是主要解释，
+passage-dense 不获准。下一轮只测试 raw full question 的 dense rank 是否优于已冻结
+generated-query best rank，用最小实验分离 query semantic alignment。
 多 Agent、fresh paired run、sealed holdout、official Judge 和 leaderboard submission
 都保持 `planned`。
 
