@@ -80,13 +80,18 @@
 - 完整 passage index 将 100,195 个源文档确定性切成 2,715,518 个段落，源文档与
   25 题的 57 个 gold 文档覆盖均为 100%；但相同 48 条生成查询只把 2/7 拉入
   collapsed document top-20，未达到预注册 4/7，passage 分支冻结。
+- 相同 48 条查询的 Qwen3-Embedding-0.6B dense rank 为 top-20 `0/7`、top-100
+  `1/7`、top-1000 `5/7`；top-20 和 top-100 两个预注册 `4/7` gate 均失败，
+  dense candidate-depth 与 bounded reranker 分支冻结。
 
 因此当前差异点不再表述为泛化的 `repair_search`，而是 **Evidence Debt 驱动的
 检索表示诊断**：先证明 obligation、目标文档、答案 span 分别在哪一层丢失，再
-决定是否改变 index、candidate pool 或验证器。passage-level gate 已以负结果关闭；
-下一候选是相同 48 条查询的离线 dense gold-rank 审计，用来区分词法表示失败和
-语义候选深度失败。多 Agent、fresh paired run、sealed holdout、official Judge 和
-leaderboard submission 都保持 `planned`。
+决定是否改变 index、candidate pool 或验证器。passage 与 dense gate 均已以负结果
+关闭；下一候选是 Visible-Pivot Bridge Sufficiency oracle：只允许使用已可见非 gold
+文档与 gold 文档共有、且不在 question/query/answer 中的 pivot term，检查一跳词汇桥
+是否足以让冻结 BM25 top-20 命中。它是 gold-aware 诊断，不是可部署 selector。
+多 Agent、fresh paired run、sealed holdout、official Judge 和 leaderboard submission
+都保持 `planned`。
 
 ## 操作命令
 

@@ -180,12 +180,17 @@ passage-to-document mapping, and maximum returned documents. It preserved full
 source and development-gold index coverage but reached only 2/7 diagnosed cases
 at collapsed document Recall@20 against the registered 4/7 gate. The passage
 branch is therefore frozen rather than retuned on those ranks. The next planned
-diagnostic holds the 48 recorded queries fixed and measures dense gold-document
-rank without provider, online-search, or Judge calls. Only a passing retrieval
-screen may permit a new, preregistered fresh development comparison with the
-model, prompt, search provider, query-call cap, Token budget, cost budget, and
-Judge held fixed. All unrun accuracy, citation, latency, Token, and cost fields
-remain `planned`.
+diagnostic held the 48 recorded queries fixed and measured dense gold-document
+rank without provider, online-search, or Judge calls. Dense top-20 was 0/7 and
+top-100 was 1/7 against two registered 4/7 gates; top-1000 was 5/7 but remained
+diagnostic only. Candidate-depth and reranker work are therefore frozen on this
+cluster. The next planned oracle may test one lexical pivot only when that term
+is already present in a visible non-gold document, is also present in a gold
+document, and is absent from the question, recorded queries, and answer. Only a
+passing gold-blind retrieval screen may permit a new, preregistered fresh
+development comparison with the model, prompt, search provider, query-call cap,
+Token budget, cost budget, and Judge held fixed. All unrun accuracy, citation,
+latency, Token, and cost fields remain `planned`.
 
 The standard-loop adapter pins Pi 0.84.1 but clears Pi's system prompt and all
 ambient coding context. Pi is held fixed in harness ablations and is not an

@@ -240,10 +240,13 @@ diagnostic or calibration tools, not additional Agent roles and not evidence of
 model improvement. The frozen passage-index screen represented all 100,195
 source documents as 2,715,518 overlapping passages, but recovered only two of
 seven diagnosed misses at collapsed document Recall@20 against a registered
-four-case threshold. That branch is frozen. The next planned boundary is a
-zero-provider dense-rank audit over the identical recorded queries; no paid
-fresh-slice comparison is allowed until a retrieval candidate clears its own
-offline gate.
+four-case threshold. That branch is frozen. The zero-provider dense-rank audit
+over the identical queries then recovered 0/7 at top-20 and 1/7 at top-100,
+also below registered four-case gates; top-1000 was 5/7 but did not authorize
+post-hoc reranker tuning. The dense depth branch is frozen. The next planned
+boundary is a gold-aware, one-hop Visible-Pivot oracle over already visible
+documents; no paid fresh-slice comparison is allowed until a retrieval
+candidate clears its own offline gate.
 
 ## Contracts and audit boundary
 

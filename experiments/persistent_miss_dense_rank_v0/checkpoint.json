@@ -1,7 +1,7 @@
 {
   "schema_version": "deepresearch-research-loop-checkpoint-v0",
   "loop_id": "persistent-miss-dense-rank-v0",
-  "status": "implementing",
+  "status": "closed",
   "problem": "The complete full-document BM25 index retrieved zero of seven persistent misses at generated-query top-20, and the preregistered passage BM25 representation recovered only two of seven against a four-case gate despite complete source and gold-document coverage.",
   "observed_evidence": [
     {
@@ -69,9 +69,12 @@
     "sealed_holdout_access": "forbidden"
   },
   "multi_agent_status": "deferred",
-  "measured_result": null,
-  "decision": null,
-  "next_action": "Implement the frozen dense-rank contract, reproduce the same 48 query hashes, and report per-case best gold ranks plus top-20, top-100, and top-1000 gates without changing the model or candidate depth after observation.",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/persistent-miss-dense-rank-v0-20260816/audit.json",
+    "sha256": "0ceeddf7fb1e54fb94c90f4920e577ae71917ed7007d02cd1681c7c226a97bb6"
+  },
+  "decision": "reject",
+  "next_action": "Freeze dense candidate-depth and reranking work on this outcome-selected cluster: top-20 recovered 0/7 and top-100 only 1/7 against both registered 4/7 gates. Pre-register a zero-provider Visible-Pivot Bridge Sufficiency oracle that permits a candidate pivot only when it occurs in an already visible non-gold document and an indexed gold document, excludes question/query/answer terms, and tests one bounded lexical bridge hop before any new query generator, Agent role, or end-to-end run.",
   "active_paid_calls": 0,
   "retained_services": [
     "qwen3-32b-bf16-judge@127.0.0.1:18015",

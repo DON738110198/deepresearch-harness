@@ -75,7 +75,8 @@ search、Judge 均为 0。
 
 ## 下一步
 
-`planned`：在完全相同的 48 条查询上做 dense gold-rank audit，记录 top-20、
-top-100、top-1000 和每题最好 rank。只有该离线门槛证明 semantic candidate pool
-可用，才允许设计固定预算 reranker 或 fresh paired comparison。未运行的 Judge
+该 dense gold-rank audit 已完成并被拒绝：相同 48 条查询下，Qwen3-Embedding-0.6B
+仅有 top-20 `0/7`、top-100 `1/7`，均低于预注册 `4/7`；top-1000 才达到
+`5/7`。因此不进入 reranker 或 fresh paired comparison。完整结果见
+`docs/persistent_miss_dense_rank_results_2026-08-16.zh-CN.md`。未运行的 Judge
 accuracy、citation support、Token 和费用指标保持 `planned`。
