@@ -1,0 +1,102 @@
+{
+  "schema_version": "browsecomp-plus-development-profile-registration-v0",
+  "status": "registered_before_provider_call",
+  "registered_at": "2026-08-17T00:26:33.8784770+08:00",
+  "purpose": "Run one frozen Pi v10 Query-Aware Progressive Disclosure profile over all 175 BrowseComp-Plus development questions after exhausting mechanism selection on a seven-case failure cluster. The goal is a broader failure distribution, not another same-cluster intervention.",
+  "artifacts": {
+    "failure_cluster_route": {
+      "path": "benchmarks/browsecomp_plus_v0/persistent_miss_cluster_route_v0.json",
+      "sha256": "2b178b5ba756482199fa352b2e252493c38136b78bca727db7d8dba05d4213af"
+    },
+    "target_manifest": {
+      "path": "benchmarks/browsecomp_plus_v0/target_manifest.json",
+      "sha256": "dad4e291d9bf1223cd2e4e56067948883736b6a8732d29b57cc06a03d1b140c0"
+    },
+    "query_partitions": {
+      "path": "benchmarks/browsecomp_plus_v0/query_partitions.json",
+      "sha256": "8aa00956930382d893a6e115068f5a999cbc3dc66d96d8a583b5560856db8eb9",
+      "normalized_sha256": "ceeeca92afe139eec757aa70f4e7c22a1ea272735b31d8e3262ce0324ef00b83"
+    },
+    "development_queries": {
+      "path": "runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/development_queries_175.json",
+      "sha256": "eaa85e3821cf58c0db2b4bde8f55f7249be3a1ba3588df62a652cada40d37531"
+    },
+    "retriever_manifest": {
+      "path": "benchmarks/browsecomp_plus_v0/retriever_candidates.json",
+      "sha256": "95b623d13960088adbc1261e8e5508d86592bdd94e38c80e94e7894aa2cc0899"
+    }
+  },
+  "policy": {
+    "policy_id": "pi-v10-query-aware-progressive-disclosure-failclosed",
+    "adapter_version": "pi-browsecomp-v10",
+    "adapter_contract": {
+      "path": "integrations/pi-browsecomp/v10/contract.mjs",
+      "sha256": "5cfdcccb5876659f0acad50541c9ec2dace3b3a4055a01f9d205bbd991029062"
+    },
+    "adapter_runner": {
+      "path": "integrations/pi-browsecomp/v10/runner.mjs",
+      "sha256": "945a3167636019d1f5f63aab6a54ea76d24ec0c2230bb6a0b836f2fb799bf2d7"
+    },
+    "preview_module": {
+      "path": "src/deepresearch_harness/evidence_preview.py",
+      "sha256": "6b0052f90d766e1195091affe102369d0abddbcbea4d8e73ca9dc1fc9441b0cd"
+    },
+    "retrieval_server": {
+      "path": "src/deepresearch_harness/progressive_disclosure_server.py",
+      "sha256": "5e99582cfa2775e6341545d2f1d73aa58746d2dd63544919f9540d0e76f619fb"
+    },
+    "operational_patch_only": true
+  },
+  "execution": {
+    "model": "deepseek-v4-flash",
+    "thinking_level": "high",
+    "system_prompt_policy": "empty",
+    "control_policy": "answer_reserve_nonthinking_v0",
+    "query_partition": "development",
+    "query_count": 175,
+    "concurrency": 1,
+    "max_output_tokens_per_query": 10000,
+    "max_iterations_per_query": 100,
+    "maximum_search_calls_per_query": 8,
+    "maximum_open_calls_per_query": 8,
+    "max_search_results": 20,
+    "search_url": "http://127.0.0.1:8768/search",
+    "retriever_id": "bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64",
+    "provider_key_env": "DEEPSEEK_API_KEY",
+    "failed_only_resume_limit": 2,
+    "budget_exhausted_retry": "forbidden",
+    "output_directory": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/v10",
+    "maximum_provider_cost_usd": 2.0
+  },
+  "evaluation": {
+    "judge_url": "http://127.0.0.1:18015/v1",
+    "served_model_name": "qwen3-32b-bf16-judge",
+    "metric_status": "calibrated_development_diagnostic_not_official",
+    "sealed_holdout_access": "forbidden"
+  },
+  "acceptance": {
+    "succeeded_must_equal": 175,
+    "failed_must_equal": 0,
+    "budget_exhausted_must_equal": 0,
+    "output_budget_overshoot_tokens_must_equal": 0,
+    "search_and_open_transport_failures_must_equal": 0,
+    "minimum_schema_complete": 168,
+    "judge_parse_failures_must_equal": 0,
+    "judge_request_failures_must_equal": 0,
+    "minimum_scored_wrong_cases_for_taxonomy": 30,
+    "accuracy_promotion_threshold": "none_profile_only"
+  },
+  "planned_metrics": [
+    "calibrated Judge accuracy",
+    "strict exact",
+    "gold-document recall",
+    "citation support",
+    "schema completeness",
+    "failure-class counts",
+    "search and open calls",
+    "input, output, and total Tokens",
+    "provider cost in USD and RMB",
+    "wall-clock and per-query latency"
+  ],
+  "claim_boundary": "This run reuses the entire development partition after policy selection and is therefore a profiling baseline, not a fresh confirmatory comparison. It cannot establish sealed-holdout accuracy, official leaderboard standing, framework superiority, or model-capability improvement. The fail-closed adapter patch changes only execution validity and must not be presented as an effectiveness mechanism."
+}

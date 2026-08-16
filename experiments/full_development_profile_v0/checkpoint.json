@@ -1,0 +1,87 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "full-development-profile-v0",
+  "status": "preregistering",
+  "problem": "Five registered retrieval interventions failed on the same seven outcome-selected cases, and six prompt-only bridge analogues had already failed on another three-case cluster. Continuing to select mechanisms from those cases would overfit the development evidence and leave the project's benchmark story dependent on small slices.",
+  "observed_evidence": [
+    {
+      "path": "benchmarks/browsecomp_plus_v0/persistent_miss_cluster_route_v0.json",
+      "sha256": "2b178b5ba756482199fa352b2e252493c38136b78bca727db7d8dba05d4213af"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/raw-question-dense-rank-v0-20260817/audit.json",
+      "sha256": "c1472ff7b281447b67195123754f3f364bdfc11ea5f8d545cbebba8b83f7a001"
+    }
+  ],
+  "simplest_baseline": "Run the frozen Pi v10 Query-Aware Progressive Disclosure policy once, sequentially, on all 175 development questions. Change no search policy, prompt, model, retriever, call cap, or output budget; use the resulting valid traces only to measure the broader failure distribution.",
+  "hypothesis": "The frozen policy will produce 175 valid predictions with at least 168 schema-complete answers, zero tool-transport failures, zero output-budget overshoot, and at least 30 Judge-wrong cases suitable for a broader mutually exclusive bad-case taxonomy. No accuracy threshold is used to promote a mechanism from this profiling run.",
+  "changed_mechanisms": [
+    "evaluation scope from an outcome-selected seven-case cluster to the frozen 175-question development partition"
+  ],
+  "anti_claim": "This changes evaluation scope, not model parameters or intrinsic capability. Because the policy was selected using development data, the result is profiling rather than fresh confirmatory evidence.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["dynamic scoped sub-agents", "context isolation", "structured sub-agent results"],
+      "current_gap": "DeerFlow explicitly treats sub-agents as an optimization. A broader failure distribution is required before claiming that parallel latency, specialization, or context isolation is the limiting factor here.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["iterative research", "summarization", "research compression", "100-task evaluation"],
+      "current_gap": "Its public evaluation spans 100 tasks and its older supervisor-researcher implementation is documented as less performant. The immediate deficit is measured scope, not missing role labels.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["planner questions", "crawler execution", "source summaries", "publisher aggregation"],
+      "current_gap": "Its breadth-oriented topology should be compared only after the frozen single-Agent policy has a full development error profile under an auditable cost and trace contract.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["simultaneous multi-query search", "asynchronous agents", "multiple search backends"],
+      "current_gap": "Concurrency is a latency intervention. It remains deferred until the broader profile shows independent branch omission or serial latency rather than shared retrieval failure.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "all 175 byte-pinned development questions and no sealed holdout",
+    "deepseek-v4-flash with high thinking, empty system prompt, and answer_reserve_nonthinking_v0",
+    "Pi v10 query-aware Progressive Disclosure with fail-closed operational patch only",
+    "retriever identity bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64",
+    "maximum eight searches, eight opens, 20 results, 10,000 output Tokens, and 100 iterations per query",
+    "one sequential generation process and failed-only resume at most twice",
+    "calibrated persistent Qwen3-32B Judge remains a development diagnostic, not the upstream official execution",
+    "all observed Token, cost, latency, transport failure, and retry accounting is retained"
+  ],
+  "budget": {
+    "maximum_development_queries": 175,
+    "maximum_provider_cost_usd": 2.0,
+    "maximum_search_calls_per_query": 8,
+    "maximum_output_tokens_per_query": 10000,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": null,
+  "decision": null,
+  "next_action": "Commit and push registration de66b62da71e9f3a3173104a328773bf4094aded703e0d64376974fa29a02118, run the zero-provider fail-closed preflight, then execute exactly one sequential 175-question generation profile. Abort on retriever identity drift or transport failure; resume only failed queries without repeating successful paid calls.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768",
+    "obligation-span-opening@127.0.0.1:8769"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "A valid result is one development profiling artifact for a frozen harness policy. It cannot establish a fresh same-model gain, sealed-holdout accuracy, official BrowseComp-Plus accuracy, leaderboard rank, cross-framework superiority, or model-capability improvement."
+}
