@@ -272,4 +272,3 @@ def _atomic_write(path: Path, value: object) -> None:
         json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     temporary.replace(path)
-

@@ -1,7 +1,7 @@
 {
   "schema_version": "deepresearch-research-loop-checkpoint-v0",
   "loop_id": "full-development-profile-v0",
-  "status": "preregistering",
+  "status": "live_evaluating",
   "problem": "Five registered retrieval interventions failed on the same seven outcome-selected cases, and six prompt-only bridge analogues had already failed on another three-case cluster. Continuing to select mechanisms from those cases would overfit the development evidence and leave the project's benchmark story dependent on small slices.",
   "observed_evidence": [
     {
@@ -11,6 +11,10 @@
     {
       "path": "runs/browsecomp_plus_v0/raw-question-dense-rank-v0-20260817/audit.json",
       "sha256": "c1472ff7b281447b67195123754f3f364bdfc11ea5f8d545cbebba8b83f7a001"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/preflight.json",
+      "sha256": "d8d4166dfca33d0e00ac21df9172b53906fd2677369b00002d7d935c91e5a1d5"
     }
   ],
   "simplest_baseline": "Run the frozen Pi v10 Query-Aware Progressive Disclosure policy once, sequentially, on all 175 development questions. Change no search policy, prompt, model, retriever, call cap, or output budget; use the resulting valid traces only to measure the broader failure distribution.",
@@ -75,8 +79,8 @@
   "multi_agent_comparison_contract": null,
   "measured_result": null,
   "decision": null,
-  "next_action": "Commit and push registration de66b62da71e9f3a3173104a328773bf4094aded703e0d64376974fa29a02118, run the zero-provider fail-closed preflight, then execute exactly one sequential 175-question generation profile. Abort on retriever identity drift or transport failure; resume only failed queries without repeating successful paid calls.",
-  "active_paid_calls": 0,
+  "next_action": "Run exactly: python -m deepresearch_harness.cli run-pi-browsecomp-smoke --manifest benchmarks/browsecomp_plus_v0/target_manifest.json --partitions benchmarks/browsecomp_plus_v0/query_partitions.json --queries runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/development_queries_175.json --output-dir runs/browsecomp_plus_v0/full-development-profile-v0-20260817/v10 --node G:/DevelopTools/node/node.exe --adapter-dir integrations/pi-browsecomp --adapter-runner integrations/pi-browsecomp/v10/runner.mjs --search-url http://127.0.0.1:8768/search --model deepseek-v4-flash --control-policy answer_reserve_nonthinking_v0 --timeout-seconds 1800 --retriever-id bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64 --retriever-manifest benchmarks/browsecomp_plus_v0/retriever_candidates.json --max-search-results 20. Monitor new per-query attempt artifacts; abort on identity drift or transport failure; never repeat successful paid calls.",
+  "active_paid_calls": 1,
   "retained_services": [
     "qwen3-32b-bf16-judge@127.0.0.1:18015",
     "baseline-progressive-disclosure@127.0.0.1:8768",
