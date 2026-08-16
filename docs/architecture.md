@@ -250,10 +250,14 @@ metadata rather than a semantic bridge. The next boundary must therefore be a
 gold-blind, body-only, provenance-bound pivot slate with a fixed search budget;
 that selector persisted its slate before opening gold and had zero leakage, but
 recovered 0/7 and retained 0/4 oracle rescues. The rarity-first selector is
-frozen. A future loop must change candidate representation, for example to a
-typed entity/relation link, while holding the retriever and Agent count fixed.
-No paid fresh-slice comparison is allowed until that candidate clears its own
-offline gate.
+frozen. A still simpler multi-query baseline then persisted all 48 BM25
+top-1000 rankings before gold access and applied uniform RRF. It recovered 0/7
+at both fused top-20 and top-100, while the best-single-query top-100 baseline
+was 2/7. RRF tuning and a reranker over the empty-coverage fused top-100 are
+frozen. Before a future typed entity/relation link or passage-dense build, the
+next zero-provider diagnostic must test whether the exact 512-token dense
+document head contains the answer span. No paid fresh-slice comparison is
+allowed until a candidate clears its own offline gate.
 
 ## Contracts and audit boundary
 

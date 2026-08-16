@@ -1,7 +1,7 @@
 {
   "schema_version": "deepresearch-research-loop-checkpoint-v0",
   "loop_id": "multi-query-rrf-v0",
-  "status": "preregistering",
+  "status": "closed",
   "problem": "Seven persistent retrieval misses have gold documents in the corpus, and frozen generated queries place gold within BM25 top-1000 on six cases, but no case reaches any single-query top-20. Passage, dense, visible-pivot oracle transfer, and rarity-first pivot selection did not meet their gates. The project has not yet tested whether deterministic aggregation of the existing query rankings is a sufficient lower bound.",
   "observed_evidence": [
     {
@@ -75,9 +75,12 @@
   "multi_agent_status": "deferred",
   "multi_agent_failure_triggers": [],
   "multi_agent_comparison_contract": null,
-  "measured_result": null,
-  "decision": null,
-  "next_action": "Commit the registration before implementation, then implement and run the deterministic RRF audit exactly once. Accept only the preregistered top-20 gate; use the top-100 gate solely to decide whether a new typed-reranker question is admissible.",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/multi-query-rrf-v0-20260816/audit.json",
+    "sha256": "205892ab67eb815657e3e3b369ab0c9201cff179cda7e812159afcbd6c952ff7"
+  },
+  "decision": "reject",
+  "next_action": "Freeze uniform RRF on this failure cluster. It recovered 0/7 at fused top-20 and 0/7 at fused top-100, versus the fixed single-query baselines of 0/7 and 2/7. Do not tune k or tie breaks on these cases and do not admit a reranker over a top-100 slate containing no gold documents. Before building an expensive passage-dense index or typed entity linker, separately register a zero-provider dense-head visibility audit that tests whether the pinned 512-token document representation can even contain the literal answer spans in the 18 gold documents.",
   "active_paid_calls": 0,
   "retained_services": [
     "qwen3-32b-bf16-judge@127.0.0.1:18015",

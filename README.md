@@ -514,6 +514,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/tool_loop_governor_decision.py`: fresh-five governor/preview gates and routing.
 - `src/deepresearch_harness/query_aware_confirmation_decision.py`: hash-bound paired-25 confirmation and per-query trace decision.
 - `src/deepresearch_harness/retrieval_replay.py`: hash-bound dense and RRF counterfactual replay over frozen agent queries.
+- `src/deepresearch_harness/multi_query_rrf.py`: two-phase, gold-blind multi-query RRF slate construction and post-persistence scoring.
 - `src/deepresearch_harness/browsecomp_evaluation.py`: post-prediction development-gold boundary and explicitly non-official diagnostics.
 - `src/deepresearch_harness/browsecomp_repeats.py`: strict paired-repeat validation, artifact binding, distributions, and query-level win/loss aggregation.
 - `src/deepresearch_harness/browsecomp_judge.py`: self-contained official-judge batches, execution contracts, result validation, and paired score aggregation.
@@ -540,6 +541,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `docs/persistent_miss_dense_rank_results_2026-08-16.zh-CN.md`: CPU-only dense top-20/100/1000 rank audit, retained local crash, negative gates, and the next query-bridge boundary.
 - `docs/visible_pivot_bridge_results_2026-08-16.zh-CN.md`: gold-aware one-hop bridge sufficiency, exact 4/7 gate, metadata-artifact caveat, and the gold-blind selector boundary.
 - `docs/gold_blind_visible_pivot_slate_results_2026-08-16.zh-CN.md`: no-gold two-pivot slate, persisted selection boundary, 0/7 negative result, and frozen rarity-first selector.
+- `docs/multi_query_rrf_results_2026-08-16.zh-CN.md`: preregistered zero-provider rank fusion, 0/7 top-20/top-100 negative result, and the next dense-head visibility diagnostic.
 - `docs/b1_b2_token_v1.md`: retained negative B2 v1 result and causal follow-up.
 - `docs/b1_b2_token_v2.md`: retained B2 v2 tie and search-layer diagnosis.
 - `docs/b1_b2_v3_results.md`: token/cost automatic results and current claim boundary.
@@ -554,4 +556,5 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 4. **Completed with retained negatives:** structured Evidence Debt, selective repair, span opening, and fail-closed execution loops.
 5. **Completed with retained negatives:** full-corpus passage BM25 and fixed-query dense rank gates; neither cleared 4/7, so candidate-depth and reranker tuning are frozen on this cluster.
 6. **Completed with a strict claim boundary:** zero-provider Visible-Pivot sufficiency reached 4/7, but one rescue was frontmatter metadata; it is an oracle, not a selector result.
-7. **Completed with a retained negative:** the gold-blind two-pivot slate had zero leakage but recovered 0/7; freeze rarity-first token selection. Test a separately registered typed entity/relation representation before any fresh run. Keep B3/B4 multi-Agent, sealed holdout, official execution, and leaderboard submission `planned` until their entry conditions are met.
+7. **Completed with a retained negative:** the gold-blind two-pivot slate had zero leakage but recovered 0/7; freeze rarity-first token selection.
+8. **Completed with a retained negative:** uniform RRF over all 48 frozen BM25 top-1000 lists recovered 0/7 at fused top-20 and top-100, versus 0/7 and 2/7 for the best-single-query baselines. Freeze fusion tuning. Before typed linking or a passage-dense build, measure whether the pinned 512-token dense document head contains the answer spans at all. Keep B3/B4 multi-Agent, fresh/official execution, sealed holdout, and leaderboard submission `planned` until their entry conditions are met.

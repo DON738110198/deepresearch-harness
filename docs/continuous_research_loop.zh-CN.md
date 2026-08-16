@@ -91,14 +91,19 @@
   answer、gold docid 或 frontmatter leakage，但 14 次 provenance-bound search 为
   `0/7`，oracle retention `0/4`。被选 pivot 全是 df=2 长尾词，说明纯 rarity 不能
   把可见实体转成有效研究边。
+- uniform RRF 在 gold 访问前持久化 48 条 frozen query 的完整 BM25 top-1000，
+  fused top-20 与 top-100 均为 `0/7`；best-single-query baseline 分别为 `0/7`、
+  `2/7`。跨 query 的通用噪声共识压过 gold，fusion 分支冻结。
 
 因此当前差异点不再表述为泛化的 `repair_search`，而是 **Evidence Debt 驱动的
 检索表示诊断**：先证明 obligation、目标文档、答案 span 分别在哪一层丢失，再
 决定是否改变 index、candidate pool 或验证器。passage 与 dense gate 均已以负结果
 关闭；Visible-Pivot Bridge Sufficiency oracle 已过最小存在性门槛。下一候选不是
-再扩 oracle。gold-blind 小 pivot slate 也已被拒绝并冻结；下一问题必须改变候选表示，
-例如从孤立 rare token 转向 typed entity/relation linking，同时固定 retriever、查询
-预算和 Agent 数，不能在同一结果上只改排序追阳性。oracle 本身仍不是可部署 selector。
+再扩 oracle。gold-blind 小 pivot slate 与 uniform RRF 均已被拒绝并冻结；不能在
+同一结果上改 rarity order、RRF `k`、tie-break 或扩大 slate 追阳性。typed
+entity/relation linking 仍是候选，但在投入它或 passage-dense build 前，先验证 pinned
+512-token dense document head 是否实际看得到 answer span。oracle 本身仍不是可部署
+selector。
 多 Agent、fresh paired run、sealed holdout、official Judge 和 leaderboard submission
 都保持 `planned`。
 

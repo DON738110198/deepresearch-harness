@@ -170,13 +170,15 @@ top-20 不仅没有补回 passage 的两题，反而为 `0/7`；因此 dense can
 4. `completed/reject`：gold-blind body-only selector 每题成功选出两个 pivot，无
    answer/gold/frontmatter leakage，但 14 个 provenance query 为 `0/7`，oracle
    retention 为 `0/4`。rarity-first selector 冻结，不在同一 7 题改排序或扩 slate。
-5. `planned`：把下一问题限定为 candidate representation，而不是 Agent 数量；例如
-   typed entity/relation linking 必须在独立注册下优于固定 `0/7` selector，且不能同时
-   更换 retriever。
-6. `planned`：只有新的检索候选通过离线门槛后才注册 fresh paired development test。锁定 DeepSeek 模型、
+5. `completed/reject`：uniform RRF 先持久化 48 条 frozen-query top-1000，再开 gold
+   评分；fused top-20/top-100 均为 `0/7`，而 best-single-query 为 `0/7`、`2/7`。
+   RRF tuning 与 fused top-100 reranker 冻结。
+6. `planned`：先做 dense-head answer visibility，判断 pinned 512-token full-document
+   representation 是否在输入层丢失 answer span；这是 gold-aware diagnosis，不是效果。
+7. `planned`：只有新的检索候选通过离线门槛后才注册 fresh paired development test。锁定 DeepSeek 模型、
    prompt、语料、8 个 search call、总 Token，并分别报告 Token-matched 和
    cost-matched 结果。
-7. `planned` metrics：Judge accuracy、strict exact、gold-doc recall、citation support、
+8. `planned` metrics：Judge accuracy、strict exact、gold-doc recall、citation support、
    latency、Token、美元及人民币费用。未运行前不填数字。
-8. 多 Agent 继续 `planned`。只有 retrieval 稳定后反复出现独立分支遗漏、
+9. 多 Agent 继续 `planned`。只有 retrieval 稳定后反复出现独立分支遗漏、
    上下文互扰、矛盾证据未核验或串行延迟，才比较 B2/B3/B4。
