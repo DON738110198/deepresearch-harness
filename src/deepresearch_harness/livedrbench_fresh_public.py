@@ -49,8 +49,10 @@ class TaskBudget(StrictContract):
     max_model_calls_per_task: Literal[3]
     max_total_tokens_per_task: Literal[8000]
     max_estimated_cost_usd_per_task: float = Field(gt=0, le=0.01)
+    max_output_tokens_per_call: Literal[2048]
     max_evidence_items_per_task: Literal[6]
     max_search_calls_per_task: Literal[5]
+    max_search_results_per_query: Literal[5]
     candidate_search_credits_per_call: Literal[1]
     candidate_max_search_credits_per_task: Literal[5]
     candidate_search_credit_price_usd: float = Field(gt=0, le=0.02)

@@ -29,6 +29,8 @@ def test_fresh_registration_is_hash_bound_and_non_overlapping() -> None:
     assert registration.candidate.adapter == "web_research.TavilySearchProvider"
     assert registration.candidate.api_key_env == "TAVILY_API_KEY"
     assert registration.budget.max_search_calls_per_task == 5
+    assert registration.budget.max_output_tokens_per_call == 2048
+    assert registration.budget.max_search_results_per_query == 5
     assert registration.budget.candidate_max_search_credits_per_task == 5
     assert registration.budget.candidate_max_search_cost_usd_per_task == 0.04
 

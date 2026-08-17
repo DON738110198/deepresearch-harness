@@ -410,7 +410,20 @@ python scripts/check_livedrbench_fresh_public_registration.py `
 
 This is pre-generation bookkeeping, not a new benchmark run. `LiveWebCollector`
 enforces its five actual-search-attempt cap; the hash-bound paired runner that
-freezes both configurations and executes the comparison remains unimplemented.
+freezes both configurations is now available as a no-provider registration:
+
+```powershell
+python -m deepresearch_harness.cli register-livedrbench-fresh-pair `
+  --registration benchmarks\livedrbench_fresh_public_v0\registration.json `
+  --config config.local.json `
+  --output-dir runs\public_benchmarks `
+  --run-label tavily-basic-v0
+```
+
+It writes two derived non-secret config snapshots and a hash-bound
+`pair_manifest.json`, then refuses a changed re-registration under the same
+label. The paid executor and failed-only resume are deliberately still
+unimplemented.
 
 ## Real API run
 

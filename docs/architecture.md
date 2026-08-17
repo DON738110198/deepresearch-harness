@@ -334,7 +334,7 @@ retained rejection, and B3/B4 multi-Agent stays deferred.
 | `RunState.trace` | append-only LLM/search/fetch events and budget totals | optional trace exporters |
 | claim ledger | atomic claims plus B2 obligation/evidence-debt links | entailment critic and repair queue |
 | benchmark contract | controlled pilot, batch aggregation, blinded semantic review | larger registered evaluation sets |
-| public benchmark adapter | pinned five-task LiveDRBench preview compatibility pilot | stable search comparison and official evaluator integration |
+| public benchmark adapter | pinned preview pilot plus fresh-public paired-config registration | paid search-backend executor, failed-only resume, and official evaluator integration |
 | reviewer presentation | English source plus validated `zh-CN` reading aid | additional packet-bound locales |
 | benchmark agent loop | pinned Pi adapter with empty system prompt | evidence-debt controller policies owned by this project |
 | BrowseComp retrieval | pinned BM25 anchors plus query-aware dense leads and bounded evidence opens | only replay-justified retrievers or rerankers |

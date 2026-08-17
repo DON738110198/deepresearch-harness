@@ -27,6 +27,7 @@ from .browsecomp_judge import (
 from .browsecomp_repeats import aggregate_repeat_experiment
 from .contracts import HarnessConfig
 from .experiment import validate_experiment_manifest
+from .livedrbench_fresh_pair import prepare_fresh_public_pair
 from .pipeline import (
     BaselineResearchPipeline,
     LocalCorpusCollector,
@@ -132,6 +133,14 @@ def main() -> int:
     score_public.add_argument("--manifest", type=Path, required=True)
     score_public.add_argument("--predictions", type=Path, required=True)
     score_public.add_argument("--output", type=Path, required=True)
+    register_fresh_public_pair = subparsers.add_parser(
+        "register-livedrbench-fresh-pair",
+        help="Freeze paired LiveDRBench search-arm configs without any provider call.",
+    )
+    register_fresh_public_pair.add_argument("--registration", type=Path, required=True)
+    register_fresh_public_pair.add_argument("--config", type=Path, required=True)
+    register_fresh_public_pair.add_argument("--output-dir", type=Path, required=True)
+    register_fresh_public_pair.add_argument("--run-label", required=True)
     validate_browsecomp_plus = subparsers.add_parser(
         "validate-browsecomp-plus-target",
         help="Validate pinned BrowseComp-Plus targets without reading benchmark gold.",
@@ -486,6 +495,21 @@ def main() -> int:
             f"macro_exact_recall={scores.macro_exact_recall:.4f}\n"
             f"macro_exact_f1={scores.macro_exact_f1:.4f}\n"
             f"official_evaluator={scores.official_evaluator_status}"
+        )
+        return 0
+    if args.command == "register-livedrbench-fresh-pair":
+        manifest = prepare_fresh_public_pair(
+            registration_path=args.registration,
+            base_config_path=args.config,
+            output_dir=args.output_dir,
+            run_label=args.run_label,
+        )
+        print(
+            f"benchmark={manifest.benchmark_id}\nstatus={manifest.status}\n"
+            f"run_label={manifest.run_label}\noutput_dir={args.output_dir / args.run_label}\n"
+            f"task_keys=" + ",".join(map(str, manifest.selected_task_keys)) + "\n"
+            f"arms=" + ",".join(arm.variant_id for arm in manifest.arms) + "\n"
+            f"provider_calls_before_generation={manifest.provider_calls_before_generation}"
         )
         return 0
     if args.command == "validate-browsecomp-plus-target":

@@ -40,7 +40,22 @@ revision 的全部十个公开 preview key，排除这五个旧 key，按整数�
 
 这是 **token-matched 的搜索后端消融**，不是总成本匹配比较：baseline 无密钥，candidate 有
 Tavily credit，因此 LLM 费用和 Tavily 费用必须分别报告，不能把结果写成 cost-matched 胜负。
-当前仍缺少 hash-bound 的 paired runner，尚未生成、调用 Tavily、调用模型或运行官方 Judge。
+已经实现 `register-livedrbench-fresh-pair`：它从一份共同配置派生两个非密钥 snapshot，冻结
+模型 endpoint、thinking、价格、3 次模型调用、8,000 Tokens、$0.002 LLM、单次 2,048
+output Tokens、6 条 evidence、5 次 HTTP 搜索尝试和每 query 5 条结果，并写入 hash-bound
+`pair_manifest.json`。该命令不读取数据集、不调用 Tavily、模型、Judge 或 GPU；同一 run label
+只能以完全相同的快照再次验证。真正的 paired executor 与 failed-only resume 仍未实现。
+
+```powershell
+python -m deepresearch_harness.cli register-livedrbench-fresh-pair `
+  --registration benchmarks\livedrbench_fresh_public_v0\registration.json `
+  --config config.local.json `
+  --output-dir runs\public_benchmarks `
+  --run-label tavily-basic-v0
+```
+
+其中 `config.local.json` 必须有非零、当前有效的 DeepSeek 价格和上述 LLM budget；搜索 kind
+不会直接沿用，而是由注册文件分别强制派生为 baseline `duckduckgo` 和 candidate `tavily`。
 执行前还必须重新核对 [Tavily credits 文档](https://docs.tavily.com/documentation/api-credits) 的
 价格快照；若价格变化，应重新注册新的比较块，不能静默沿用 $0.008。
 
