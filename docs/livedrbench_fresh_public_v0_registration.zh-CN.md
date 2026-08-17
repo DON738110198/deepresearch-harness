@@ -44,7 +44,7 @@ Tavily credit，因此 LLM 费用和 Tavily 费用必须分别报告，不能把
 模型 endpoint、thinking、价格、3 次模型调用、8,000 Tokens、$0.002 LLM、单次 2,048
 output Tokens、6 条 evidence、5 次 HTTP 搜索尝试和每 query 5 条结果，并写入 hash-bound
 `pair_manifest.json`。该命令不读取数据集、不调用 Tavily、模型、Judge 或 GPU；同一 run label
-只能以完全相同的快照再次验证。真正的 paired executor 与 failed-only resume 仍未实现。
+只能以完全相同的快照再次验证。
 
 ```powershell
 python -m deepresearch_harness.cli register-livedrbench-fresh-pair `
@@ -56,6 +56,26 @@ python -m deepresearch_harness.cli register-livedrbench-fresh-pair `
 
 其中 `config.local.json` 必须有非零、当前有效的 DeepSeek 价格和上述 LLM budget；搜索 kind
 不会直接沿用，而是由注册文件分别强制派生为 baseline `duckduckgo` 和 candidate `tavily`。
+
+真实执行入口如下。它会先验证 pair manifest 与两个 config snapshot，再检查 `DEEPSEEK_API_KEY`
+和 `TAVILY_API_KEY`；任意一个缺失会在 dataset 或模型调用前失败，因此不会出现只花 baseline 的
+半边实验。首轮执行不自动重试；如已保存失败项，只有显式 `--resume-failed` 才会重跑这些失败项，
+已成功 task 会先 hash 校验并保持 immutable。
+
+```powershell
+python -m deepresearch_harness.cli execute-livedrbench-fresh-pair `
+  --pair-manifest runs\public_benchmarks\tavily-basic-v0\pair_manifest.json
+
+# 仅在检查 provider 余额、失败原因和已有 artifact 后使用
+python -m deepresearch_harness.cli execute-livedrbench-fresh-pair `
+  --pair-manifest runs\public_benchmarks\tavily-basic-v0\pair_manifest.json `
+  --resume-failed
+```
+
+每个 task attempt 都保存 state/report hash、Token、LLM 估算费用、Tavily 估算费用、实际 HTTP
+搜索尝试数、逻辑 query 数、fetch 成功/失败和兼容性 exact 指标；这些是执行 trace，不是官方
+LiveDRBench 结果。`pair_execution.json` 只记录本次固定模型下的 harness/tool 运行，不可描述为
+模型能力提升。
 执行前还必须重新核对 [Tavily credits 文档](https://docs.tavily.com/documentation/api-credits) 的
 价格快照；若价格变化，应重新注册新的比较块，不能静默沿用 $0.008。
 

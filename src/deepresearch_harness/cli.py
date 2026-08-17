@@ -27,7 +27,7 @@ from .browsecomp_judge import (
 from .browsecomp_repeats import aggregate_repeat_experiment
 from .contracts import HarnessConfig
 from .experiment import validate_experiment_manifest
-from .livedrbench_fresh_pair import prepare_fresh_public_pair
+from .livedrbench_fresh_pair import execute_fresh_public_pair, prepare_fresh_public_pair
 from .pipeline import (
     BaselineResearchPipeline,
     LocalCorpusCollector,
@@ -141,6 +141,12 @@ def main() -> int:
     register_fresh_public_pair.add_argument("--config", type=Path, required=True)
     register_fresh_public_pair.add_argument("--output-dir", type=Path, required=True)
     register_fresh_public_pair.add_argument("--run-label", required=True)
+    execute_fresh_pair = subparsers.add_parser(
+        "execute-livedrbench-fresh-pair",
+        help="Run a frozen LiveDRBench pair; retries require --resume-failed.",
+    )
+    execute_fresh_pair.add_argument("--pair-manifest", type=Path, required=True)
+    execute_fresh_pair.add_argument("--resume-failed", action="store_true")
     validate_browsecomp_plus = subparsers.add_parser(
         "validate-browsecomp-plus-target",
         help="Validate pinned BrowseComp-Plus targets without reading benchmark gold.",
@@ -510,6 +516,23 @@ def main() -> int:
             f"task_keys=" + ",".join(map(str, manifest.selected_task_keys)) + "\n"
             f"arms=" + ",".join(arm.variant_id for arm in manifest.arms) + "\n"
             f"provider_calls_before_generation={manifest.provider_calls_before_generation}"
+        )
+        return 0
+    if args.command == "execute-livedrbench-fresh-pair":
+        execution = execute_fresh_public_pair(
+            pair_manifest_path=args.pair_manifest,
+            resume_failed=args.resume_failed,
+        )
+        completed = [
+            sum(item.status == "succeeded" for item in arm.attempts)
+            for arm in execution.arms
+        ]
+        print(
+            f"status={execution.status}\n"
+            f"execution={args.pair_manifest.parent / 'pair_execution.json'}\n"
+            f"baseline_success_records={completed[0]}\n"
+            f"candidate_success_records={completed[1]}\n"
+            f"official_evaluator={execution.official_evaluator_status}"
         )
         return 0
     if args.command == "validate-browsecomp-plus-target":

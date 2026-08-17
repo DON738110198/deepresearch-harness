@@ -422,8 +422,18 @@ python -m deepresearch_harness.cli register-livedrbench-fresh-pair `
 
 It writes two derived non-secret config snapshots and a hash-bound
 `pair_manifest.json`, then refuses a changed re-registration under the same
-label. The paid executor and failed-only resume are deliberately still
-unimplemented.
+label. Execute only after both API keys and current price snapshots have been
+checked:
+
+```powershell
+python -m deepresearch_harness.cli execute-livedrbench-fresh-pair `
+  --pair-manifest runs\public_benchmarks\tavily-basic-v0\pair_manifest.json
+```
+
+The executor preflights both keys before either arm can spend money, hash-checks
+successful task artifacts before a resume, and preserves failures. It refuses
+to retry anything unless `--resume-failed` is supplied, which retries only the
+last failed task records.
 
 ## Real API run
 

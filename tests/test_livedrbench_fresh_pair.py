@@ -6,7 +6,10 @@ import pytest
 
 from deepresearch_harness.contracts import HarnessConfig
 from deepresearch_harness.cli import main
+import deepresearch_harness.livedrbench_fresh_pair as fresh_pair
 from deepresearch_harness.livedrbench_fresh_pair import (
+    PairTaskAttempt,
+    execute_fresh_public_pair,
     load_and_validate_fresh_public_pair,
     prepare_fresh_public_pair,
 )
@@ -63,7 +66,7 @@ def test_prepare_pair_freezes_derived_search_arms_without_network_or_keys(tmp_pa
     assert manifest.provider_calls_before_generation == 0
     assert manifest.selected_task_keys == (10, 23, 38, 86, 99)
     assert [arm.search_kind for arm in manifest.arms] == ["duckduckgo", "tavily"]
-    assert manifest.executor_status == "not_implemented"
+    assert manifest.executor_status == "implemented_unexecuted"
     assert manifest.retry_policy == "failed_only_explicit_resume_v0"
     baseline = json.loads((run_dir / "baseline.config.snapshot.json").read_text(encoding="utf-8"))
     candidate = json.loads((run_dir / "candidate.config.snapshot.json").read_text(encoding="utf-8"))
@@ -148,3 +151,92 @@ def test_cli_registers_pair_without_network_or_provider(
     output = capsys.readouterr().out
     assert "status=registered_before_generation" in output
     assert "provider_calls_before_generation=0" in output
+
+
+def test_executor_preserves_successes_and_retries_only_failed_tasks_when_explicit(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    config_path = tmp_path / "common.json"
+    _write_config(config_path, _base_config())
+    manifest = prepare_fresh_public_pair(
+        registration_path=REGISTRATION,
+        base_config_path=config_path,
+        output_dir=tmp_path / "runs",
+        run_label="fresh-tavily-execute",
+    )
+    tasks = tuple(
+        fresh_pair.LiveDRBenchTask(
+            key=key,
+            category="entities",
+            question=f"question {key}",
+            ground_truths=[],
+        )
+        for key in manifest.selected_task_keys
+    )
+    calls: list[tuple[str, int, int]] = []
+
+    def fake_run_task_attempt(**kwargs: object) -> PairTaskAttempt:
+        task = kwargs["task"]
+        config = kwargs["config"]
+        attempt_index = kwargs["attempt_index"]
+        assert isinstance(task, fresh_pair.LiveDRBenchTask)
+        assert isinstance(config, HarnessConfig)
+        assert isinstance(attempt_index, int)
+        calls.append((config.search.kind, task.key, attempt_index))
+        failed_once = config.search.kind == "tavily" and task.key == 10 and attempt_index == 1
+        return PairTaskAttempt(
+            key=task.key,
+            category=task.category,
+            attempt_index=attempt_index,
+            status="failed" if failed_once else "succeeded",
+            error_type="RuntimeError" if failed_once else None,
+        )
+
+    monkeypatch.setattr(fresh_pair, "validate_fresh_public_dataset", lambda _: tasks)
+    monkeypatch.setattr(fresh_pair, "_preflight_execution_keys", lambda *_: None)
+    monkeypatch.setattr(fresh_pair, "_run_task_attempt", fake_run_task_attempt)
+    monkeypatch.setattr(fresh_pair, "_validate_execution", lambda *_: None)
+    monkeypatch.setattr(fresh_pair, "_validate_success_attempt", lambda *_: None)
+
+    first = execute_fresh_public_pair(
+        pair_manifest_path=tmp_path / "runs" / manifest.run_label / "pair_manifest.json"
+    )
+    assert first.status == "completed_with_failures"
+    assert len(calls) == 10
+    with pytest.raises(ValueError, match="resume_failed"):
+        execute_fresh_public_pair(
+            pair_manifest_path=tmp_path / "runs" / manifest.run_label / "pair_manifest.json"
+        )
+
+    second = execute_fresh_public_pair(
+        pair_manifest_path=tmp_path / "runs" / manifest.run_label / "pair_manifest.json",
+        resume_failed=True,
+    )
+    assert second.status == "succeeded"
+    assert calls[-1] == ("tavily", 10, 2)
+    assert len(calls) == 11
+
+
+def test_executor_rejects_missing_tavily_key_before_fetching_dataset(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    config_path = tmp_path / "common.json"
+    _write_config(config_path, _base_config())
+    manifest = prepare_fresh_public_pair(
+        registration_path=REGISTRATION,
+        base_config_path=config_path,
+        output_dir=tmp_path / "runs",
+        run_label="fresh-tavily-preflight",
+    )
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-only-deepseek-key")
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    monkeypatch.setattr(
+        fresh_pair,
+        "validate_fresh_public_dataset",
+        lambda _: (_ for _ in ()).throw(AssertionError("dataset fetch must not occur")),
+    )
+
+    with pytest.raises(RuntimeError, match="TAVILY_API_KEY"):
+        execute_fresh_public_pair(
+            pair_manifest_path=tmp_path / "runs" / manifest.run_label / "pair_manifest.json"
+        )
