@@ -1,0 +1,86 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "evidence-reachability-funnel-v0",
+  "status": "offline_calibrating",
+  "problem": "The frozen full-development profile assigns 67 of 110 Judge-wrong cases to reference-document-retrieved-but-answer-wrong, but the category conflates answer exposure, evidence selection, and final synthesis.",
+  "observed_evidence": [
+    {
+      "path": "experiments/full_development_profile_v0/checkpoint.json",
+      "sha256": "d03ebc80ee5683a62010db79edbc74e59150f73b6b8fcc7bdaeb10f86d4c80d6"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/failure_profile.json",
+      "sha256": "29eb55553d4f5564d6f20457899222ee3baf4388f6dcaada1ab296318d5f3be1"
+    }
+  ],
+  "simplest_baseline": "Reuse the 67 frozen traces and test answer-atom coverage first in all visible reference content and then only in cited reference content. Make no provider, search, or Judge call.",
+  "hypothesis": "At least 60% of the 67 cases hide one or more literal answer atoms despite reference-document arrival, which would route the next mechanism to evidence exposure or opening.",
+  "changed_mechanisms": [
+    "replace the aggregate downstream failure label with a hash-bound offline arrival-to-synthesis funnel"
+  ],
+  "anti_claim": "This is a posthoc gold-aware localization tool, not a runtime harness improvement, training result, or model-capability gain.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["scoped sub-agents", "structured sub-agent results", "lead-agent synthesis"],
+      "current_gap": "More research workers cannot repair answer spans that never entered the visible context; localize exposure before considering context isolation or delegation.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["iterative research", "research compression", "final synthesis"],
+      "current_gap": "Compression and synthesis changes are justified only if answer-bearing evidence was actually visible and selected in the frozen traces.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["crawler execution", "source summaries", "publisher aggregation"],
+      "current_gap": "Crawler breadth is not the smallest response to a profile already dominated by cases with some reference-document arrival; distinguish summary exposure from publisher synthesis first.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["parallel WebSearcher nodes", "search graph expansion"],
+      "current_gap": "Parallel branch expansion targets missing research branches, while the selected 67-case cohort already has reference arrival by construction.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "the exact 67 cases selected by failure-profile hash and query-ID hash",
+    "the final 175-query v10 summary and every run hash",
+    "the same development gold and calibrated Judge result",
+    "union of gold and evidence docids as the reference set",
+    "saved reference snippets plus successful reference opens as visible content",
+    "all-answer-atom literal coverage and bracketed known-docid citation parsing",
+    "60% dominance routing with frozen denominators",
+    "zero provider, online search, new Judge, GPU, or sealed-holdout access"
+  ],
+  "budget": {
+    "maximum_development_queries": 67,
+    "maximum_provider_cost_usd": 0.0,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": null,
+  "decision": null,
+  "next_action": "Validate and commit the registered funnel implementation, then execute it once on the hash-bound saved traces. Route only from the frozen 60% thresholds; do not introduce a runtime mechanism in the same loop.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "This loop may identify a dominant downstream evidence stage on 67 development failures using saved traces. It cannot establish an effectiveness gain, official benchmark accuracy, sealed-holdout performance, framework superiority, or model-capability improvement."
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": "browsecomp-plus-evidence-reachability-funnel-registration-v0",
+  "status": "registered_before_trace_execution",
+  "registered_at": "2026-08-17T13:25:00+08:00",
+  "purpose": "Separate evidence arrival, literal answer exposure, reference citation, and final synthesis for every downstream Judge-wrong case in the frozen 175-question development profile before selecting another harness mechanism.",
+  "problem": "The preregistered full-development taxonomy routes 67 of 110 Judge-wrong cases to reference-document-retrieved-but-answer-wrong, but that aggregate category does not distinguish hidden answer spans from evidence selection or synthesis failure.",
+  "simplest_baseline": "Read only the already frozen v10 run, gold, and Judge artifacts. For each of the 67 cases, test literal answer-atom coverage in saved reference-document snippets and successful opens, then repeat the coverage test using only bracket-cited reference documents.",
+  "hypothesis": "At least 60% of the 67 cases will lack full literal answer coverage in the reference content actually exposed to the Agent, routing the next intervention to evidence exposure or opening rather than another retrieval or multi-Agent change.",
+  "sources": {
+    "failure_profile": {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/failure_profile.json",
+      "sha256": "29eb55553d4f5564d6f20457899222ee3baf4388f6dcaada1ab296318d5f3be1"
+    },
+    "source_summary": {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/v10/summary.json",
+      "sha256": "0799a3da6182a7fa5298f3e0ce0390899e5ed6902e1e3d5180612232d5780a2d"
+    },
+    "gold_slice": {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/development_gold_175.json",
+      "sha256": "9b196034ac582ef6b3a8b725096ed4420379271f682feacce0e4b5893e951f5a"
+    },
+    "judge_result": {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/persistent-judge/evaluation/development_judge_result.json",
+      "sha256": "cb0fc4f103849d93d76e8af45d7518419a06a4448840c005420ba07a54b4d1a5"
+    }
+  },
+  "failure_category": "reference_document_retrieved_answer_wrong",
+  "case_count": 67,
+  "query_ids_sha256": "5b7f53ed48623106c133cadf4e698c18ecfa6deb43f42f045f6fb3d9e7c6afe5",
+  "analysis": {
+    "provider_calls": 0,
+    "online_search_calls": 0,
+    "judge_calls": 0,
+    "sealed_holdout_access": "forbidden",
+    "reference_docid_policy": "union_of_gold_and_evidence_docids",
+    "visible_content_policy": "saved_reference_snippets_plus_successful_reference_opens",
+    "literal_answer_policy": "answer_coverage_all_atoms_v0",
+    "citation_policy": "bracketed_known_docid_tokens_v0",
+    "classification_precedence": [
+      "answer_hidden_after_reference_arrival",
+      "answer_visible_reference_uncited",
+      "answer_visible_reference_cited_wrong"
+    ]
+  },
+  "routing": {
+    "dominance_percent": 60.0,
+    "denominator_policy": "hidden_over_all_cases_then_uncited_or_cited_over_answer_visible_cases"
+  },
+  "acceptance": {
+    "case_count_must_equal": 67,
+    "reference_arrived_must_equal": 67,
+    "provider_calls_must_equal": 0,
+    "online_search_calls_must_equal": 0,
+    "judge_calls_must_equal": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "claim_boundary": "This is a gold-aware posthoc development trace diagnostic over a policy selected on development data. Literal answer coverage and citation association are localization proxies, not causal effectiveness metrics. It makes no provider, online search, or Judge call and cannot establish model-capability improvement, fresh harness gain, official accuracy, sealed-holdout performance, or leaderboard standing."
+}
