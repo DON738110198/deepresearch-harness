@@ -1,0 +1,63 @@
+{
+  "schema_version": "livedrbench-fresh-public-registration-v0",
+  "status": "registered_before_generation",
+  "benchmark_id": "livedrbench-fresh-public-v0",
+  "dataset_id": "microsoft/LiveDRBench",
+  "dataset_revision": "cad63dd0403b11e8a80001e2339f64ac93acec5a",
+  "dataset_config": "preview",
+  "dataset_split": "test",
+  "source_repository": "https://github.com/microsoft/LiveDRBench",
+  "source_repository_commit": "6ff85b67b35fa303907f6f275417622338acd1f6",
+  "parent_preview_manifest_path": "benchmarks/livedrbench_preview_v0/manifest.json",
+  "parent_preview_manifest_sha256": "396f565949f9e27f9e91f67d1f58af1014580d3f04f9040312ee3389d3447a6c",
+  "dataset_response_sha256": "1165fc26457017b601f87eb1ff68da29c466f43ab75668f449dbebd90b3dced3",
+  "available_task_keys": [4, 10, 23, 31, 38, 40, 55, 76, 86, 99],
+  "excluded_prior_task_keys": [4, 31, 40, 55, 76],
+  "selected_task_keys": [10, 23, 38, 86, 99],
+  "selected_task_keys_sha256": "a4de10cb92e529184acbe76c6d1a28101d69f283eb05627be364ff00b41b1470",
+  "selection_algorithm": "sorted_key_filter_excluded_take_first_v0",
+  "category_by_key": {
+    "4": "entities",
+    "10": "entities",
+    "23": "novel-datasets-identi-extraction",
+    "31": "novel-datasets-identification",
+    "38": "novel-datasets-peer",
+    "40": "flights",
+    "55": "scifacts-geo",
+    "76": "scifacts-materials",
+    "86": "prior-art",
+    "99": "prior-art"
+  },
+  "selected_category_coverage": {
+    "entities": 1,
+    "novel-datasets-identi-extraction": 1,
+    "novel-datasets-peer": 1,
+    "prior-art": 2
+  },
+  "baseline": {
+    "id": "existing-live-collector-v0",
+    "status": "existing",
+    "search_provider": "existing_live_collector",
+    "adapter": "public_benchmark.b1_benchmark_structured"
+  },
+  "candidate": {
+    "id": "stable-search-provider-adapter-v0",
+    "status": "planned",
+    "search_provider": "stable-search-provider",
+    "adapter": "planned_not_implemented"
+  },
+  "budget": {
+    "model": "deepseek-v4-flash",
+    "thinking_mode": "disabled",
+    "max_model_calls_per_task": 3,
+    "max_total_tokens_per_task": 8000,
+    "max_estimated_cost_usd_per_task": 0.002,
+    "max_evidence_items_per_task": 6,
+    "max_search_calls_per_task": 5
+  },
+  "evaluator": "compatibility_exact_main_claim_v1",
+  "official_evaluator_status": "planned_not_run",
+  "sealed_holdout_access": "forbidden",
+  "provider_calls_before_generation": 0,
+  "claim_boundary": "This is a pre-generation registration for an untouched public LiveDRBench task slice. It is not a run, effectiveness result, official evaluator result, leaderboard result, or model-capability improvement. The candidate stable-search-provider adapter is planned only and is not implemented by this artifact."
+}

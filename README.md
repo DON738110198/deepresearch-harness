@@ -391,6 +391,20 @@ python -m deepresearch_harness.cli run-public-benchmark `
 
 The deterministic compatibility scorer checks prediction coverage, official outer shape/type compatibility, and normalized exact match on designated main claims without another model call. It is not the official LiveDRBench evaluator and must not be reported as a leaderboard score. The recorded baseline completed 5/5 tasks but obtained `0.0` macro exact main-claim F1 because the no-key general search fallback returned mostly irrelevant sources. See `docs/livedrbench_preview_v0_results.md`.
 
+The five preview tasks are already observed, so the next public slice is separately
+registered rather than retrospectively re-split. Its keys, prior-task exclusion,
+budgets, baseline, planned search-provider candidate, and dataset hash can be
+checked without a provider call:
+
+```powershell
+python scripts/check_livedrbench_fresh_public_registration.py `
+  --registration benchmarks/livedrbench_fresh_public_v0/registration.json
+```
+
+This is pre-generation bookkeeping, not a new benchmark run. The paired runner
+that enforces its five-search cap and compares the planned stable-search adapter
+against the existing collector remains unimplemented.
+
 ## Real API run
 
 Copy `config.example.json` to a local config file, set only the named environment variable, then run:
@@ -499,6 +513,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `src/deepresearch_harness/pipeline.py`: baseline orchestration and persistence.
 - `src/deepresearch_harness/web_research.py`: no-key repository/web search, bounded fetch, text extraction, and request trace.
 - `src/deepresearch_harness/public_benchmark.py`: pinned LiveDRBench loading, structured predictions, exact compatibility scoring, and batch audit summary.
+- `src/deepresearch_harness/livedrbench_fresh_public.py`: hash-bound fresh-public task registration and optional public-row verification before paired execution exists.
 - `src/deepresearch_harness/browsecomp_plus.py`: strict benchmark pins, leakage-safe query split/extraction, and Pi run contracts.
 - `src/deepresearch_harness/bm25_server.py`: loopback-only pinned BM25/top-5/Qwen-tokenizer search service.
 - `src/deepresearch_harness/dense_server.py`: loopback-only pinned dense/top-5 service backed by the same document store and snippet contract.
@@ -531,6 +546,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `experiments/pilot_v0/`: token-matched and cost-matched manifests with pinned corpus hashes and pricing.
 - `benchmarks/pilot_v0/`: ten controlled diagnostic tasks and a synthetic corpus.
 - `benchmarks/livedrbench_preview_v0/`: frozen five-task external compatibility manifest.
+- `benchmarks/livedrbench_fresh_public_v0/`: untouched five-task public slice registration for the future paired search-provider comparison.
 - `docs/problem_statement.md`: problem-first design position and falsifiable hypotheses.
 - `docs/pilot_design.md`: B0/B1/B2 comparison and stage gates.
 - `docs/architecture.md`: current boundaries and next-stage extension points.
@@ -554,6 +570,7 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 - `docs/b1_b2_v3_results.md`: token/cost automatic results and current claim boundary.
 - `docs/live_web_smoke_2026-08-13.md`: real DeepSeek live-search failures, final smoke evidence, and next gate.
 - `docs/livedrbench_preview_v0_results.md`: first external benchmark result and search-layer diagnosis.
+- `docs/livedrbench_fresh_public_v0_registration.zh-CN.md`: fresh public slice selection, fixed budget, and unimplemented-runner boundary.
 
 ## Next implementation order
 
@@ -570,3 +587,4 @@ No API key is accepted through CLI flags or configuration values. `api_key_env` 
 11. **Completed development profile:** the frozen v10 policy produced 175/175 valid predictions after preserving 106 successes and retrying only 69 balance-failed IDs. Normalized exact was 42/175, evidence recall 52.51%, and the calibrated persistent Judge marked 65/175 correct. Of 110 Judge-wrong cases, 67 had some reference-document retrieval signal, 40 had none, and 3 failed the answer contract. The preregistered 60% route therefore selects a zero-provider evidence-reachability funnel before any new mechanism. These are development diagnostics, not official accuracy or model-capability improvement.
 12. **Completed with a retained diagnostic limitation:** the registered reachability funnel found full literal answer coverage hidden in 47/67 downstream cases, while 11/67 were visible-but-uncited and 9/67 were cited-but-wrong. The 70.15% hidden share triggers the frozen exposure/opening route, but the union-of-gold-and-evidence reference policy can admit supporting-evidence-only arrival. Reject the route as a sufficient runtime-mechanism selector and formalize a zero-call mutually exclusive correction before changing the Agent.
 13. **Completed corrective diagnostic:** the selected-after-v0 Gold/Evidence Causal Funnel separates 110 calibrated-Judge-wrong traces into 40 no-reference, 21 supporting-only, 31 gold-span-incomplete, 8 gold-visible-but-uncited, 7 cited-but-wrong, and 3 answer-contract cases. It records no effectiveness metric and explicitly disallows promotion. The next paid test must target one queue on a fresh development slice; global span opening and multi-Agent remain deferred.
+14. **Registered, not run:** the unused LiveDRBench public keys `10,23,38,86,99` are fixed for a fresh public diagnostic. The existing live collector is the baseline; one stable-search-provider adapter is the planned candidate. Both the paired runner and the candidate remain unimplemented, so no comparison, official score, or effectiveness claim exists.

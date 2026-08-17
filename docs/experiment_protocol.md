@@ -52,6 +52,14 @@ The live web run in `live_web_smoke_2026-08-13.md` is an exploratory end-to-end 
 
 The five-task LiveDRBench preview run in `livedrbench_preview_v0_results.md` is a pinned compatibility pilot. `compatibility_exact_main_claim_v1` performs normalized exact matching on selected main-claim fields and checks the official outer shape/type contract. It does not perform the official LLM equivalence judgments, tolerances, or leaderboard aggregation. Therefore its scores must be labeled compatibility metrics, not official LiveDRBench results.
 
+After a public LiveDRBench task has been generated, it is not eligible to become
+the fresh comparison slice by retrospective partitioning. A new public slice
+must exclude every prior key, bind the pinned dataset-response hash and key
+selection hash, and freeze both arms before generation. The paired executor
+must enforce the same model, thinking mode, query policy, evidence cap, search
+cap, Token cap, cost cap, and compatibility/official-evaluator boundary. A
+planned search adapter or static registration is not an effectiveness result.
+
 BrowseComp-Plus is the active primary benchmark target described in
 `research_goal_and_benchmark_strategy.md`. Before its answers or relevance
 labels are accessed, pin the benchmark artifacts and create a deterministic

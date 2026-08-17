@@ -344,4 +344,11 @@ retained rejection, and B3/B4 multi-Agent stays deferred.
 
 Do not add DAG fan-out, critic loops, or automatic re-planning until a saved bad case makes their decision boundary measurable.
 
+The public benchmark boundary now also has a separate LiveDRBench fresh-public
+registration: five unused task keys are hash-bound before any generation, with
+the existing collector as baseline and one planned stable-search adapter as the
+only candidate. This registration is deliberately not a runner: a future paired
+executor must enforce its fixed per-task model, search, Token, cost, and evidence
+limits before it can make an effectiveness comparison.
+
 The project-specific control hypothesis and its simpler baselines are documented in `problem_statement.md`; the first diagnostic suite is documented in `pilot_design.md`. Neither document claims a measured improvement.

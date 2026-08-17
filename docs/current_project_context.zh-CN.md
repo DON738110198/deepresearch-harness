@@ -7,3 +7,4 @@
 - 本次术语："评测方式"指 benchmark、任务集、指标或 judge protocol；LangSmith/Langfuse 等运行 trace 属于可观测性，不等同于效果评测。
 - 决策要求：只推荐一个当前尚未实现、能由本次 bad case 直接证明必要的最小改进。优先简单方法，不因为外部项目使用多 Agent 就复制多 Agent。
 - 最新诊断：175 题 development profile 的 110 个 calibrated-Judge-wrong trace 已完成 gold/evidence 纠偏。40 个无 reference、21 个仅 supporting evidence、31 个 gold span 不完整、8 个可见未引、7 个已引仍错、3 个 answer contract。它只是 selected-after-v0 的 queue map；下一次付费机制测试必须用 fresh development slice，global span opening 和多 Agent 都暂不进入实现。
+- Fresh public 入口：LiveDRBench 已固定未使用 keys `[10,23,38,86,99]`，baseline 是既有 live collector，候选仅为 planned 的 stable Search API adapter。当前只有静态注册与验证，没有 candidate、paired runner、生成、官方 Judge 或效果数字。
