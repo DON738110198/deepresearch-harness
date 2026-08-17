@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from deepresearch_harness.evidence_reachability_funnel import (
+    _query_ids_sha256,
     classify_reachability,
     extract_cited_docids,
     route_reachability,
@@ -52,4 +53,10 @@ def test_citation_parser_accepts_only_known_bracketed_docids() -> None:
         "123",
         "456",
         "doc-7",
+    )
+
+
+def test_query_id_hash_uses_real_lf_and_a_final_lf() -> None:
+    assert _query_ids_sha256(["10", "2"]) == (
+        "eba7437651bd2dabe00aba8388b552da5557f5f7b0fbe2ea2248902e7ffc9cfd"
     )

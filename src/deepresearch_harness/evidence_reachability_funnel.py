@@ -97,6 +97,7 @@ class EvidenceReachabilityRegistration(StrictContract):
     failure_category: Literal["reference_document_retrieved_answer_wrong"]
     case_count: Literal[67]
     query_ids_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    query_ids_hash_encoding: Literal["utf8_lf_delimited_with_final_lf"]
     analysis: FunnelAnalysisContract
     routing: FunnelRouting
     acceptance: FunnelAcceptance

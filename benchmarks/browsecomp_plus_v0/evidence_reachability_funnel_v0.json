@@ -26,7 +26,8 @@
   },
   "failure_category": "reference_document_retrieved_answer_wrong",
   "case_count": 67,
-  "query_ids_sha256": "5b7f53ed48623106c133cadf4e698c18ecfa6deb43f42f045f6fb3d9e7c6afe5",
+  "query_ids_sha256": "658b6abede147a82619586fca00cb7a9345e0bee62e654e647331eca3483e8bf",
+  "query_ids_hash_encoding": "utf8_lf_delimited_with_final_lf",
   "analysis": {
     "provider_calls": 0,
     "online_search_calls": 0,
