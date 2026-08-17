@@ -38,6 +38,7 @@ from deepresearch_harness.pi_browsecomp import (
     _archive_source_summary,
     _build_request,
     _merge_retry_item,
+    _provider_failure_reason,
     _record_prior_attempt,
     _validate_existing_attempt,
     audit_pi_failed_resume,
@@ -294,6 +295,60 @@ def test_pi_run_contract_requires_empty_system_prompt() -> None:
     payload["system_prompt"] = "coding agent prompt"
     with pytest.raises(ValidationError):
         PiBrowseCompRun.model_validate(payload)
+
+
+def test_provider_error_message_triggers_fail_closed_batch_abort() -> None:
+    run = PiBrowseCompRun.model_validate(
+        {
+            "schema_version": "pi-browsecomp-run-v0",
+            "adapter_version": "pi-browsecomp-v10",
+            "pi_version": "0.84.1",
+            "run_id": "run-balance-failure",
+            "query_id": "query-balance-failure",
+            "model": "deepseek-v4-flash",
+            "thinking_level": "high",
+            "control_policy": "answer_reserve_nonthinking_v0",
+            "compilation_thinking_level": "high",
+            "system_prompt": "",
+            "prompt_sha256": "a" * 64,
+            "started_at": "2026-08-17T00:00:00Z",
+            "latency_ms": 10,
+            "status": "failed",
+            "stop_reason": "no_final_answer",
+            "answer_text": "",
+            "usage": {
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cache_read_tokens": 0,
+                "cache_write_tokens": 0,
+                "reasoning_tokens": 0,
+                "total_tokens": 0,
+                "cost_usd": 0,
+            },
+            "model_requests": 1,
+            "search_calls": [],
+            "research_budget": {
+                "maximum_search_calls": 8,
+                "reserved_search_calls": 0,
+                "executed_search_calls": 0,
+                "blocked_search_calls": [],
+                "exhausted": False,
+                "stop_reason": None,
+            },
+            "messages": [
+                {
+                    "role": "assistant",
+                    "stopReason": "error",
+                    "errorMessage": "402: Insufficient Balance",
+                    "content": [],
+                }
+            ],
+        }
+    )
+
+    assert _provider_failure_reason(run) == (
+        "provider_or_runtime_error:402: Insufficient Balance"
+    )
 
 
 def test_pi_v9_run_binds_progressive_disclosure_and_open_trace() -> None:

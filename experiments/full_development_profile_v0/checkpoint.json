@@ -19,6 +19,10 @@
     {
       "path": "benchmarks/browsecomp_plus_v0/full_development_failure_taxonomy_v0.json",
       "sha256": "e13b27f4effa343e5c083b7578e216ff95ca70d5736ed4e3244b46793e61cdac"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/incident-after-attempt1.json",
+      "sha256": "beeaab55579764df30389011678b66c02c7a2f8d7ed3eadb70e7c93126ba865e"
     }
   ],
   "simplest_baseline": "Run the frozen Pi v10 Query-Aware Progressive Disclosure policy once, sequentially, on all 175 development questions. Change no search policy, prompt, model, retriever, call cap, or output budget; use the resulting valid traces only to measure the broader failure distribution.",
@@ -83,7 +87,7 @@
   "multi_agent_comparison_contract": null,
   "measured_result": null,
   "decision": null,
-  "next_action": "Run exactly: python -m deepresearch_harness.cli run-pi-browsecomp-smoke --manifest benchmarks/browsecomp_plus_v0/target_manifest.json --partitions benchmarks/browsecomp_plus_v0/query_partitions.json --queries runs/browsecomp_plus_v0/query-aware-preview-confirmation-v0-20260815/development_queries_175.json --output-dir runs/browsecomp_plus_v0/full-development-profile-v0-20260817/v10 --node G:/DevelopTools/node/node.exe --adapter-dir integrations/pi-browsecomp --adapter-runner integrations/pi-browsecomp/v10/runner.mjs --search-url http://127.0.0.1:8768/search --model deepseek-v4-flash --control-policy answer_reserve_nonthinking_v0 --timeout-seconds 1800 --retriever-id bm25-anchor-5+qwen3-embedding-0.6b-lead-15-query_window_v0-64 --retriever-manifest benchmarks/browsecomp_plus_v0/retriever_candidates.json --max-search-results 20. Monitor new per-query attempt artifacts; abort on identity drift or transport failure; never repeat successful paid calls. After all predictions are frozen, access development gold once, run the calibrated Judge, and apply taxonomy e13b27f4effa343e5c083b7578e216ff95ca70d5736ed4e3244b46793e61cdac without changing its thresholds.",
+  "next_action": "Balance audit 59e27c4c4aca887b2a14859ab71721e20a13cf7b1005c23f5b8b38165caa44aa permits resume. Run the registered generation command with --resume-failed exactly once; keep the 106 successful attempt-1 results immutable and retry only the 69 failed query IDs bound by affc187d4419197493ac348791f8d59951ba2cbcf203a1d72f4d5cc3dc96ea0b. The operational provider-error circuit breaker may stop the batch but may not change research behavior. After all predictions are frozen, access development gold once, run the calibrated Judge, and apply taxonomy e13b27f4effa343e5c083b7578e216ff95ca70d5736ed4e3244b46793e61cdac without changing its thresholds.",
   "active_paid_calls": 1,
   "retained_services": [
     "qwen3-32b-bf16-judge@127.0.0.1:18015",

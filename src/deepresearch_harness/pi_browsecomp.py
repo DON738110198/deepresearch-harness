@@ -658,7 +658,10 @@ def run_pi_unscored_smoke(
             _atomic_write(run_path, completed.stdout)
             run_bytes = run_path.read_bytes()
             current_item = _summarize_run(run, run_path, run_bytes)
-            if run.stop_reason.startswith("tool_call_failures:"):
+            provider_failure = _provider_failure_reason(run)
+            if provider_failure is not None:
+                batch_abort_reason = provider_failure
+            elif run.stop_reason.startswith("tool_call_failures:"):
                 batch_abort_reason = run.stop_reason
         except Exception as error:
             detail = _redact(str(error))[:4000]
@@ -726,6 +729,19 @@ def run_pi_unscored_smoke(
     )
     _atomic_write(summary_path, summary.model_dump_json(indent=2))
     return summary
+
+
+def _provider_failure_reason(run: PiBrowseCompRun) -> str | None:
+    if run.stop_reason.startswith("provider_or_runtime_error:"):
+        return _redact(run.stop_reason)[:4000]
+    for message in reversed(run.messages):
+        if message.get("role") != "assistant":
+            continue
+        if message.get("stopReason") not in {"error", "aborted"}:
+            continue
+        detail = message.get("errorMessage") or message.get("stopReason")
+        return f"provider_or_runtime_error:{_redact(str(detail))}"[:4000]
+    return None
 
 
 def export_pi_runs_for_official_evaluator(
