@@ -411,6 +411,15 @@ answer coverage in the actual visible content. When a registered proxy reveals
 this confound, retain the original result and register the correction without a
 promotion threshold; do not reinterpret the old categories in place.
 
+The corrective gold/evidence causal funnel is also a posthoc localization tool,
+not a confirmation run. It must record gold-only, supporting-only, union, and
+cited literal-answer coverage as separate fields and set `promotion_allowed`
+to false. Its queue counts may choose what to investigate, but any runtime
+change requires a separately preregistered fresh development slice with fixed
+model, corpus, search provider, query-call budget, Token budget, cost budget,
+and Judge. Do not use the selected wrong-case queue as a reported effectiveness
+test.
+
 ## Bad-case-driven iteration
 
 Start by saving a concrete failure with its inputs and trace. State `problem -> evidence -> hypothesis -> change -> metric -> conclusion`. Add only the smallest mechanism that tests that hypothesis, then add a focused regression test. A more complex orchestration is not accepted merely because it produces a more fluent report.

@@ -301,6 +301,15 @@ arrived. The registered result is retained, while its runtime route is rejected
 pending a mutually exclusive gold-arrival correction. This prevents a trace
 proxy from silently authorizing another global opening mechanism.
 
+That correction is now closed as Gold/Evidence Causal Funnel v1. It separately
+assigns the 110 calibrated-Judge-wrong development traces to 40 no-reference,
+21 supporting-evidence-only, 31 gold-span-incomplete, 8 gold-visible-but-
+uncited, 7 cited-but-wrong, and 3 answer-contract cases. These are queue
+counts, not an effect estimate: v1 was selected after v0 and locks
+`promotion_allowed=false`. The next runtime test must use one queue on a fresh
+development slice with fixed model and budgets; global span opening remains a
+retained rejection, and B3/B4 multi-Agent stays deferred.
+
 ## Contracts and audit boundary
 
 - `Task`, `Plan`, `Evidence`, `Claim`, and `Citation` are validated Pydantic models.

@@ -1,0 +1,58 @@
+{
+  "schema_version": "browsecomp-plus-gold-evidence-causal-funnel-registration-v1",
+  "status": "selected_after_v0_before_correction_execution",
+  "registered_at": "2026-08-17T15:10:00+08:00",
+  "purpose": "Correct the v0 union-of-gold-and-evidence confound before selecting a new runtime mechanism from the frozen 175-question development profile.",
+  "problem": "The v0 funnel counted any gold or supporting-evidence arrival as reference arrival. That permits supporting-only retrieval to look like a gold-document exposure failure, so its 47/67 hidden-answer route cannot select a runtime mechanism.",
+  "simplest_baseline": "Read only the frozen v10 runs, development gold docids, failure profile, and calibrated Judge labels. Recompute arrival and literal answer coverage separately for gold documents, supporting-evidence documents, their union, and the final bracket-cited documents.",
+  "hypothesis": "The corrected distribution will preserve separate retrieval/evidence-frontier, gold-span-exposure, evidence-selection, synthesis-verification, and answer-contract queues without asserting that any queue is ready for a runtime intervention.",
+  "sources": {
+    "failure_profile": {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/failure_profile.json",
+      "sha256": "29eb55553d4f5564d6f20457899222ee3baf4388f6dcaada1ab296318d5f3be1"
+    },
+    "source_summary": {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/v10/summary.json",
+      "sha256": "0799a3da6182a7fa5298f3e0ce0390899e5ed6902e1e3d5180612232d5780a2d"
+    },
+    "gold_slice": {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/development_gold_175.json",
+      "sha256": "9b196034ac582ef6b3a8b725096ed4420379271f682feacce0e4b5893e951f5a"
+    },
+    "judge_result": {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/persistent-judge/evaluation/development_judge_result.json",
+      "sha256": "cb0fc4f103849d93d76e8af45d7518419a06a4448840c005420ba07a54b4d1a5"
+    }
+  },
+  "case_count": 110,
+  "query_ids_sha256": "7252ec1f328f2c89e037a57d0b5a892574bf921b3fb21356fd81ddf0895a2811",
+  "query_ids_hash_encoding": "utf8_lf_delimited_with_final_lf",
+  "analysis": {
+    "provider_calls": 0,
+    "online_search_calls": 0,
+    "judge_calls": 0,
+    "gpu_calls": 0,
+    "sealed_holdout_access": "forbidden",
+    "arrival_policy": "gold_docids_distinguished_from_evidence_docids",
+    "visible_content_policy": "saved_gold_and_supporting_snippets_plus_successful_opens",
+    "literal_answer_policy": "answer_coverage_all_atoms_v0",
+    "citation_policy": "bracketed_known_docid_tokens_v0",
+    "classification_precedence": [
+      "answer_contract_failure",
+      "no_reference_arrival",
+      "supporting_evidence_only_arrived",
+      "gold_arrived_gold_span_incomplete",
+      "gold_arrived_answer_visible_uncited",
+      "gold_arrived_answer_visible_cited_wrong"
+    ]
+  },
+  "acceptance": {
+    "case_count_must_equal": 110,
+    "provider_calls_must_equal": 0,
+    "online_search_calls_must_equal": 0,
+    "judge_calls_must_equal": 0,
+    "gpu_calls_must_equal": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "claim_boundary": "This selected-after-v0, gold-aware posthoc development localization diagnostic does not reopen the registered 47/67 v0 result or set a promotion threshold. Literal answer coverage and bracketed citation association are trace proxies, not causal effectiveness metrics. It makes no provider, online-search, Judge, GPU, or sealed-holdout call and cannot establish harness gain, official accuracy, leaderboard standing, framework superiority, or model-capability improvement. Any runtime mechanism must be separately preregistered on a fresh development slice with fixed model, corpus, search provider, tool budget, Token budget, cost budget, and Judge."
+}

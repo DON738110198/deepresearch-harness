@@ -134,6 +134,14 @@ evidence 到达也能入组。该混淆已作为负边界保留。下一步纠�
 wrong trace，不设 promotion threshold、不调用模型；先拆开 gold-not-arrived、
 evidence-only-arrived、gold-arrived-span-hidden、selection 和 synthesis。
 
+纠偏现已完成，并明确为 selected-after-v0 的 queue map：110 个 wrong trace 中，40 个
+没有 gold 或 supporting evidence 到达，21 个只有 supporting evidence，31 个 gold 已到达但
+gold span 未完整可见，8 个 gold span 可见但未引用完整答案证据，7 个已引用答案证据仍被
+Judge 判错，3 个为 answer contract。最大 `61` 个 retrieval/evidence-frontier queue 仍混合
+两种不同原因，不能直接改全局 retriever；`31` 个 exposure queue 也不能重跑已拒绝的全局
+span opening。下一次付费运行前必须在 fresh development slice 预注册一个、且只一个机制。
+多 Agent 仍未满足进入条件。
+
 ## 操作命令
 
 ```powershell

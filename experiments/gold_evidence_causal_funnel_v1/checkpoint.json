@@ -1,0 +1,92 @@
+{
+  "schema_version": "deepresearch-research-loop-checkpoint-v0",
+  "loop_id": "gold-evidence-causal-funnel-v1",
+  "status": "closed",
+  "problem": "The registered v0 reachability funnel used the union of gold and supporting-evidence document IDs, so supporting-only arrival could be mistaken for an answer-bearing gold-document exposure failure.",
+  "observed_evidence": [
+    {
+      "path": "experiments/evidence_reachability_funnel_v0/checkpoint.json",
+      "sha256": "7f43515c0eb9295965f8867d9107f5d647800ebc64a26a0f4e5434af10fc37f7"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/evidence-reachability-funnel-v0-20260817/funnel.json",
+      "sha256": "7aee84b3d8528c13b730c218f197ec198afeed05989d15c2382fddf5fe4ed92a"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/failure_profile.json",
+      "sha256": "29eb55553d4f5564d6f20457899222ee3baf4388f6dcaada1ab296318d5f3be1"
+    }
+  ],
+  "simplest_baseline": "Reuse only the frozen 110 calibrated-Judge-wrong traces and distinguish literal answer coverage in gold documents, supporting-evidence documents, their union, and bracket-cited documents. Make no new model, search, Judge, or GPU call.",
+  "hypothesis": "The correction will produce mutually exclusive queues that do not confuse supporting-only retrieval with gold-document span exposure, without promoting any runtime intervention.",
+  "changed_mechanisms": [
+    "replace union-only reference arrival with a gold-versus-supporting-evidence causal trace classification"
+  ],
+  "anti_claim": "This is a selected-after-v0, posthoc development localization correction. It changes no model parameter or runtime harness behavior and cannot demonstrate a harness gain or model-capability improvement.",
+  "framework_comparisons": [
+    {
+      "framework": "DeerFlow",
+      "official_source_url": "https://github.com/bytedance/deer-flow",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["scoped sub-agents", "structured sub-agent results", "lead-agent synthesis"],
+      "current_gap": "Adding workers before separating gold-document absence from span exposure would repeat the same weak evidence arrival under more contexts.",
+      "disposition": "defer"
+    },
+    {
+      "framework": "LangChain Open Deep Research",
+      "official_source_url": "https://github.com/langchain-ai/open_deep_research",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["iterative research", "research compression", "final synthesis"],
+      "current_gap": "Compression or synthesis changes are only relevant to cases where gold-document answer spans are already visible in a frozen trace.",
+      "disposition": "borrow_boundary"
+    },
+    {
+      "framework": "GPT Researcher",
+      "official_source_url": "https://github.com/assafelovic/gpt-researcher",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["planner questions", "crawler execution", "publisher aggregation"],
+      "current_gap": "Broad crawler expansion is not the smallest response while the corrected diagnostic still mixes no-reference and supporting-only arrival cases.",
+      "disposition": "benchmark_later"
+    },
+    {
+      "framework": "MindSearch",
+      "official_source_url": "https://github.com/InternLM/MindSearch",
+      "inspected_on": "2026-08-17",
+      "relevant_mechanisms": ["parallel search graph", "query expansion", "asynchronous search"],
+      "current_gap": "Parallel research is only eligible after a separate trace shows independent branch omission rather than an undifferentiated retrieval/evidence frontier.",
+      "disposition": "defer"
+    }
+  ],
+  "frozen_controls": [
+    "the exact 110 calibrated-Judge-wrong query IDs bound by an LF-delimited SHA-256",
+    "the full v10 summary, every referenced run hash, development gold slice, failure profile, and Judge result",
+    "gold document IDs separated from supporting evidence IDs before answer coverage",
+    "saved snippets and successful open contents only",
+    "all-answer-atom literal coverage and bracketed known-docid citation parsing",
+    "zero provider, online-search, Judge, GPU, or sealed-holdout calls",
+    "promotion_allowed=false and no effect-size or threshold rule"
+  ],
+  "budget": {
+    "maximum_development_queries": 110,
+    "maximum_provider_cost_usd": 0.0,
+    "maximum_search_calls_per_query": 0,
+    "maximum_output_tokens_per_query": 0,
+    "sealed_holdout_access": "forbidden"
+  },
+  "multi_agent_status": "deferred",
+  "multi_agent_failure_triggers": [],
+  "multi_agent_comparison_contract": null,
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/gold-evidence-causal-funnel-v1-20260817/funnel.json",
+    "sha256": "cb2390cf0b7b6a785b1dfcd25f76cf0f08ff8ff31df4b45b5345de2c3530f2f5"
+  },
+  "decision": "accept",
+  "next_action": "Keep this result as a selected-after-v0 queue map, not a mechanism promotion. Before any paid runtime change, preregister one fresh-slice, one-variable test that targets only one queue; keep no-reference and supporting-only cases separate, do not repeat the rejected global span-opening policy, and retain B3/B4 multi-Agent as deferred until a trace proves independent-branch omission, context interference, contradictory evidence, or serial latency.",
+  "active_paid_calls": 0,
+  "retained_services": [
+    "qwen3-32b-bf16-judge@127.0.0.1:18015",
+    "baseline-progressive-disclosure@127.0.0.1:8768"
+  ],
+  "task_owned_processes": "named_and_retained",
+  "claim_boundary": "Among 110 calibrated-Judge-wrong development traces, the selected-after-v0 correction assigns 40 to no reference arrival, 21 to supporting-evidence-only arrival, 31 to gold arrival with incomplete literal answer span, 8 to gold-visible but uncited answer evidence, 7 to cited answer-bearing evidence with a Judge-wrong final answer, and 3 to answer-contract failure. These queue counts are posthoc localization proxies, not runtime harness effectiveness, fresh benchmark gains, official accuracy, sealed-holdout performance, framework superiority, or model-capability improvement."
+}
