@@ -403,6 +403,14 @@ must be a zero-provider reachability funnel over document arrival, literal
 answer-span exposure, citation selection, and final synthesis. Do not combine
 retrieval changes with downstream evidence changes in that test.
 
+Do not treat the union of gold and supporting-evidence document IDs as proof
+that answer-bearing evidence arrived. A posthoc funnel may use that union for a
+compatibility diagnostic, but a mechanism-selection taxonomy must separately
+record gold-document arrival, supporting-evidence-only arrival, and literal
+answer coverage in the actual visible content. When a registered proxy reveals
+this confound, retain the original result and register the correction without a
+promotion threshold; do not reinterpret the old categories in place.
+
 ## Bad-case-driven iteration
 
 Start by saving a concrete failure with its inputs and trace. State `problem -> evidence -> hypothesis -> change -> metric -> conclusion`. Add only the smallest mechanism that tests that hypothesis, then add a focused regression test. A more complex orchestration is not accepted merely because it produces a more fluent report.

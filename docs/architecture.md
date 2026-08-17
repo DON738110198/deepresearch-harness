@@ -293,6 +293,14 @@ literal answer-span exposure, citation selection, and final synthesis before a
 new runtime mechanism is admitted. This is trace localization, not another
 Agent role and not a model change.
 
+Reachability funnel v0 deliberately reused the earlier union of gold and
+supporting-evidence document IDs. It found 47 of 67 answers hidden, but the
+result exposed a taxonomy flaw: supporting-evidence-only arrival can look like
+downstream evidence loss even when the answer-bearing gold document never
+arrived. The registered result is retained, while its runtime route is rejected
+pending a mutually exclusive gold-arrival correction. This prevents a trace
+proxy from silently authorizing another global opening mechanism.
+
 ## Contracts and audit boundary
 
 - `Task`, `Plan`, `Evidence`, `Claim`, and `Citation` are validated Pydantic models.

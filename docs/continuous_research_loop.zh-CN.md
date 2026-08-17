@@ -126,6 +126,14 @@ synthesis funnel。不得把 40 个 retrieval miss 混进同一个机制，也�
 替代证据链定位。fresh paired run、sealed holdout、upstream official evaluator 和
 leaderboard submission 都保持 `planned`。
 
+第一版 reachability funnel 随后按注册执行：47/67 case 的 literal answer 未在可见
+reference 内容中完整出现，11/67 可见但未获得完整 cited coverage，9/67 已引用
+answer-bearing reference 仍答错。虽然 47/67 触发 exposure/opening route，当前不会
+据此直接加 opening：v0 把 `gold_docs ∪ evidence_docs` 都称为 reference，仅有 supporting
+evidence 到达也能入组。该混淆已作为负边界保留。下一步纠偏只重分层已有 110 个
+wrong trace，不设 promotion threshold、不调用模型；先拆开 gold-not-arrived、
+evidence-only-arrived、gold-arrived-span-hidden、selection 和 synthesis。
+
 ## 操作命令
 
 ```powershell

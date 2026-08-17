@@ -1,7 +1,7 @@
 {
   "schema_version": "deepresearch-research-loop-checkpoint-v0",
   "loop_id": "evidence-reachability-funnel-v0",
-  "status": "offline_calibrating",
+  "status": "closed",
   "problem": "The frozen full-development profile assigns 67 of 110 Judge-wrong cases to reference-document-retrieved-but-answer-wrong, but the category conflates answer exposure, evidence selection, and final synthesis.",
   "observed_evidence": [
     {
@@ -11,6 +11,10 @@
     {
       "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/failure_profile.json",
       "sha256": "29eb55553d4f5564d6f20457899222ee3baf4388f6dcaada1ab296318d5f3be1"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/evidence-reachability-funnel-v0-20260817/funnel.json",
+      "sha256": "7aee84b3d8528c13b730c218f197ec198afeed05989d15c2382fddf5fe4ed92a"
     }
   ],
   "simplest_baseline": "Reuse the 67 frozen traces and test answer-atom coverage first in all visible reference content and then only in cited reference content. Make no provider, search, or Judge call.",
@@ -73,14 +77,17 @@
   "multi_agent_status": "deferred",
   "multi_agent_failure_triggers": [],
   "multi_agent_comparison_contract": null,
-  "measured_result": null,
-  "decision": null,
-  "next_action": "Validate and commit the registered funnel implementation, then execute it once on the hash-bound saved traces. Route only from the frozen 60% thresholds; do not introduce a runtime mechanism in the same loop.",
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/evidence-reachability-funnel-v0-20260817/funnel.json",
+    "sha256": "7aee84b3d8528c13b730c218f197ec198afeed05989d15c2382fddf5fe4ed92a"
+  },
+  "decision": "reject",
+  "next_action": "Retain the registered 47/67 hidden-answer result but reject it as a sufficient runtime-mechanism selector because the frozen union_of_gold_and_evidence_docids reference policy conflates gold-document arrival with supporting-evidence-only arrival. Build one zero-call corrected audit over all 110 Judge-wrong cases with mutually exclusive gold-not-arrived, evidence-only-arrived-answer-hidden, gold-arrived-answer-hidden, visible-but-uncited, cited-but-wrong, and answer-contract categories. Mark that correction selected after observing v0 and do not attach a promotion threshold.",
   "active_paid_calls": 0,
   "retained_services": [
     "qwen3-32b-bf16-judge@127.0.0.1:18015",
     "baseline-progressive-disclosure@127.0.0.1:8768"
   ],
   "task_owned_processes": "named_and_retained",
-  "claim_boundary": "This loop may identify a dominant downstream evidence stage on 67 development failures using saved traces. It cannot establish an effectiveness gain, official benchmark accuracy, sealed-holdout performance, framework superiority, or model-capability improvement."
+  "claim_boundary": "Under the registered union-of-gold-and-evidence reference policy, 47/67 cases lacked full literal answer coverage, 11/67 had visible answer evidence that was not cited, and 9/67 cited answer-bearing reference content but remained Judge-wrong. The registered 60% rule routes to evidence_exposure_or_opening, but that route is rejected as a sufficient mechanism selector because supporting-evidence-only arrival can satisfy the cohort definition without gold-document arrival. This is a posthoc development localization result, not an effectiveness gain, official benchmark accuracy, sealed-holdout performance, framework superiority, or model-capability improvement."
 }
