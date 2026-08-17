@@ -3,6 +3,7 @@ from __future__ import annotations
 import html
 import ipaddress
 import json
+import os
 import re
 import socket
 import time
@@ -10,7 +11,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from hashlib import sha256
 from html.parser import HTMLParser
-from typing import Protocol
+from typing import Callable, Protocol
 from urllib.parse import ParseResult, parse_qs, quote, unquote, urljoin, urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
@@ -36,6 +37,100 @@ class HttpClient(Protocol):
     def get(self, url: str, *, accept: str) -> HttpResponse: ...
 
 
+class JsonPostHttpClient(HttpClient, Protocol):
+    def post_json(
+        self,
+        url: str,
+        *,
+        payload: dict[str, object],
+        headers: dict[str, str],
+    ) -> HttpResponse: ...
+
+
+class SearchBudgetExhausted(RuntimeError):
+    pass
+
+
+@dataclass(frozen=True)
+class SearchAttempt:
+    index: int
+    logical_query_index: int
+    query_sha256: str
+    provider: str
+    outcome: str
+    result_count: int | None
+    latency_ms: int
+    estimated_cost_usd: float
+    error_type: str | None = None
+
+
+class SearchCallBudget:
+    """Counts every networked search attempt before it is issued."""
+
+    def __init__(self, max_attempts: int) -> None:
+        self._max_attempts = max_attempts
+        self._active_query = ""
+        self._active_query_index = 0
+        self.attempts: list[SearchAttempt] = []
+
+    @property
+    def max_attempts(self) -> int:
+        return self._max_attempts
+
+    def reset(self) -> None:
+        self.attempts = []
+        self._active_query = ""
+        self._active_query_index = 0
+
+    def begin_logical_query(self, query: str, index: int) -> None:
+        self._active_query = query
+        self._active_query_index = index
+
+    def search(
+        self,
+        provider: str,
+        request: Callable[[], list[SearchHit]],
+        *,
+        estimated_cost_usd: float = 0.0,
+    ) -> list[SearchHit]:
+        if len(self.attempts) >= self._max_attempts:
+            raise SearchBudgetExhausted(
+                f"search attempt budget exhausted at {self._max_attempts} attempts"
+            )
+        started = time.perf_counter()
+        index = len(self.attempts) + 1
+        try:
+            hits = request()
+        except Exception as error:
+            self.attempts.append(
+                SearchAttempt(
+                    index=index,
+                    logical_query_index=self._active_query_index,
+                    query_sha256=sha256(self._active_query.encode("utf-8")).hexdigest(),
+                    provider=provider,
+                    outcome="error",
+                    result_count=None,
+                    latency_ms=int((time.perf_counter() - started) * 1000),
+                    estimated_cost_usd=estimated_cost_usd,
+                    error_type=type(error).__name__,
+                )
+            )
+            raise
+        self.attempts.append(
+            SearchAttempt(
+                index=index,
+                logical_query_index=self._active_query_index,
+                query_sha256=sha256(self._active_query.encode("utf-8")).hexdigest(),
+                provider=provider,
+                outcome="ok",
+                result_count=len(hits),
+                latency_ms=int((time.perf_counter() - started) * 1000),
+                estimated_cost_usd=estimated_cost_usd,
+            )
+        )
+        return hits
+
+
 class SafeHttpClient:
     def __init__(self, *, timeout_seconds: int, max_download_bytes: int, user_agent: str) -> None:
         self._timeout_seconds = timeout_seconds
@@ -59,6 +154,35 @@ class SafeHttpClient:
             raise ValueError(f"response exceeded max_download_bytes={self._max_download_bytes}")
         return HttpResponse(url=final_url, content_type=content_type, body=body)
 
+    def post_json(
+        self,
+        url: str,
+        *,
+        payload: dict[str, object],
+        headers: dict[str, str],
+    ) -> HttpResponse:
+        _require_public_http_url(url)
+        request_headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": self._user_agent,
+            **headers,
+        }
+        request = Request(
+            url,
+            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            headers=request_headers,
+            method="POST",
+        )
+        with self._opener.open(request, timeout=self._timeout_seconds) as response:
+            final_url = response.geturl()
+            _require_public_http_url(final_url)
+            content_type = response.headers.get_content_type()
+            body = response.read(self._max_download_bytes + 1)
+        if len(body) > self._max_download_bytes:
+            raise ValueError(f"response exceeded max_download_bytes={self._max_download_bytes}")
+        return HttpResponse(url=final_url, content_type=content_type, body=body)
+
 
 class _SafeRedirectHandler(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
@@ -71,30 +195,41 @@ class DuckDuckGoSearchProvider:
 
     name = "duckduckgo_html"
 
-    def __init__(self, client: HttpClient) -> None:
+    def __init__(self, client: HttpClient, budget: SearchCallBudget | None = None) -> None:
         self._client = client
+        self._budget = budget
 
     def search(self, query: str, *, limit: int) -> list[SearchHit]:
         url = f"https://lite.duckduckgo.com/lite/?q={quote(query)}"
-        response = self._client.get(url, accept="text/html,application/xhtml+xml")
-        parser = _DuckDuckGoParser()
-        parser.feed(_decode_body(response.body, response.content_type))
-        hits: list[SearchHit] = []
-        seen: set[str] = set()
-        for raw in parser.results:
-            target = _duckduckgo_target(raw["url"])
-            if not target or target in seen:
-                continue
-            try:
-                _require_http_url_syntax(target)
-                hit = SearchHit(title=raw["title"], url=target, snippet=raw.get("snippet", ""))
-            except ValueError:
-                continue
-            hits.append(hit)
-            seen.add(target)
-            if len(hits) >= limit:
-                break
-        return hits
+        def request() -> list[SearchHit]:
+            response = self._client.get(url, accept="text/html,application/xhtml+xml")
+            parser = _DuckDuckGoParser()
+            parser.feed(_decode_body(response.body, response.content_type))
+            hits: list[SearchHit] = []
+            seen: set[str] = set()
+            for raw in parser.results:
+                target = _duckduckgo_target(raw["url"])
+                if not target or target in seen:
+                    continue
+                try:
+                    _require_http_url_syntax(target)
+                    hit = SearchHit(title=raw["title"], url=target, snippet=raw.get("snippet", ""))
+                except ValueError:
+                    continue
+                hits.append(hit)
+                seen.add(target)
+                if len(hits) >= limit:
+                    break
+            return hits
+
+        return self._search_with_budget(query, request)
+
+    def _search_with_budget(
+        self, query: str, request: Callable[[], list[SearchHit]]
+    ) -> list[SearchHit]:
+        if self._budget is None:
+            return request()
+        return self._budget.search(self.name, request)
 
 
 class BingRssSearchProvider:
@@ -102,28 +237,34 @@ class BingRssSearchProvider:
 
     name = "bing_rss"
 
-    def __init__(self, client: HttpClient) -> None:
+    def __init__(self, client: HttpClient, budget: SearchCallBudget | None = None) -> None:
         self._client = client
+        self._budget = budget
 
     def search(self, query: str, *, limit: int) -> list[SearchHit]:
         url = f"https://www.bing.com/search?format=rss&setlang=en-US&q={quote(query)}"
-        response = self._client.get(url, accept="application/rss+xml,application/xml,text/xml")
-        root = ET.fromstring(response.body)
-        hits: list[SearchHit] = []
-        for item in root.findall("./channel/item"):
-            title = _normalize_space(item.findtext("title") or "")
-            target = _normalize_space(item.findtext("link") or "")
-            snippet = _normalize_space(item.findtext("description") or "")
-            if not title or not target:
-                continue
-            try:
-                _require_http_url_syntax(target)
-                hits.append(SearchHit(title=title, url=target, snippet=snippet))
-            except ValueError:
-                continue
-            if len(hits) >= limit:
-                break
-        return hits
+        def request() -> list[SearchHit]:
+            response = self._client.get(url, accept="application/rss+xml,application/xml,text/xml")
+            root = ET.fromstring(response.body)
+            hits: list[SearchHit] = []
+            for item in root.findall("./channel/item"):
+                title = _normalize_space(item.findtext("title") or "")
+                target = _normalize_space(item.findtext("link") or "")
+                snippet = _normalize_space(item.findtext("description") or "")
+                if not title or not target:
+                    continue
+                try:
+                    _require_http_url_syntax(target)
+                    hits.append(SearchHit(title=title, url=target, snippet=snippet))
+                except ValueError:
+                    continue
+                if len(hits) >= limit:
+                    break
+            return hits
+
+        if self._budget is None:
+            return request()
+        return self._budget.search(self.name, request)
 
 
 class GitHubRepositorySearchProvider:
@@ -148,8 +289,9 @@ class GitHubRepositorySearchProvider:
         "workflow",
     }
 
-    def __init__(self, client: HttpClient) -> None:
+    def __init__(self, client: HttpClient, budget: SearchCallBudget | None = None) -> None:
         self._client = client
+        self._budget = budget
 
     def search(self, query: str, *, limit: int) -> list[SearchHit]:
         if not any(marker in query.casefold() for marker in self._QUERY_MARKERS):
@@ -162,48 +304,56 @@ class GitHubRepositorySearchProvider:
         if " " not in project_name and hyphenated.casefold() != project_name.casefold():
             search_terms.append(f"{hyphenated} in:name")
 
-        repositories: dict[str, dict[str, object]] = {}
+        candidates: dict[str, SearchHit] = {}
         last_error: Exception | None = None
         for term in search_terms:
             url = (
                 "https://api.github.com/search/repositories?"
                 f"q={quote(term)}&per_page={min(max(limit, 3), 10)}"
             )
-            try:
+
+            def request() -> list[SearchHit]:
                 response = self._client.get(url, accept="application/vnd.github+json")
                 payload = json.loads(_decode_body(response.body, response.content_type))
+                hits: list[SearchHit] = []
+                for item in payload.get("items", []):
+                    if not isinstance(item, dict) or not isinstance(item.get("html_url"), str):
+                        continue
+                    try:
+                        hits.append(
+                            SearchHit(
+                                title=str(
+                                    item.get("full_name")
+                                    or item.get("name")
+                                    or "GitHub repository"
+                                ),
+                                url=str(item["html_url"]),
+                                snippet=str(item.get("description") or ""),
+                            )
+                        )
+                    except ValueError:
+                        continue
+                return hits
+
+            try:
+                hits = request() if self._budget is None else self._budget.search(self.name, request)
             except Exception as error:
                 last_error = error
                 continue
-            for item in payload.get("items", []):
-                if isinstance(item, dict) and isinstance(item.get("html_url"), str):
-                    repositories[item["html_url"]] = item
-        if not repositories and last_error is not None:
+            for hit in hits:
+                candidates[str(hit.url)] = hit
+        if not candidates and last_error is not None:
             raise last_error
 
         target = _compact_name(project_name)
-        ranked = sorted(
-            repositories.values(),
-            key=lambda item: (
-                _compact_name(str(item.get("name", ""))) != target,
-                -_name_overlap(project_name, str(item.get("name", ""))),
-                -int(item.get("stargazers_count", 0)),
-                str(item.get("full_name", "")).casefold(),
+        return sorted(
+            candidates.values(),
+            key=lambda hit: (
+                _compact_name(hit.title.rsplit("/", maxsplit=1)[-1]) != target,
+                -_name_overlap(project_name, hit.title.rsplit("/", maxsplit=1)[-1]),
+                hit.title.casefold(),
             ),
-        )
-        hits: list[SearchHit] = []
-        for item in ranked[:limit]:
-            try:
-                hits.append(
-                    SearchHit(
-                        title=str(item.get("full_name") or item.get("name") or "GitHub repository"),
-                        url=str(item["html_url"]),
-                        snippet=str(item.get("description") or ""),
-                    )
-                )
-            except ValueError:
-                continue
-        return hits
+        )[:limit]
 
     @classmethod
     def _project_name(cls, query: str) -> str:
@@ -217,11 +367,11 @@ class GitHubRepositorySearchProvider:
 class NoKeyWebSearchProvider:
     name = "no_key_web_search"
 
-    def __init__(self, client: HttpClient) -> None:
+    def __init__(self, client: HttpClient, budget: SearchCallBudget | None = None) -> None:
         self._providers = [
-            GitHubRepositorySearchProvider(client),
-            DuckDuckGoSearchProvider(client),
-            BingRssSearchProvider(client),
+            GitHubRepositorySearchProvider(client, budget),
+            DuckDuckGoSearchProvider(client, budget),
+            BingRssSearchProvider(client, budget),
         ]
         self.last_backend = ""
 
@@ -242,6 +392,80 @@ class NoKeyWebSearchProvider:
         return []
 
 
+class TavilySearchProvider:
+    """Keyed Tavily /search adapter with a small, explicit request surface."""
+
+    name = "tavily_search"
+    last_backend = name
+    _ENDPOINT = "https://api.tavily.com/search"
+
+    def __init__(
+        self, client: JsonPostHttpClient, config: SearchConfig, budget: SearchCallBudget
+    ) -> None:
+        if config.kind != "tavily" or not config.api_key_env:
+            raise ValueError("TavilySearchProvider requires search.kind=tavily and api_key_env")
+        api_key = os.environ.get(config.api_key_env)
+        if not api_key:
+            raise RuntimeError(f"missing search API key in environment variable {config.api_key_env}")
+        self._client = client
+        self._api_key = api_key
+        self._search_depth = config.tavily_search_depth
+        self._budget = budget
+        self._estimated_cost_usd = config.tavily_basic_credit_price_usd
+
+    def search(self, query: str, *, limit: int) -> list[SearchHit]:
+        def request() -> list[SearchHit]:
+            response = self._client.post_json(
+                self._ENDPOINT,
+                payload={
+                    "query": query,
+                    "search_depth": self._search_depth,
+                    "max_results": limit,
+                    "include_answer": False,
+                    "include_raw_content": False,
+                    "include_images": False,
+                },
+                headers={"Authorization": f"Bearer {self._api_key}"},
+            )
+            if response.content_type != "application/json":
+                raise ValueError("Tavily search response must be application/json")
+            payload = json.loads(_decode_body(response.body, response.content_type))
+            raw_results = payload.get("results", [])
+            if not isinstance(raw_results, list):
+                raise ValueError("Tavily search response results must be a list")
+
+            hits: list[SearchHit] = []
+            seen: set[str] = set()
+            for item in raw_results:
+                if not isinstance(item, dict):
+                    continue
+                target = item.get("url")
+                if not isinstance(target, str) or target in seen:
+                    continue
+                try:
+                    _require_http_url_syntax(target)
+                    title = _normalize_space(str(item.get("title") or urlparse(target).netloc))
+                    if not title:
+                        continue
+                    hits.append(
+                        SearchHit(
+                            title=title,
+                            url=target,
+                            snippet=_normalize_space(str(item.get("content") or "")),
+                        )
+                    )
+                except ValueError:
+                    continue
+                seen.add(target)
+                if len(hits) >= limit:
+                    break
+            return hits
+
+        return self._budget.search(
+            self.name, request, estimated_cost_usd=self._estimated_cost_usd
+        )
+
+
 class LiveWebCollector:
     """Searches public web results, fetches pages, and retains a per-request audit trace."""
 
@@ -252,14 +476,26 @@ class LiveWebCollector:
             max_download_bytes=config.max_download_bytes,
             user_agent=config.user_agent,
         )
-        if config.kind != "duckduckgo":
+        self._search_budget = SearchCallBudget(config.max_search_calls)
+        if config.kind == "duckduckgo":
+            self._search = NoKeyWebSearchProvider(self._client, self._search_budget)
+        elif config.kind == "tavily":
+            if not hasattr(self._client, "post_json"):
+                raise TypeError("tavily search requires an HTTP client with post_json")
+            self._search = TavilySearchProvider(  # type: ignore[arg-type]
+                self._client, config, self._search_budget
+            )
+        else:
             raise ValueError(f"live web collector does not support search kind {config.kind}")
-        self._search = NoKeyWebSearchProvider(self._client)
         self.trace_events: list[TraceEvent] = []
 
     def collect(self, queries: list[str], max_evidence: int) -> list[Evidence]:
         self.trace_events = []
-        ranked_by_query = [self._search_query(query) for query in queries]
+        self._search_budget.reset()
+        ranked_by_query = [
+            self._search_query(query, logical_query_index=index)
+            for index, query in enumerate(queries, start=1)
+        ]
         candidates = _round_robin_hits(ranked_by_query, max_evidence * 2)
         evidence: list[Evidence] = []
         seen_urls: set[str] = set()
@@ -275,36 +511,62 @@ class LiveWebCollector:
                 break
         return evidence
 
-    def _search_query(self, query: str) -> list[tuple[SearchHit, str]]:
-        started = time.perf_counter()
+    def _search_query(
+        self, query: str, *, logical_query_index: int
+    ) -> list[tuple[SearchHit, str]]:
+        self._search_budget.begin_logical_query(query, logical_query_index)
+        before_attempts = len(self._search_budget.attempts)
         try:
             hits = self._search.search(query, limit=self._config.max_results_per_query)
+            self._append_search_attempt_trace(before_attempts)
+            return [(hit, query) for hit in hits]
+        except Exception as error:
+            self._append_search_attempt_trace(before_attempts)
+            if len(self._search_budget.attempts) == before_attempts:
+                self.trace_events.append(
+                    TraceEvent(
+                        stage="search_budget",
+                        provider=self._search.last_backend or self._search.name,
+                        model="html-v1",
+                        latency_ms=0,
+                        outcome="error",
+                        detail=json.dumps(
+                            {
+                                "logical_query_index": logical_query_index,
+                                "query_sha256": sha256(query.encode("utf-8")).hexdigest(),
+                                "error_type": type(error).__name__,
+                                "attempted_http_search": False,
+                            },
+                            ensure_ascii=False,
+                        ),
+                    )
+                )
+            return []
+
+    def _append_search_attempt_trace(self, start_index: int) -> None:
+        for attempt in self._search_budget.attempts[start_index:]:
             self.trace_events.append(
                 TraceEvent(
                     stage="search",
-                    provider=self._search.last_backend or self._search.name,
-                    model="html-v1",
-                    latency_ms=int((time.perf_counter() - started) * 1000),
-                    outcome="ok",
+                    provider=attempt.provider,
+                    model="tavily-basic-v1" if attempt.provider == "tavily_search" else "html-v1",
+                    latency_ms=attempt.latency_ms,
+                    outcome=attempt.outcome,
                     detail=json.dumps(
-                        {"query": query, "results": len(hits), "backend": self._search.last_backend},
+                        {
+                            "logical_query_index": attempt.logical_query_index,
+                            "http_search_attempt_index": attempt.index,
+                            "query_sha256": attempt.query_sha256,
+                            "results": attempt.result_count,
+                            "budget_before": attempt.index - 1,
+                            "budget_after": self._search_budget.max_attempts - attempt.index,
+                            "estimated_search_cost_usd": attempt.estimated_cost_usd,
+                            "error_type": attempt.error_type,
+                        },
                         ensure_ascii=False,
                     ),
                 )
             )
-            return [(hit, query) for hit in hits]
-        except Exception as error:
-            self.trace_events.append(
-                TraceEvent(
-                    stage="search",
-                    provider=self._search.last_backend or self._search.name,
-                    model="html-v1",
-                    latency_ms=int((time.perf_counter() - started) * 1000),
-                    outcome="error",
-                    detail=json.dumps({"query": query, "error": str(error)}, ensure_ascii=False),
-                )
-            )
-            return []
 
     def _fetch_evidence(self, hit: SearchHit, query: str) -> Evidence | None:
         started = time.perf_counter()
@@ -362,7 +624,7 @@ class LiveWebCollector:
 
 def live_collector_from_config(config: SearchConfig) -> LiveWebCollector:
     if config.kind == "local":
-        raise ValueError("live research requires search.kind=duckduckgo")
+        raise ValueError("live research requires search.kind=duckduckgo or tavily")
     return LiveWebCollector(config)
 
 

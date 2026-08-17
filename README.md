@@ -375,6 +375,12 @@ python -m deepresearch_harness.cli research `
 
 Repository-shaped queries first use GitHub's public repository search and fetch the repository README. Other queries fall back to DuckDuckGo Lite and Bing RSS without another API key. These no-key search paths are best-effort and rate-limited, not a production search SLA. The saved trace records every query, backend, fetched URL, fetch error, token count, estimated fee, and latency.
 
+For the registered stable-search candidate, use `config.tavily.example.json` as
+the shape of an ignored local config and set `TAVILY_API_KEY` only in the
+environment. The adapter pins Tavily `/search` to `basic`, disables answer and
+raw-content fields, and counts every actual search HTTP attempt before sending
+it. It is an unexecuted candidate implementation, not a claimed improvement.
+
 ## Public benchmark pilot
 
 The first external slice pins five tasks from Microsoft's LiveDRBench preview. It runs the same one-pass B1 search policy with a task-shaped JSON answer adapter:
@@ -393,7 +399,8 @@ The deterministic compatibility scorer checks prediction coverage, official oute
 
 The five preview tasks are already observed, so the next public slice is separately
 registered rather than retrospectively re-split. Its keys, prior-task exclusion,
-budgets, baseline, planned search-provider candidate, and dataset hash can be
+budgets, baseline, implemented-but-unexecuted Tavily search-provider candidate,
+and dataset hash can be
 checked without a provider call:
 
 ```powershell
@@ -401,9 +408,9 @@ python scripts/check_livedrbench_fresh_public_registration.py `
   --registration benchmarks/livedrbench_fresh_public_v0/registration.json
 ```
 
-This is pre-generation bookkeeping, not a new benchmark run. The paired runner
-that enforces its five-search cap and compares the planned stable-search adapter
-against the existing collector remains unimplemented.
+This is pre-generation bookkeeping, not a new benchmark run. `LiveWebCollector`
+enforces its five actual-search-attempt cap; the hash-bound paired runner that
+freezes both configurations and executes the comparison remains unimplemented.
 
 ## Real API run
 

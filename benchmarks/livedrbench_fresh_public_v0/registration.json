@@ -38,13 +38,19 @@
     "id": "existing-live-collector-v0",
     "status": "existing",
     "search_provider": "existing_live_collector",
-    "adapter": "public_benchmark.b1_benchmark_structured"
+    "adapter": "public_benchmark.b1_benchmark_structured",
+    "search_kind": "duckduckgo"
   },
   "candidate": {
-    "id": "stable-search-provider-adapter-v0",
-    "status": "planned",
-    "search_provider": "stable-search-provider",
-    "adapter": "planned_not_implemented"
+    "id": "tavily-basic-search-adapter-v0",
+    "status": "implemented_not_run",
+    "search_provider": "tavily_search",
+    "adapter": "web_research.TavilySearchProvider",
+    "search_kind": "tavily",
+    "api_key_env": "TAVILY_API_KEY",
+    "tavily_search_depth": "basic",
+    "include_answer": false,
+    "include_raw_content": false
   },
   "budget": {
     "model": "deepseek-v4-flash",
@@ -53,11 +59,18 @@
     "max_total_tokens_per_task": 8000,
     "max_estimated_cost_usd_per_task": 0.002,
     "max_evidence_items_per_task": 6,
-    "max_search_calls_per_task": 5
+    "max_search_calls_per_task": 5,
+    "candidate_search_credits_per_call": 1,
+    "candidate_max_search_credits_per_task": 5,
+    "candidate_search_credit_price_usd": 0.008,
+    "candidate_max_search_cost_usd_per_task": 0.04,
+    "candidate_search_price_source_url": "https://docs.tavily.com/documentation/api-credits",
+    "candidate_search_price_checked_on": "2026-08-17"
   },
+  "comparison_mode": "token_matched_search_backend_ablation",
   "evaluator": "compatibility_exact_main_claim_v1",
   "official_evaluator_status": "planned_not_run",
   "sealed_holdout_access": "forbidden",
   "provider_calls_before_generation": 0,
-  "claim_boundary": "This is a pre-generation registration for an untouched public LiveDRBench task slice. It is not a run, effectiveness result, official evaluator result, leaderboard result, or model-capability improvement. The candidate stable-search-provider adapter is planned only and is not implemented by this artifact."
+  "claim_boundary": "This is a pre-generation registration for an untouched public LiveDRBench task slice. It is not a run, effectiveness result, official evaluator result, leaderboard result, or model-capability improvement. The candidate Tavily basic search adapter is implemented but has not been configured with a key, executed, or compared. This is a token-matched search-backend ablation, not a total-cost-matched comparison: Tavily credits and model costs must be reported separately."
 }

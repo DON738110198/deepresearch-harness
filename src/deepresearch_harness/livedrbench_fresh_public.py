@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from hashlib import sha256
 from pathlib import Path
 from typing import Literal
@@ -32,9 +33,14 @@ class StrictContract(BaseModel):
 
 class SearchVariant(StrictContract):
     id: str = Field(min_length=1)
-    status: Literal["existing", "planned"]
+    status: Literal["existing", "implemented_not_run"]
     search_provider: str = Field(min_length=1)
     adapter: str = Field(min_length=1)
+    search_kind: Literal["duckduckgo", "tavily"]
+    api_key_env: Literal["TAVILY_API_KEY"] | None = None
+    tavily_search_depth: Literal["basic"] | None = None
+    include_answer: Literal[False] | None = None
+    include_raw_content: Literal[False] | None = None
 
 
 class TaskBudget(StrictContract):
@@ -45,6 +51,27 @@ class TaskBudget(StrictContract):
     max_estimated_cost_usd_per_task: float = Field(gt=0, le=0.01)
     max_evidence_items_per_task: Literal[6]
     max_search_calls_per_task: Literal[5]
+    candidate_search_credits_per_call: Literal[1]
+    candidate_max_search_credits_per_task: Literal[5]
+    candidate_search_credit_price_usd: float = Field(gt=0, le=0.02)
+    candidate_max_search_cost_usd_per_task: float = Field(gt=0, le=0.10)
+    candidate_search_price_source_url: HttpUrl
+    candidate_search_price_checked_on: date
+
+    @model_validator(mode="after")
+    def candidate_search_cost_is_bounded(self) -> "TaskBudget":
+        expected_credits = (
+            self.max_search_calls_per_task * self.candidate_search_credits_per_call
+        )
+        if self.candidate_max_search_credits_per_task != expected_credits:
+            raise ValueError("candidate search credit cap must match the search-call cap")
+        expected_cost = (
+            self.candidate_max_search_credits_per_task
+            * self.candidate_search_credit_price_usd
+        )
+        if abs(self.candidate_max_search_cost_usd_per_task - expected_cost) > 1e-12:
+            raise ValueError("candidate search cost cap must match the credit snapshot")
+        return self
 
 
 class FreshLiveDRBenchRegistration(StrictContract):
@@ -70,6 +97,7 @@ class FreshLiveDRBenchRegistration(StrictContract):
     baseline: SearchVariant
     candidate: SearchVariant
     budget: TaskBudget
+    comparison_mode: Literal["token_matched_search_backend_ablation"]
     evaluator: Literal["compatibility_exact_main_claim_v1"]
     official_evaluator_status: Literal["planned_not_run"]
     sealed_holdout_access: Literal["forbidden"]
@@ -105,10 +133,28 @@ class FreshLiveDRBenchRegistration(StrictContract):
             raise ValueError("selected task-key hash changed")
         if self.baseline.status != "existing":
             raise ValueError("baseline must bind the existing public runner")
-        if self.candidate.status != "planned":
-            raise ValueError("candidate must remain planned")
-        if self.candidate.id != "stable-search-provider-adapter-v0":
+        if (
+            self.baseline.id != "existing-live-collector-v0"
+            or self.baseline.search_provider != "existing_live_collector"
+            or self.baseline.adapter != "public_benchmark.b1_benchmark_structured"
+            or self.baseline.search_kind != "duckduckgo"
+            or self.baseline.api_key_env is not None
+        ):
+            raise ValueError("baseline search variant changed")
+        if self.candidate.status != "implemented_not_run":
+            raise ValueError("candidate implementation must be present but unexecuted")
+        if self.candidate.id != "tavily-basic-search-adapter-v0":
             raise ValueError("candidate mechanism changed")
+        if (
+            self.candidate.search_provider != "tavily_search"
+            or self.candidate.adapter != "web_research.TavilySearchProvider"
+            or self.candidate.search_kind != "tavily"
+            or self.candidate.api_key_env != "TAVILY_API_KEY"
+            or self.candidate.tavily_search_depth != "basic"
+            or self.candidate.include_answer is not False
+            or self.candidate.include_raw_content is not False
+        ):
+            raise ValueError("candidate Tavily contract changed")
         return self
 
 

@@ -60,6 +60,16 @@ must enforce the same model, thinking mode, query policy, evidence cap, search
 cap, Token cap, cost cap, and compatibility/official-evaluator boundary. A
 planned search adapter or static registration is not an effectiveness result.
 
+The LiveDRBench fresh-public Tavily candidate is a **token-matched search-backend
+ablation**, not a total-cost-matched comparison: it changes only the search
+provider while separately reporting its dated search-credit bill. Before any
+generation, the paired executor must bind the candidate to Tavily `/search`,
+`basic` depth, `include_answer=false`, `include_raw_content=false`, a maximum
+of five actual HTTP search attempts (including failures), and the frozen price
+snapshot. The no-key baseline can use fewer or zero billable credits, so a
+cost-matched claim is prohibited unless a separately registered total-system
+budget policy makes the tools comparable.
+
 BrowseComp-Plus is the active primary benchmark target described in
 `research_goal_and_benchmark_strategy.md`. Before its answers or relevance
 labels are accessed, pin the benchmark artifacts and create a deterministic

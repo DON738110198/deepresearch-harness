@@ -26,14 +26,23 @@ revision 的全部十个公开 preview key，排除这五个旧 key，按整数�
 | --- | --- |
 | 模型 | `deepseek-v4-flash`，thinking disabled |
 | baseline | 既有 `public_benchmark.b1_benchmark_structured` live collector |
-| candidate | `stable-search-provider-adapter-v0`，仍为 planned，尚未实现 |
-| 每题上限 | 3 次模型调用、5 次搜索、8,000 Tokens、$0.002、6 条 evidence |
+| candidate | `tavily-basic-search-adapter-v0`；仅替换 search provider，已实现、尚未运行 |
+| 每题上限 | 3 次模型调用、5 次实际 HTTP 搜索尝试、8,000 Tokens、$0.002 LLM、6 条 evidence |
+| Tavily 工具预算 | `basic`、每次 1 credit、最多 5 credit；价格快照为 2026-08-17 的 $0.008/credit，即最多 $0.04/题 |
 | evaluator | `compatibility_exact_main_claim_v1`；官方 evaluator 仍 planned |
 | 数据边界 | BrowseComp-Plus sealed holdout 不访问 |
 
-这一步只完成任务选择和比较契约。现有 public runner 还不能强制 5 次 search 上限，也没有
-paired baseline/candidate execution wrapper；在这两个边界实现并测试之前，不能开始付费运行。
-稳定 Search API 的选择、密钥和计费也尚未进入仓库。
+候选实现固定为 Tavily `/search` 的 `basic` depth：不接收 Tavily answer、不接收 raw content、
+不启用图片；结果只会以 `title/url/content` 进入既有的受限抓取和 Ledger。密钥只读取
+`TAVILY_API_KEY` 环境变量，不进入配置、trace 或注册文件。`LiveWebCollector` 现在在每次
+实际 HTTP 搜索前扣一次共享预算，失败和异常也计数，第六次会在网络请求前拒绝；trace 会记录
+逻辑 query 序号、HTTP attempt 序号、query hash、结果数、预算前后、延迟和估算工具费用。
+
+这是 **token-matched 的搜索后端消融**，不是总成本匹配比较：baseline 无密钥，candidate 有
+Tavily credit，因此 LLM 费用和 Tavily 费用必须分别报告，不能把结果写成 cost-matched 胜负。
+当前仍缺少 hash-bound 的 paired runner，尚未生成、调用 Tavily、调用模型或运行官方 Judge。
+执行前还必须重新核对 [Tavily credits 文档](https://docs.tavily.com/documentation/api-credits) 的
+价格快照；若价格变化，应重新注册新的比较块，不能静默沿用 $0.008。
 
 ## 验证
 
@@ -54,5 +63,5 @@ hash、task key 与类别；它仍不调用 provider、Judge 或 GPU。
 - checker：`scripts/check_livedrbench_fresh_public_registration.py`
 - tests：`tests/test_livedrbench_fresh_public.py`
 
-注册并不是实验结果。没有生成、没有 candidate 实现、没有官方 Judge、没有效果数字，也没有
-任何模型能力提升的主张。
+注册并不是实验结果。没有生成、没有 paired 比较、没有官方 Judge、没有效果数字，也没有任何
+模型能力提升的主张。

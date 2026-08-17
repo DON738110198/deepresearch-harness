@@ -25,6 +25,12 @@ def main() -> int:
     print("selected_task_keys=" + ",".join(map(str, registration.selected_task_keys)))
     print(f"selected_task_keys_sha256={registration.selected_task_keys_sha256}")
     print(f"candidate_status={registration.candidate.status}")
+    print(f"comparison_mode={registration.comparison_mode}")
+    print(
+        "candidate_search_budget="
+        f"{registration.budget.candidate_max_search_credits_per_task} credits,"
+        f"${registration.budget.candidate_max_search_cost_usd_per_task:.3f}/task"
+    )
     print("provider_calls_before_generation=0")
     if args.verify_pinned_dataset:
         tasks = validate_fresh_public_dataset(registration)

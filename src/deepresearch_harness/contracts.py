@@ -114,7 +114,11 @@ class ProviderConfig(BaseModel):
 
 
 class SearchConfig(BaseModel):
-    kind: Literal["local", "duckduckgo"] = "local"
+    kind: Literal["local", "duckduckgo", "tavily"] = "local"
+    api_key_env: str | None = None
+    tavily_search_depth: Literal["basic", "advanced"] = "basic"
+    max_search_calls: int = Field(ge=1, le=20, default=5)
+    tavily_basic_credit_price_usd: float = Field(ge=0, default=0.008)
     timeout_seconds: int = Field(ge=1, le=120, default=20)
     max_results_per_query: int = Field(ge=1, le=10, default=5)
     max_download_bytes: int = Field(ge=16_384, le=5_000_000, default=1_000_000)
@@ -123,6 +127,14 @@ class SearchConfig(BaseModel):
         min_length=1,
         default="training-free-deepresearch-harness/0.1 (+https://github.com/DON738110198/deepresearch-harness)",
     )
+
+    @model_validator(mode="after")
+    def key_contract_matches_search_backend(self) -> "SearchConfig":
+        if self.kind == "tavily" and self.api_key_env != "TAVILY_API_KEY":
+            raise ValueError("tavily search requires api_key_env=TAVILY_API_KEY")
+        if self.kind != "tavily" and self.api_key_env is not None:
+            raise ValueError("api_key_env is only supported for tavily search")
+        return self
 
 
 class BudgetLimits(BaseModel):

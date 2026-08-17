@@ -25,9 +25,12 @@ def test_fresh_registration_is_hash_bound_and_non_overlapping() -> None:
     assert registration.selected_task_keys == KEYS
     assert registration.excluded_prior_task_keys == EXCLUDED_KEYS
     assert not set(registration.selected_task_keys) & set(EXCLUDED_KEYS)
-    assert registration.candidate.status == "planned"
-    assert registration.candidate.adapter == "planned_not_implemented"
+    assert registration.candidate.status == "implemented_not_run"
+    assert registration.candidate.adapter == "web_research.TavilySearchProvider"
+    assert registration.candidate.api_key_env == "TAVILY_API_KEY"
     assert registration.budget.max_search_calls_per_task == 5
+    assert registration.budget.candidate_max_search_credits_per_task == 5
+    assert registration.budget.candidate_max_search_cost_usd_per_task == 0.04
 
 
 def test_selected_key_hash_uses_final_lf() -> None:
