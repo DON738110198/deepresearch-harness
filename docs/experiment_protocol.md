@@ -392,6 +392,17 @@ The following metrics remain required for registered comparisons:
 - median and tail latency, total tokens, and cost per completed task;
 - completion rate and recoverable-failure rate.
 
+For the full-development profiling route, freeze every prediction and its
+attempt history before development gold access. A balance or transport failure
+may be resumed only for failed IDs after a read-only hash audit; successful paid
+IDs are immutable. The calibrated persistent Judge is a development diagnostic,
+not the upstream official evaluator. Apply the registered mutually exclusive
+failure taxonomy without changing its thresholds. When reference evidence is
+present but the answer is wrong for at least 60% of wrong cases, the next test
+must be a zero-provider reachability funnel over document arrival, literal
+answer-span exposure, citation selection, and final synthesis. Do not combine
+retrieval changes with downstream evidence changes in that test.
+
 ## Bad-case-driven iteration
 
 Start by saving a concrete failure with its inputs and trace. State `problem -> evidence -> hypothesis -> change -> metric -> conclusion`. Add only the smallest mechanism that tests that hypothesis, then add a focused regression test. A more complex orchestration is not accepted merely because it produces a more fluent report.

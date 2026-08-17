@@ -117,8 +117,14 @@ hypothesis firewall、Pro generator substitution 和 corpus-grounded induction�
 因此不再把 prompt-only typed bridge 换名后重跑；当前 7 题进入 regression-only，
 下一轮改为冻结 v10 在完整 175 题 development 上做一次规模化错误分布采集，再由新
 bad-case 主类选择机制。
-多 Agent、fresh paired run、sealed holdout、official Judge 和 leaderboard submission
-都保持 `planned`。
+该 profile 现已完成：175/175 成功，normalized exact 为 42/175，calibrated
+development Judge 为 65/175。110 个 Judge-wrong case 中，67 个属于“reference
+document retrieved but answer wrong”，40 个属于 retrieval miss，3 个属于 answer
+contract failure。67/110 = 60.91%，达到预注册的 60% downstream route，因此下一轮
+先对这 67 题做零 provider call 的 arrival -> answer-span exposure -> citation ->
+synthesis funnel。不得把 40 个 retrieval miss 混进同一个机制，也不得用多 Agent
+替代证据链定位。fresh paired run、sealed holdout、upstream official evaluator 和
+leaderboard submission 都保持 `planned`。
 
 ## 操作命令
 

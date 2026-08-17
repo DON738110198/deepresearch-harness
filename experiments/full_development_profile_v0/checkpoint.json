@@ -1,7 +1,7 @@
 {
   "schema_version": "deepresearch-research-loop-checkpoint-v0",
   "loop_id": "full-development-profile-v0",
-  "status": "live_evaluating",
+  "status": "closed",
   "problem": "Five registered retrieval interventions failed on the same seven outcome-selected cases, and six prompt-only bridge analogues had already failed on another three-case cluster. Continuing to select mechanisms from those cases would overfit the development evidence and leave the project's benchmark story dependent on small slices.",
   "observed_evidence": [
     {
@@ -23,6 +23,22 @@
     {
       "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/incident-after-attempt1.json",
       "sha256": "beeaab55579764df30389011678b66c02c7a2f8d7ed3eadb70e7c93126ba865e"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/v10/summary.json",
+      "sha256": "0799a3da6182a7fa5298f3e0ce0390899e5ed6902e1e3d5180612232d5780a2d"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/gold_diagnostic.json",
+      "sha256": "f1a7c2735e90d0d4619042e79176d5e4d8af3bd2ec612782003c7a80802272f7"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/persistent-judge/evaluation/development_judge_result.json",
+      "sha256": "cb0fc4f103849d93d76e8af45d7518419a06a4448840c005420ba07a54b4d1a5"
+    },
+    {
+      "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/failure_profile.json",
+      "sha256": "29eb55553d4f5564d6f20457899222ee3baf4388f6dcaada1ab296318d5f3be1"
     }
   ],
   "simplest_baseline": "Run the frozen Pi v10 Query-Aware Progressive Disclosure policy once, sequentially, on all 175 development questions. Change no search policy, prompt, model, retriever, call cap, or output budget; use the resulting valid traces only to measure the broader failure distribution.",
@@ -85,15 +101,17 @@
   "multi_agent_status": "deferred",
   "multi_agent_failure_triggers": [],
   "multi_agent_comparison_contract": null,
-  "measured_result": null,
-  "decision": null,
-  "next_action": "Balance audit 59e27c4c4aca887b2a14859ab71721e20a13cf7b1005c23f5b8b38165caa44aa permits resume. Run the registered generation command with --resume-failed exactly once; keep the 106 successful attempt-1 results immutable and retry only the 69 failed query IDs bound by affc187d4419197493ac348791f8d59951ba2cbcf203a1d72f4d5cc3dc96ea0b. The operational provider-error circuit breaker may stop the batch but may not change research behavior. After all predictions are frozen, access development gold once, run the calibrated Judge, and apply taxonomy e13b27f4effa343e5c083b7578e216ff95ca70d5736ed4e3244b46793e61cdac without changing its thresholds.",
-  "active_paid_calls": 1,
+  "measured_result": {
+    "path": "runs/browsecomp_plus_v0/full-development-profile-v0-20260817/failure_profile.json",
+    "sha256": "29eb55553d4f5564d6f20457899222ee3baf4388f6dcaada1ab296318d5f3be1"
+  },
+  "decision": "accept",
+  "next_action": "Run a zero-provider, hash-bound reachability funnel over all 67 Judge-wrong cases classified as reference_document_retrieved_answer_wrong. Separate reference-document arrival, literal answer-span exposure, reference citation, and wrong final synthesis before selecting any new mechanism. Do not tune retrieval on the 40 retrieval misses in the same loop, and do not add multiple Agents unless the resulting traces show independent branch omission or context interference.",
+  "active_paid_calls": 0,
   "retained_services": [
     "qwen3-32b-bf16-judge@127.0.0.1:18015",
-    "baseline-progressive-disclosure@127.0.0.1:8768",
-    "obligation-span-opening@127.0.0.1:8769"
+    "baseline-progressive-disclosure@127.0.0.1:8768"
   ],
   "task_owned_processes": "named_and_retained",
-  "claim_boundary": "A valid result is one development profiling artifact for a frozen harness policy. It cannot establish a fresh same-model gain, sealed-holdout accuracy, official BrowseComp-Plus accuracy, leaderboard rank, cross-framework superiority, or model-capability improvement."
+  "claim_boundary": "The frozen v10 development profile completed 175/175 predictions after a failed-only resume, with 172 schema-complete answers, $1.1793086032 recorded provider cost, 42/175 normalized exact, 52.51% evidence recall, and 65/175 correctness under the calibrated persistent Qwen3-32B development Judge. Among 110 Judge-wrong cases, the preregistered taxonomy assigned 67 to reference-document-retrieved-but-answer-wrong, 40 to reference-document-not-retrieved, and 3 to answer-contract failure. These are development diagnostics after policy selection, not fresh same-model gains, upstream-official accuracy, sealed-holdout accuracy, leaderboard rank, framework superiority, or model-capability improvement."
 }

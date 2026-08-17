@@ -282,6 +282,17 @@ tuning, and acquire a broader frozen development profile before selecting the
 next intervention. No sealed-holdout or leaderboard claim is allowed during
 that profiling step.
 
+The broader profile is now frozen. Pi v10 completed all 175 development
+questions after a hash-audited failed-only resume; the calibrated persistent
+Judge marked 65 correct and 110 wrong. The preregistered taxonomy assigned 67
+wrong cases to reference evidence retrieved but answer wrong, 40 to reference
+evidence not retrieved, and three to the answer contract. Because 67/110 exceeds
+the registered 60% threshold, the next boundary is an offline Evidence
+Reachability Funnel over saved traces. It must separate document arrival,
+literal answer-span exposure, citation selection, and final synthesis before a
+new runtime mechanism is admitted. This is trace localization, not another
+Agent role and not a model change.
+
 ## Contracts and audit boundary
 
 - `Task`, `Plan`, `Evidence`, `Claim`, and `Citation` are validated Pydantic models.
